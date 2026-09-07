@@ -1,0 +1,9 @@
+.applications-container {
+  margin: 0.5rem;
+
+  .applications-grid {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
