@@ -1,6 +1,6 @@
 package com.example.ntbd.persistence.converter;
 
-import com.example.ntbd.domain.domain.Email;
+import com.example.ntbd.domain.Email;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 

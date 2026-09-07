@@ -1,4 +1,4 @@
-package com.example.ntbd.domain.domain;
+package com.example.ntbd.domain;
 
 import com.example.ntbd.persistence.converter.EmailConverter;
 import com.example.ntbd.persistence.converter.UsernameConverter;

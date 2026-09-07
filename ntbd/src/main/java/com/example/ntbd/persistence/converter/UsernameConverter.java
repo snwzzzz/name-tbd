@@ -1,9 +1,10 @@
 package com.example.ntbd.persistence.converter;
 
-import com.example.ntbd.domain.domain.User;
-import com.example.ntbd.domain.domain.Username;
+import com.example.ntbd.domain.Username;
 import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 
+@Converter(autoApply = true)
 public class UsernameConverter implements AttributeConverter<Username, String> {
 
     @Override

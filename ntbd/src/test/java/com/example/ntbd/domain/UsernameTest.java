@@ -1,4 +1,4 @@
-package com.example.ntbd.domain.domain;
+package com.example.ntbd.domain;
 
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
@@ -8,23 +8,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
-public class EmailTest {
+public class UsernameTest {
 
     @Test
     public void can_create_valid_email() {
-        var email = new Email("snwzishot@gmail.com");
-        assertThat(email).isNotNull();
+        var username = new Username("snwz");
+        assertThat(username).isNotNull();
     }
 
     @Test
-    public void null_and_empty_email_throws_error() {
-        assertThatThrownBy(() -> new Email(null))
+    public void null_and_empty_username_throws_error() {
+        assertThatThrownBy(() -> new Username(null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    public void invalid_email_throws_error() {
-        assertThatThrownBy(() -> new Email("X"))
+    public void invalid_username_throws_error() {
+        assertThatThrownBy(() -> new Username("X"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

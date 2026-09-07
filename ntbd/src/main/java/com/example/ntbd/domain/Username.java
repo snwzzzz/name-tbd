@@ -1,4 +1,4 @@
-package com.example.ntbd.domain.domain;
+package com.example.ntbd.domain;
 
 public record Username(String value) {
 
