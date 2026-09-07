@@ -1,0 +1,22 @@
+<div class="application-card">
+  <div class="header">
+    <div class="status" [class.occupied]="application().isOccupied"></div>
+    <span class="title">{{ application().title }}</span>
+  </div>
+  <div class="body">
+    <span class="current-branch">Branch: {{ application().currentBranch }}</span>
+    <span class="last-modified">Last modified: {{ application().lastModified }}</span>
+    <span class="last-modified-by">Last modified by: {{ application().lastModifiedBy }}</span>
+  </div>
+  <div class="footer">
+    <div class="icon play">
+      <svg lucidePlay></svg>
+    </div>
+    <div class="icon pencil">
+      <svg lucidePencil></svg>
+    </div>
+    <div class="icon settings">
+      <svg lucideSettings></svg>
+    </div>
+  </div>
+</div>

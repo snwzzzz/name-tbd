@@ -1,0 +1,66 @@
+.application-card {
+  background-color: white;
+  min-height: 4rem;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .status {
+      width: 0.8rem;
+      height: 0.8rem;
+      border-radius: 100%;
+      background-color: rgb(87, 182, 87);
+
+      &.occupied {
+        background-color: rgb(179, 57, 57);
+      }
+    }
+
+    .title {
+      font-family: 'Jetbrains Mono', monospace;
+
+      white-space: nowrap;
+
+      font-size: 1rem;
+      font-weight: bold;
+    }
+  }
+
+  .body {
+    display: flex;
+    gap: 0.1rem;
+    flex-direction: column;
+
+    span {
+      font-size: 0.75rem;
+      color: gray;
+    }
+  }
+
+  .footer {
+    display: flex;
+    gap: 0.5rem;
+
+    .icon {
+      cursor: pointer;
+
+      width: 2rem;
+      height: 2rem;
+      border-radius: 100%;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        background-color: rgb(223, 223, 223);
+      }
+    }
+  }
+}
