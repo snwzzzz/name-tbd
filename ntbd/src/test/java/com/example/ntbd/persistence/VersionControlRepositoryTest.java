@@ -64,6 +64,7 @@ public class VersionControlRepositoryTest {
 
         var versionControl = VersionControl.builder()
                 .id(versionControlId)
+                .applicationDefinition("{}")
                 .timestamp(LocalDateTime.now())
                 .modifiedBy(savedUser)
                 .build();

@@ -3,6 +3,8 @@ package com.example.ntbd.domain;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,6 +23,9 @@ public class Application {
 
     @Column(nullable = false)
     private String description;
+
+    @OneToMany(orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "application")
+    private List<Branch> branches = List.of();
 
     @Embeddable
     public record ApplicationId(@GeneratedValue Long id) {}

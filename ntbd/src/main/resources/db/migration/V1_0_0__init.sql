@@ -1,0 +1,10 @@
+create sequence application_seq start with 1 increment by 50;
+create sequence branch_seq start with 1 increment by 50;
+create sequence user_seq start with 1 increment by 50;
+create table "application" (id bigint not null, description varchar(255) not null, title varchar(255) not null, primary key (id));
+create table "branch" ("application_id" bigint not null, "createdBy_id" bigint not null, created_at timestamp(6) not null, id bigint not null, last_modified timestamp(6), description varchar(255) not null, latest_version varchar(255), name varchar(255) not null, primary key (id));
+create table "user" (id bigint not null, email varchar(255) not null unique, first_name varchar(255) not null, last_name varchar(255) not null, password varchar(255) not null, username varchar(255) not null unique, primary key (id));
+create table "version_control" (id bigint not null, "modifiedBy_id" bigint not null, timestamp timestamp(6) not null, application_definition varchar(255) not null, version varchar(255) not null, primary key (id, version));
+alter table if exists "branch" add constraint FKn0du63d7mmjsodvs4kivus4tu foreign key ("application_id") references "application";
+alter table if exists "branch" add constraint FKiyc3arp4d7xla8o8r2iiv249q foreign key ("createdBy_id") references "user";
+alter table if exists "version_control" add constraint FKi2uftujyoxl7pub1qfo2l62xc foreign key ("modifiedBy_id") references "user";

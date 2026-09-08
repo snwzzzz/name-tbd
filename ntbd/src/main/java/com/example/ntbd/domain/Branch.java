@@ -2,9 +2,7 @@ package com.example.ntbd.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.jetbrains.annotations.NotNull;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Getter
