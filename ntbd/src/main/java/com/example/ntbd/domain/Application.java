@@ -10,7 +10,7 @@ import lombok.*;
 @Builder
 
 @Entity
-@Table(name = "application")
+@Table(name = "\"application\"")
 public class Application {
 
     @EmbeddedId
@@ -22,6 +22,7 @@ public class Application {
     @Column(nullable = false)
     private String description;
 
+    @Embeddable
     public record ApplicationId(@GeneratedValue Long id) {}
 
 }

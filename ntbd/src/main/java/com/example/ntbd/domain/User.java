@@ -12,7 +12,7 @@ import lombok.*;
 @Builder
 
 @Entity
-@Table(name = "user")
+@Table(name = "\"user\"")
 public class User {
 
     @EmbeddedId
@@ -35,6 +35,7 @@ public class User {
     @Column(nullable = false)
     private String lastName;
 
+    @Embeddable
     public record UserId(@GeneratedValue Long id) {}
 
 }
