@@ -1,5 +1,6 @@
 package com.example.ntbd.service;
 
+import com.example.ntbd.Exception.DuplicateResourceException;
 import com.example.ntbd.Validation.PasswordValidator;
 import com.example.ntbd.commands.NewUserCommand;
 import com.example.ntbd.domain.Email;
@@ -25,6 +26,13 @@ public class UserService {
 
     @Transactional
     public UserDto createUser(NewUserCommand newUserCommand) {
+
+        if (userRepository.existsByUsername(new Username(newUserCommand.username()))) {
+            throw new DuplicateResourceException("Username already taken");
+        }
+        if (userRepository.existsByEmail(new Email(newUserCommand.email()))) {
+            throw new DuplicateResourceException("Email already in use");
+        }
 
         PasswordValidator.validate(newUserCommand.password());
 

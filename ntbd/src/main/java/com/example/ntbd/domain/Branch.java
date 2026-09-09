@@ -40,8 +40,10 @@ public class Branch {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Application application;
 
-    @OneToMany(orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "branch")
+    @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "branch")
     private List<VersionControl> versions = List.of();
+
+    //private Boolean active
 
     @Embeddable
     public record BranchId(@GeneratedValue Long id) { }
