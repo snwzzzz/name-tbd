@@ -31,4 +31,32 @@ public class UserRepositoryTest {
         var savedUser = userRepository.save(user);
         assertThat(userRepository.findById(savedUser.getId())).isNotNull();
     }
+
+    @Test
+    void exists_by_username() {
+        var user = User.builder()
+                .username(new Username("snwz"))
+                .email(new Email("snwzishot@gmail.com"))
+                .password("password")
+                .firstName("snwz")
+                .lastName("ishot").build();
+
+        var savedUser = userRepository.save(user);
+
+        assertThat(userRepository.existsByUsername(new Username("snwz"))).isTrue();
+    }
+
+    @Test
+    void exists_by_email() {
+        var user = User.builder()
+                .username(new Username("snwz"))
+                .email(new Email("snwzishot@gmail.com"))
+                .password("password")
+                .firstName("snwz")
+                .lastName("ishot").build();
+
+        var savedUser = userRepository.save(user);
+
+        assertThat(userRepository.existsByEmail(new Email("snwzishot@gmail.com"))).isTrue();
+    }
 }

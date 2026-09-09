@@ -19,7 +19,7 @@ public interface VersionControlRepository extends JpaRepository<VersionControl, 
     ORDER BY vc.timestamp DESC
     """)
     List<VersionControl> findVersionControlByBranchOrderByTimestamp(
-            Long branchId,
+            Branch.BranchId branchId,
             Pageable pageable
     );
 }

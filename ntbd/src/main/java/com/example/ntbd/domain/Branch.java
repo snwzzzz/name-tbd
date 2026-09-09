@@ -41,6 +41,7 @@ public class Branch {
     private Application application;
 
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "branch")
+    @Builder.Default
     private List<VersionControl> versions = List.of();
 
     //private Boolean active

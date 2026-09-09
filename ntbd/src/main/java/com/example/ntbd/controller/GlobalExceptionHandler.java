@@ -1,5 +1,7 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.Exception.DuplicateResourceException;
+import com.example.ntbd.Exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -22,13 +24,5 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getMessage(), HttpStatus.CONFLICT.value()));
     }
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponse> handleUnauthorized(AuthenticationException ex) {
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(new ErrorResponse(ex.getMessage(), HttpStatus.UNAUTHORIZED.value()));
-    }
-
-    // Standard record for consistent JSON error responses
     public record ErrorResponse(String message, int status) {}
 }

@@ -52,9 +52,9 @@ public class UserServiceTest {
         when(passwordEncoder.encode(VALID_PASSWORD)).thenReturn("hashed-value");
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Optional<UserDto> result = userService.createUser(command);
+        UserDto result = userService.createUser(command);
 
-        assertThat(result).isPresent();
+        assertThat(result).isNotNull();
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).saveAndFlush(captor.capture());

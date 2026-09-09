@@ -2,7 +2,6 @@ package com.example.ntbd.service;
 
 import com.example.ntbd.Exception.BranchNotFoundException;
 import com.example.ntbd.Exception.UserNotFoundException;
-import com.example.ntbd.Exception.VersionControlNotFoundException;
 import com.example.ntbd.commands.NewVersionControlCommand;
 import com.example.ntbd.domain.Branch;
 import com.example.ntbd.domain.User;
@@ -19,7 +18,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -63,7 +61,7 @@ public class VersionControlService {
 
     @Transactional
     public List<VersionControlDto> findByBranchId(Long branchId) {
-        return versionControlRepository.findVersionControlByBranchOrderByTimestamp(branchId, Pageable.unpaged())
+        return versionControlRepository.findVersionControlByBranchOrderByTimestamp(new Branch.BranchId(branchId), Pageable.unpaged())
                 .stream()
                 .map(VersionControlMapper::toDto)
                 .toList();
@@ -74,7 +72,7 @@ public class VersionControlService {
     public Optional<VersionControlDto> findLatestByBranchId(Long branchId) {
         return versionControlRepository
                 .findVersionControlByBranchOrderByTimestamp(
-                        branchId,
+                        new Branch.BranchId(branchId),
                         PageRequest.of(0, 1)
                 )
                 .stream()

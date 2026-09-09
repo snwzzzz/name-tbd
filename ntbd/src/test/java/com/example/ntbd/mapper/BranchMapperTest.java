@@ -21,7 +21,7 @@ public class BranchMapperTest {
                 .description("Main branch")
                 .createdAt(LocalDateTime.of(2026, 1, 1, 12, 0))
                 .lastModified(LocalDateTime.of(2026, 1, 2, 12, 0))
-                .latestVersion("1.0.0")
+                .latestVersion(new Version("1.0.0"))
                 .createdBy(user)
                 .application(application)
                 .build();
