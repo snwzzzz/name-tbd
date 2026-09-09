@@ -57,13 +57,9 @@ public class VersionControlRepositoryTest {
 
         var savedBranch = branchRepository.saveAndFlush(branch);
 
-        var versionControlId = new VersionControl.VersionControlId(
-                new Version("1.0.0"),
-                savedBranch.getId()
-        );
-
         var versionControl = VersionControl.builder()
-                .id(versionControlId)
+                .version(new Version("1.0.0"))
+                .branch(savedBranch)
                 .applicationDefinition("{}")
                 .timestamp(LocalDateTime.now())
                 .modifiedBy(savedUser)

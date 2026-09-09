@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -36,6 +37,9 @@ public class Branch {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Application application;
+
+    @OneToMany(orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "branch")
+    private List<VersionControl> versions = List.of();
 
     @Embeddable
     public record BranchId(@GeneratedValue Long id) { }
