@@ -14,8 +14,8 @@ public record Email(String value) {
     );
 
     public Email {
-        if (value == null || value.isEmpty()) throw new IllegalArgumentException("value cannot be null or empty");
+        if (value == null || value.isEmpty()) throw new IllegalArgumentException("email cannot be null or empty");
         if (!PATTERN.matcher(value).matches())
-            throw new IllegalArgumentException("value is not valid");
+            throw new IllegalArgumentException("email is not valid");
     }
 }

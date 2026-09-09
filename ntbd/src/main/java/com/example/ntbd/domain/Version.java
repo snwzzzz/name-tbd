@@ -8,8 +8,8 @@ public record Version(String value) {
             "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
 
     public Version{
-        if (value == null || value.isEmpty()) throw new IllegalArgumentException("value cannot be null or empty");
+        if (value == null || value.isEmpty()) throw new IllegalArgumentException("version cannot be null or empty");
         if (!PATTERN.matcher(value).matches())
-            throw new IllegalArgumentException("value is not valid");
+            throw new IllegalArgumentException("version is not valid");
     }
 }
