@@ -1,5 +1,6 @@
 package com.example.ntbd.domain;
 
+import com.example.ntbd.persistence.converter.VersionConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,7 +31,8 @@ public class Branch {
 
     private LocalDateTime lastModified;
 
-    private String latestVersion;
+    @Convert(converter = VersionConverter.class)
+    private Version latestVersion;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private User createdBy;

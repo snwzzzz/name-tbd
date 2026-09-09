@@ -8,6 +8,7 @@ import com.example.ntbd.domain.Username;
 import com.example.ntbd.dto.UserDto;
 import com.example.ntbd.mapper.UserMapper;
 import com.example.ntbd.persistence.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public Optional<UserDto> createUser(NewUserCommand newUserCommand) {
+    @Transactional
+    public UserDto createUser(NewUserCommand newUserCommand) {
 
         PasswordValidator.validate(newUserCommand.password());
 
@@ -36,6 +38,6 @@ public class UserService {
                         .build()
         );
 
-        return Optional.of(UserMapper.toDto(saved));
+        return UserMapper.toDto(saved);
     }
 }
