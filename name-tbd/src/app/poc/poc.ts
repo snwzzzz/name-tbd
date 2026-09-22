@@ -222,7 +222,7 @@ export class Poc implements AfterViewInit, OnDestroy {
                 row: node.h ?? 1,
                 maxRow: node.h ?? 1,
                 cellHeight: CELL_H, // inherit exact row height from parent scale
-                margin: 4,
+                margin: 0, // 0 margin so children sit flush inside this structural component
                 acceptWidgets: '.gs-drag-item',
                 disableResize: false,
                 removable: false,
