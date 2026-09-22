@@ -1,13 +1,40 @@
-<div class="container">
-    <ul>
-        <li>
-            <button>Item 1</button>
-        </li>
-        <li>
-            <button>Item 2</button>
-        </li>
-        <li>
-            <button>Item 3</button>
-        </li>
-    </ul>
+<div class="component-list">
+  <div class="list-header">
+    <span class="list-title">Components</span>
+  </div>
+
+  <ul class="item-list">
+    @for (item of items; track item.type) {
+      <!--
+        .gs-drag-item       — selector used by acceptWidgets:'.gs-drag-item' in poc.ts
+        data-type           — read in Poc's 'added' event to identify what was dropped
+        gs-w / gs-h         — GridStack v14 attribute format: initial widget size on drop
+
+        NOTE: We deliberately do NOT add .grid-stack-item here.
+        Adding it would make GridStack's own CSS (position:absolute; width:var(--gs-column-width))
+        fight with our palette layout. Instead, acceptWidgets:'.gs-drag-item' lets the grid
+        accept our items by our own selector, no .grid-stack-item class needed on the source.
+
+        PHASE 2: add [attr.data-config]="item.config | json" once the Detail Section
+        popup / data-model is ready. Read it in poc.ts 'added' handler and pass to createComponent().
+      -->
+      <li>
+        <div
+          class="gs-drag-item"
+          [attr.data-type]="item.type"
+          [attr.gs-w]="item.w"
+          [attr.gs-h]="item.h"
+        >
+          <!-- .grid-stack-item-content wrapper is required so the dropped widget
+               renders with correct dimensions inside the grid (GridStack's CSS
+               absolutely positions this div to fill the grid cell). -->
+          <div class="grid-stack-item-content palette-card">
+            <span class="item-icon">{{ item.icon }}</span>
+            <span class="item-label">{{ item.label }}</span>
+            <span class="item-size">{{ item.w }}×{{ item.h }}</span>
+          </div>
+        </div>
+      </li>
+    }
+  </ul>
 </div>

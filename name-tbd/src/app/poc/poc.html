@@ -1,5 +1,21 @@
-<div class="container">
-    <div class="left">
-        <app-component-list></app-component-list>
+<div class="poc-container">
+  <!-- LEFT PANEL: draggable component palette -->
+  <div class="left-panel">
+    <app-component-list />
+  </div>
+
+  <!-- RIGHT PANEL: GridStack canvas -->
+  <div class="right-panel">
+    <div class="canvas-wrapper">
+      <div class="canvas-header">
+        <span class="canvas-title">Screen Canvas</span>
+        <span class="canvas-hint">Drag components from the left to place them</span>
+      </div>
+
+      <!-- GridStack mounts here. #gridContainer is referenced by viewChild() in poc.ts. -->
+      <div class="canvas-body">
+        <div class="grid-stack" #gridContainer></div>
+      </div>
     </div>
+  </div>
 </div>

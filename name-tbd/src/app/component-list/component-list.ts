@@ -1,9 +1,39 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component } from '@angular/core';
+import { GridStack } from 'gridstack';
 
 @Component({
   selector: 'app-component-list',
+  standalone: true,
   imports: [],
   templateUrl: './component-list.html',
   styleUrl: './component-list.scss',
 })
-export class ComponentList {}
+export class ComponentList implements AfterViewInit {
+  /**
+   * The list of draggable component definitions.
+   * PHASE 2: replace this static list with a signal/service that loads real
+   * component configurations (type, label, default w/h, icon, config schema)
+   * — each entry maps to the Detail Section popup model.
+   */
+  readonly items = [
+    { type: 'button',         label: 'Button',         icon: '🔘', w: 2, h: 1 },
+    { type: 'detail-section', label: 'Detail Section', icon: '📋', w: 4, h: 2 },
+    { type: 'chart',          label: 'Chart',          icon: '📊', w: 6, h: 3 },
+    { type: 'text',           label: 'Text Block',     icon: '📝', w: 3, h: 2 },
+    { type: 'image',          label: 'Image',          icon: '🖼️',  w: 3, h: 3 },
+  ];
+
+  ngAfterViewInit(): void {
+    // Register all .gs-drag-item elements in this panel as external drag sources.
+    // GridStack.setupDragIn() attaches drag-and-drop behaviour via its internal
+    // drag engine (dd-draggable), so no native HTML5 drag events are needed.
+    //
+    // The selector must match the class applied in component-list.html.
+    // data-gs-width / data-gs-height on each element tell GridStack the initial
+    // widget size when dropped.
+    GridStack.setupDragIn('.gs-drag-item', {
+      appendTo: 'body',   // ghost element appended to body so it escapes any overflow:hidden containers
+      helper: 'clone',    // drag a visual clone, leaving the original in place
+    });
+  }
+}
