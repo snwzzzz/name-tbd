@@ -33,7 +33,7 @@ public class BranchMapperTest {
         assertEquals(branch.getDescription(), branchDto.description());
         assertEquals(branch.getCreatedAt(), branchDto.createdAt());
         assertEquals(branch.getLastModified(), branchDto.lastModified());
-        assertEquals(branch.getLatestVersion(), branchDto.latestVersion());
+        assertEquals(branch.getLatestVersion().value(), branchDto.latestVersion());
         assertNotNull(branchDto.createdBy());
         assertEquals(user.getId().id(), branchDto.createdBy().id());
         assertNotNull(branchDto.application());
@@ -46,7 +46,7 @@ public class BranchMapperTest {
         assertEquals(branchDto.description(), mappedBranch.getDescription());
         assertEquals(branchDto.createdAt(), mappedBranch.getCreatedAt());
         assertEquals(branchDto.lastModified(), mappedBranch.getLastModified());
-        assertEquals(branchDto.latestVersion(), mappedBranch.getLatestVersion());
+        assertEquals(branchDto.latestVersion(), mappedBranch.getLatestVersion().value());
         assertNotNull(mappedBranch.getCreatedBy());
         assertEquals(branchDto.createdBy().id(), mappedBranch.getCreatedBy().getId().id());
         assertNotNull(mappedBranch.getApplication());
