@@ -169,22 +169,30 @@ export class Poc implements AfterViewInit, OnDestroy {
           const mapNode = (n: GridStackNode): LayoutItem => {
             // If this node is a container with a subGrid, recalculate its minimum bounds!
             if (n.subGrid && n.grid) {
-              let maxChildMinW = parseInt(n.el?.getAttribute('data-base-min-w') || String(n.minW || 2));
-              // Store original minW if not already stored, so we know the container's absolute minimum
+              const baseMinW = parseInt(n.el?.getAttribute('data-base-min-w') || String(n.minW || 2));
+              const baseMinH = parseInt(n.el?.getAttribute('data-base-min-h') || String(n.minH || 2));
+              
+              // Store original minW/minH if not already stored, so we know the container's absolute minimum empty size
               if (!n.el?.hasAttribute('data-base-min-w')) {
-                n.el?.setAttribute('data-base-min-w', String(maxChildMinW));
+                n.el?.setAttribute('data-base-min-w', String(baseMinW));
+                n.el?.setAttribute('data-base-min-h', String(baseMinH));
               }
 
+              // Calculate the physical bounding box of all children currently inside the container
+              let maxRightEdge = baseMinW;
+              let maxBottomEdge = baseMinH;
+              
               n.subGrid.engine.nodes.forEach(child => {
-                const childMinW = child.minW || child.w || 1;
-                if (childMinW > maxChildMinW) {
-                  maxChildMinW = childMinW;
-                }
+                const rightEdge = (child.x ?? 0) + (child.w || 1);
+                const bottomEdge = (child.y ?? 0) + (child.h || 1);
+                
+                if (rightEdge > maxRightEdge) maxRightEdge = rightEdge;
+                if (bottomEdge > maxBottomEdge) maxBottomEdge = bottomEdge;
               });
 
-              if (n.minW !== maxChildMinW) {
-                // Instantly update the GridStack engine so the user cannot resize the container below this bound
-                n.grid.update(n.el!, { minW: maxChildMinW });
+              // Instantly update the GridStack engine so the user cannot resize the container below its content's bounding box
+              if (n.minW !== maxRightEdge || n.minH !== maxBottomEdge) {
+                n.grid.update(n.el!, { minW: maxRightEdge, minH: maxBottomEdge });
               }
             }
 
@@ -298,14 +306,29 @@ export class Poc implements AfterViewInit, OnDestroy {
               // Read original intended constraints from the DOM element (since GridStack might have clamped node.w during drop)
               const origW = parseInt(node.el?.getAttribute('gs-w') || String(node.w || 1));
               const origMinW = parseInt(node.el?.getAttribute('gs-min-w') || String(node.minW || origW));
+              const origH = parseInt(node.el?.getAttribute('gs-h') || String(node.h || 1));
+              const origMinH = parseInt(node.el?.getAttribute('gs-min-h') || String(node.minH || origH));
               
-              const requiredW = Math.max(parentNode.w || 1, origW, origMinW);
+              // Calculate required dimensions based on where the widget was placed (node.x, node.y)
+              // This accounts for multiple widgets side-by-side or stacked!
+              const requiredW = Math.max(parentNode.w || 1, (node.x ?? 0) + Math.max(origW, origMinW));
+              const requiredH = Math.max(parentNode.h || 1, (node.y ?? 0) + Math.max(origH, origMinH));
               
-              if (requiredW > (parentNode.w || 1)) {
-                // Resize parent container to fit the newly dropped child
-                parentNode.grid.update(parentNode.el!, { w: requiredW });
-                // Now that the parent is bigger, restore the child's true width
-                node.grid.update(node.el!, { w: origW, minW: origMinW });
+              if (requiredW > (parentNode.w || 1) || requiredH > (parentNode.h || 1)) {
+                // Resize parent container to fully fit the layout bounds
+                parentNode.grid.update(parentNode.el!, { w: requiredW, h: requiredH });
+                
+                // Keep subgrid constraints in sync with the new physical height
+                if (parentNode.subGrid) {
+                  parentNode.subGrid.opts.maxRow = requiredH;
+                  parentNode.subGrid.opts.row = requiredH;
+                  if (parentNode.subGrid.engine) {
+                    parentNode.subGrid.engine.maxRow = requiredH;
+                  }
+                }
+                
+                // Now that the parent is bigger, restore the child's true dimensions
+                node.grid.update(node.el!, { w: origW, minW: origMinW, h: origH, minH: origMinH });
               }
             }
           }
