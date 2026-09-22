@@ -13,6 +13,16 @@ describe('ApplicationCard', () => {
 
     fixture = TestBed.createComponent(ApplicationCard);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('application', {
+      id: '1',
+      title: 'Test',
+      description: 'Test',
+      currentBranch: 'main',
+      otherBranches: [],
+      lastModified: '2023-01-01',
+      lastModifiedBy: 'user',
+      isOccupied: false
+    });
     await fixture.whenStable();
   });
 

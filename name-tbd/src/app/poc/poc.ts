@@ -37,6 +37,7 @@ export interface LayoutItem {
    *  PHASE 2: widen to a full ComponentConfig carrying the Detail Section
    *  popup / data-model so the 'added' handler can pass it to createComponent(). */
   type: string;
+  children?: LayoutItem[];
 }
 
 @Component({
@@ -163,6 +164,28 @@ export class Poc implements AfterViewInit, OnDestroy {
       )!;
       this.grid = grid;
       
+      const syncLayout = () => {
+        this.ngZone.run(() => {
+          const mapNode = (n: GridStackNode): LayoutItem => {
+            return {
+              id: n.id as string || n.el?.getAttribute('data-gs-id') || `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              x: n.x ?? 0,
+              y: n.y ?? 0,
+              w: n.w ?? 2,
+              h: n.h ?? 1,
+              type: n.el?.getAttribute('data-type') || 'unknown',
+              children: n.subGrid ? n.subGrid.engine.nodes.map(mapNode) : undefined,
+            };
+          };
+          
+          if (this.grid) {
+            const newLayout = this.grid.engine.nodes.map(mapNode);
+            this.layout.set(newLayout);
+            console.log('[POC] layout:', newLayout);
+          }
+        });
+      };
+      
       // Expose for our dynamic form demo
       (window as any)._pocGrid = grid;
       (window as any).resizeGridItem = (btn: HTMLElement) => {
@@ -172,11 +195,16 @@ export class Poc implements AfterViewInit, OnDestroy {
         }
       };
 
-      // 'added' fires when an external widget is dropped onto the grid.
+      // 'added' fires when an external widget is dropped onto the grid (or subgrid).
       grid.on('added', (_event: Event, nodes: GridStackNode[]) => {
         nodes.forEach((node) => {
           const type = node.el?.getAttribute('data-type') ?? 'unknown';
           const id   = `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+          
+          if (node.el) {
+             node.el.setAttribute('data-gs-id', id);
+             node.id = id;
+          }
 
           // Replace the palette card content with a grid-placed widget label.
           const contentEl = node.el?.querySelector('.grid-stack-item-content');
@@ -185,7 +213,23 @@ export class Poc implements AfterViewInit, OnDestroy {
             // so we don't carry over the 9px 12px padding!
             contentEl.classList.remove('palette-card');
             
-            if (type === 'form') {
+            if (type === 'container') {
+              // Convert this widget into a nested GridStack (it natively enforces containment bounds)
+              contentEl.innerHTML = '';
+              // GridStack 14 natively tracks resize to recompute 'auto' columns if subGridOpts uses it
+              grid.makeSubGrid(node.el as any, {
+                column: 'auto',
+                row: node.h ?? 1,
+                maxRow: node.h ?? 1,
+                cellHeight: CELL_H, // inherit exact row height from parent scale
+                margin: 4,
+                acceptWidgets: '.gs-drag-item',
+                disableResize: false,
+                removable: false,
+                mode: 'float',
+              }, undefined, false); // pass saveContent = false to avoid auto-creating a child widget
+              contentEl.classList.add('container-widget');
+            } else if (type === 'form') {
               // Demonstrating sizeToContent: a widget that grows as inputs are added.
               // GridStack 14 natively listens to DOM height changes when sizeToContent is true.
               contentEl.innerHTML = `
@@ -223,26 +267,41 @@ export class Poc implements AfterViewInit, OnDestroy {
             }
           }
 
-          // Re-enter Angular zone to update the layout signal.
-          this.ngZone.run(() => {
-            this.layout.update((prev) => [
-              ...prev,
-              { id, x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 2, h: node.h ?? 1, type },
-            ]);
-            console.log('[POC] layout:', this.layout());
-          });
         });
+        syncLayout();
       });
-      // Cleanup Angular components when widgets are removed
+
+      // Cleanup Angular components and nested GridStack instances when widgets are removed
       grid.on('removed', (_event: Event, nodes: GridStackNode[]) => {
         nodes.forEach(node => {
-          const id = node.id as string;
+          const id = node.id as string || node.el?.getAttribute('data-gs-id');
           if (id && this.widgetRefs.has(id)) {
             this.widgetRefs.get(id)!.destroy();
             this.widgetRefs.delete(id);
           }
+          if (node.subGrid) {
+            node.subGrid.destroy(false); // remove instances/listeners recursively
+          }
         });
+        syncLayout();
       });
+
+      grid.on('change', () => syncLayout());
+
+      // On resize stop, we might need to syncLayout (which captures the new sizes)
+      // and update the nested grid maxRow constraint to match the container's new row height
+      grid.on('resizestop', (_event: Event, el: any) => {
+        const node = el.gridstackNode as GridStackNode;
+        if (node && node.subGrid) {
+          node.subGrid.opts.maxRow = node.h ?? 1;
+          node.subGrid.opts.row = node.h ?? 1;
+          if (node.subGrid.engine) {
+            node.subGrid.engine.maxRow = node.h ?? 1;
+          }
+        }
+        syncLayout();
+      });
+
     });
   }
 

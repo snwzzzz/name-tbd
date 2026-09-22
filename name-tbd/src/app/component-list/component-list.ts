@@ -33,6 +33,7 @@ export class ComponentList implements AfterViewInit {
     { type: 'text',           label: 'Text Block',     icon: '📝', w: 3, h: 2, resizable: false },
     { type: 'image',          label: 'Image',          icon: '🖼️', w: 3, h: 3, resizable: false },
     { type: 'form',           label: 'Dynamic Form',   icon: '📋', w: 4, h: 3, minH: 3, resizable: false },
+    { type: 'container',      label: 'Container',      icon: '🗃️', w: 4, h: 3 },
   ];
 
   ngAfterViewInit(): void {
