@@ -4,6 +4,7 @@ import {
   ElementRef,
   NgZone,
   OnDestroy,
+  computed,
   signal,
   viewChild,
 } from '@angular/core';
@@ -11,16 +12,26 @@ import { JsonPipe } from '@angular/common';
 import { GridStack, GridStackNode } from 'gridstack';
 import { ComponentList } from '../component-list/component-list';
 
-/** A serialisable representation of one grid item — extend later with a full component config. */
+// ─── Artboard constants (16:9 website viewport reference) ─────────────────────
+// 24 columns × 60px = 1440px wide
+// 18 rows    × 45px = 810px tall  → 1440 × 810 = exactly 16:9
+// One grid cell (1×1) = 60 × 45px
+// Typical button (w:2, h:1) content = ~112 × 37px after 4px margins ✓
+const AW = 1440;             // artboard width  (px)
+const AH = 810;              // artboard height (px)  — AW * 9/16
+const COLS = 24;             // grid columns
+const ROWS = 18;             // grid rows  (fixed — locks canvas at 16:9)
+const CELL_H = AH / ROWS;   // 45px per row
+
 export interface LayoutItem {
   id: string;
   x: number;
   y: number;
   w: number;
   h: number;
-  /** The component type key, e.g. 'button' | 'detail-section'.
-   *  PHASE 2: replace/extend with a full ComponentConfig object
-   *  that carries the popup / data-model fields from the Detail Section design. */
+  /** Component type key ('button' | 'detail-section' | …).
+   *  PHASE 2: widen to a full ComponentConfig carrying the Detail Section
+   *  popup / data-model so the 'added' handler can pass it to createComponent(). */
   type: string;
 }
 
@@ -32,47 +43,114 @@ export interface LayoutItem {
   styleUrl: './poc.scss',
 })
 export class Poc implements AfterViewInit, OnDestroy {
-  // Signal-based ViewChild (Angular 17+ API)
+  // ─── View references ───────────────────────────────────────────────────────
   private gridContainerRef = viewChild.required<ElementRef<HTMLElement>>('gridContainer');
+  private viewportRef      = viewChild.required<ElementRef<HTMLElement>>('viewport');
 
   private grid: GridStack | null = null;
 
-  /** Serialisable layout state — bind to a JSON display or persist later. */
+  // ─── Layout state ──────────────────────────────────────────────────────────
   readonly layout = signal<LayoutItem[]>([]);
+
+  // ─── Zoom / Pan state ──────────────────────────────────────────────────────
+  readonly zoom  = signal(1);
+  readonly panX  = signal(0);
+  readonly panY  = signal(0);
+  readonly isPanning = signal(false);
+
+  /** CSS transform applied to the artboard element for panning only. */
+  readonly artboardTransform = computed(
+    () => `translate(${this.panX()}px, ${this.panY()}px)`
+  );
+  
+  /** Zoom level rounded to a display percentage. */
+  readonly zoomPercent = computed(() => Math.round(this.zoom() * 100));
+
+  // ─── Internal pan tracking (not reactive, no CD needed) ───────────────────
+  private spaceHeld         = false;
+  private middleMouseDown   = false;
+  private activelyPanning   = false;
+  private lastMouseX        = 0;
+  private lastMouseY        = 0;
+
+  // ─── Bound listener references (needed to remove them later) ──────────────
+  private _onKeyDown!: (e: KeyboardEvent) => void;
+  private _onKeyUp!:   (e: KeyboardEvent) => void;
+  private _onMouseUp!: () => void;
+  private _onWheel!:   (e: WheelEvent) => void;
 
   constructor(private ngZone: NgZone) {}
 
   ngAfterViewInit(): void {
-    // Run GridStack initialisation outside Angular's zone so that its internal
-    // DOM mutations (which happen outside Angular's rendering cycle) don't
-    // trigger spurious change-detection cycles.
+    // ── Global keyboard listeners ──────────────────────────────────────────
+    this._onKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      if (e.code === 'Space') {
+        // Ignore when an input/textarea is focused
+        const tag = (document.activeElement as HTMLElement)?.tagName ?? '';
+        if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;
+        e.preventDefault();
+        this.spaceHeld = true;
+        this.isPanning.set(true);
+      }
+      // Ctrl+0 = reset zoom, Ctrl++/= = zoom in, Ctrl+- = zoom out
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === '0') { e.preventDefault(); this.zoomReset(); }
+        if (e.key === '=' || e.key === '+') { e.preventDefault(); this.zoomIn(); }
+        if (e.key === '-') { e.preventDefault(); this.zoomOut(); }
+        if (e.key === 'f' || e.key === 'F') { e.preventDefault(); this.zoomFit(); }
+      }
+    };
+    this._onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        this.spaceHeld = false;
+        if (!this.middleMouseDown) this.isPanning.set(false);
+      }
+    };
+    this._onMouseUp = () => {
+      this.activelyPanning = false;
+      this.middleMouseDown = false;
+      if (!this.spaceHeld) this.isPanning.set(false);
+    };
+
+    document.addEventListener('keydown', this._onKeyDown);
+    document.addEventListener('keyup',   this._onKeyUp);
+    document.addEventListener('mouseup', this._onMouseUp);
+
+    // ── Wheel listener (non-passive so we can call preventDefault) ─────────
+    this._onWheel = (e: WheelEvent) => this.handleWheel(e);
+    this.viewportRef().nativeElement.addEventListener('wheel', this._onWheel, { passive: false });
+
+    // ── Fit artboard to viewport on load ──────────────────────────────────
+    requestAnimationFrame(() => this.zoomFit());
+
+    // ── GridStack initialisation (outside Angular zone) ───────────────────
     this.ngZone.runOutsideAngular(() => {
       const grid = GridStack.init(
         {
-          // Grid configuration
-          column: 12,
-          cellHeight: 80,
-          margin: 8,
+          column:     COLS,
+          cellHeight: CELL_H,
+          margin:     4,
 
-          // Accept items dragged from the ComponentList palette.
-          // '.gs-drag-item' is our own selector — avoids needing .grid-stack-item
-          // on the palette cards, which would conflict with GridStack's own positioning CSS.
+          // Fixed row count — locks the canvas to exactly 16:9
+          row: ROWS,
+
+          // Disable responsive breakpoints so the grid doesn't drop to 1 column when zoomed out
+          columnOpts: { breakpoints: [] },
+
+          // Accept items dragged from ComponentList palette (our own selector avoids
+          // adding .grid-stack-item to palette cards, which would break their layout).
           acceptWidgets: '.gs-drag-item',
 
-          // Always show at least 4 rows so there is a visible droppable surface
-          minRow: 4,
-
-          // 'float' mode: widgets stay where dropped, no gravity-pack to top
+          // 'float' mode: widgets stay exactly where dropped, no gravity packing.
           mode: 'float',
 
-          // Override the drag handle so the whole item surface is draggable
-          // (default is '.grid-stack-item-content' which our palette items don't use)
+          // Use the content div as the drag handle (matches .grid-stack-item-content).
           draggable: { handle: '.grid-stack-item-content' },
 
-          // Keep POC minimal — no resize handles for now
-          // PHASE 2: remove disableResize + wire up 'change' event to keep layout() in sync
+          // PHASE 2: set disableResize:false + wire the 'change' event to sync layout().
           disableResize: true,
-          removable: false,
+          removable:     false,
         },
         this.gridContainerRef().nativeElement,
       )!;
@@ -81,35 +159,28 @@ export class Poc implements AfterViewInit, OnDestroy {
       // 'added' fires when an external widget is dropped onto the grid.
       grid.on('added', (_event: Event, nodes: GridStackNode[]) => {
         nodes.forEach((node) => {
-          // Read the data-type attribute set on the draggable source element.
           const type = node.el?.getAttribute('data-type') ?? 'unknown';
-          const id = `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+          const id   = `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
-          // Inject a visible label into the widget's content area.
+          // Replace the palette card content with a grid-placed widget label.
           const contentEl = node.el?.querySelector('.grid-stack-item-content');
           if (contentEl) {
             contentEl.innerHTML = `
-              <div class="grid-item-content">
-                <span class="grid-item-label">${type}</span>
-                <!-- PHASE 2: dynamically load the real Angular component for this type,
-                     using ViewContainerRef + createComponent(), passing the config from
-                     the Detail Section popup/data-model. -->
+              <div class="grid-item-content" data-type="${type}">
+                <span class="grid-item-type">${type}</span>
+                <!-- PHASE 2: replace innerHTML with ViewContainerRef.createComponent()
+                     and pass the ComponentConfig (Detail Section popup/data-model)
+                     to the dynamically loaded Angular component. -->
               </div>`;
           }
 
-          // Re-enter Angular's zone to update signals / trigger CD.
+          // Re-enter Angular zone to update the layout signal.
           this.ngZone.run(() => {
-            const item: LayoutItem = {
-              id,
-              x: node.x ?? 0,
-              y: node.y ?? 0,
-              w: node.w ?? 2,
-              h: node.h ?? 1,
-              type,
-            };
-
-            this.layout.update((prev) => [...prev, item]);
-            console.log('[POC] Layout updated:', this.layout());
+            this.layout.update((prev) => [
+              ...prev,
+              { id, x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 2, h: node.h ?? 1, type },
+            ]);
+            console.log('[POC] layout:', this.layout());
           });
         });
       });
@@ -117,9 +188,93 @@ export class Poc implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // destroy(false) removes GridStack internals but leaves the DOM intact,
-    // so Angular's own cleanup can handle the elements safely.
+    document.removeEventListener('keydown', this._onKeyDown);
+    document.removeEventListener('keyup',   this._onKeyUp);
+    document.removeEventListener('mouseup', this._onMouseUp);
+    this.viewportRef().nativeElement.removeEventListener('wheel', this._onWheel);
     this.grid?.destroy(false);
     this.grid = null;
+  }
+
+  // ─── Zoom helpers ──────────────────────────────────────────────────────────
+
+  zoomIn(): void  { this._clampZoom(this.zoom() * 1.25); }
+  zoomOut(): void { this._clampZoom(this.zoom() / 1.25); }
+  zoomReset(): void { this._clampZoom(1); }
+
+  zoomFit(): void {
+    const vp = this.viewportRef().nativeElement;
+    const padding = 56;
+    const fit = Math.min(
+      (vp.clientWidth  - padding * 2) / AW,
+      (vp.clientHeight - padding * 2) / AH,
+    );
+    this.zoom.set(Math.max(0.05, fit));
+    this.panX.set(0);
+    this.panY.set(0);
+  }
+
+  private _clampZoom(z: number): void {
+    const newZoom = Math.max(0.05, Math.min(4, z));
+    this.zoom.set(newZoom);
+  }
+
+  // ─── Viewport event handlers ───────────────────────────────────────────────
+
+  private handleWheel(e: WheelEvent): void {
+    e.preventDefault();
+
+    const vp   = this.viewportRef().nativeElement;
+    const rect = vp.getBoundingClientRect();
+    // Cursor position relative to viewport center (the artboard's anchor)
+    const mx = e.clientX - rect.left - rect.width  / 2;
+    const my = e.clientY - rect.top  - rect.height / 2;
+
+    if (e.ctrlKey || e.metaKey) {
+      // Ctrl+Scroll → zoom toward cursor
+      const factor   = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      const oldZoom  = this.zoom();
+      const newZoom  = Math.max(0.05, Math.min(4, oldZoom * factor));
+      const ratio    = newZoom / oldZoom;
+
+      this.panX.update((x) => mx + (x - mx) * ratio);
+      this.panY.update((y) => my + (y - my) * ratio);
+      this.zoom.set(newZoom);
+    } else if (e.shiftKey) {
+      // Shift+Scroll → horizontal pan
+      this.panX.update((x) => x - e.deltaY);
+    } else {
+      // Plain scroll → vertical / trackpad pan
+      this.panX.update((x) => x - e.deltaX);
+      this.panY.update((y) => y - e.deltaY);
+    }
+  }
+
+  onViewportMouseDown(e: MouseEvent): void {
+    if (e.button === 1) {
+      // Middle mouse → pan
+      e.preventDefault();
+      this.middleMouseDown = true;
+      this.activelyPanning = true;
+      this.isPanning.set(true);
+      this.lastMouseX = e.clientX;
+      this.lastMouseY = e.clientY;
+    } else if (e.button === 0 && this.spaceHeld) {
+      // Space + left drag → pan
+      e.preventDefault();
+      this.activelyPanning = true;
+      this.lastMouseX = e.clientX;
+      this.lastMouseY = e.clientY;
+    }
+  }
+
+  onViewportMouseMove(e: MouseEvent): void {
+    if (!this.activelyPanning) return;
+    const dx = e.clientX - this.lastMouseX;
+    const dy = e.clientY - this.lastMouseY;
+    this.panX.update((x) => x + dx);
+    this.panY.update((y) => y + dy);
+    this.lastMouseX = e.clientX;
+    this.lastMouseY = e.clientY;
   }
 }

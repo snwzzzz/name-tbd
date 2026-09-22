@@ -1,21 +1,64 @@
-<div class="poc-container">
-  <!-- LEFT PANEL: draggable component palette -->
-  <div class="left-panel">
+<div class="poc-layout">
+
+  <!-- ─── LEFT: component palette ──────────────────────────────────────── -->
+  <div class="palette-panel">
     <app-component-list />
   </div>
 
-  <!-- RIGHT PANEL: GridStack canvas -->
-  <div class="right-panel">
-    <div class="canvas-wrapper">
-      <div class="canvas-header">
-        <span class="canvas-title">Screen Canvas</span>
-        <span class="canvas-hint">Drag components from the left to place them</span>
+  <!-- ─── RIGHT: canvas area ───────────────────────────────────────────── -->
+  <div class="canvas-area">
+
+    <!-- Toolbar -->
+    <div class="canvas-toolbar">
+      <div class="toolbar-left">
+        <span class="artboard-name">Website Canvas</span>
+        <span class="artboard-dims">1440 × 810 · 24 col · 18 row</span>
       </div>
 
-      <!-- GridStack mounts here. #gridContainer is referenced by viewChild() in poc.ts. -->
-      <div class="canvas-body">
-        <div class="grid-stack" #gridContainer></div>
+      <div class="zoom-controls">
+        <button id="btn-zoom-fit"   class="zoom-btn icon-btn" (click)="zoomFit()"   title="Fit (F)">⊡</button>
+        <button id="btn-zoom-out"   class="zoom-btn"          (click)="zoomOut()"   title="Zoom out">−</button>
+        <button id="btn-zoom-reset" class="zoom-btn zoom-pct" (click)="zoomReset()" title="Reset to 100%">{{ zoomPercent() }}%</button>
+        <button id="btn-zoom-in"    class="zoom-btn"          (click)="zoomIn()"    title="Zoom in">+</button>
+      </div>
+
+      <div class="toolbar-right">
+        <span class="toolbar-hint">Ctrl+Scroll zoom · Scroll pan · Space+Drag pan</span>
       </div>
     </div>
-  </div>
-</div>
+
+    <!-- Infinite-canvas viewport -->
+    <div class="canvas-viewport"
+         #viewport
+         [class.is-panning]="isPanning()"
+         (mousedown)="onViewportMouseDown($event)"
+         (mousemove)="onViewportMouseMove($event)">
+
+      <!-- The artboard: native zoom scaling to keep Drag and Drop working natively -->
+      <div class="artboard"
+           [style.zoom]="zoom()"
+           [style.transform]="artboardTransform()">
+
+        <!-- GridStack mounts here.
+             column:24 · cellHeight:45px · row:18  →  1440×810px exactly 16:9
+             One grid cell (1×1) = 60×45px
+             Typical button (w:2, h:1) = 120×45px cell / ~112×37px content  -->
+        <div class="grid-stack" #gridContainer></div>
+
+      </div><!-- /artboard -->
+
+      <!-- Layout-state debug overlay (remove or gate behind a flag in production) -->
+      @if (layout().length > 0) {
+        <div class="debug-overlay">
+          <div class="debug-header">
+            <span class="debug-title">LAYOUT STATE</span>
+            <span class="debug-count">{{ layout().length }} item{{ layout().length !== 1 ? 's' : '' }}</span>
+          </div>
+          <pre class="debug-json">{{ layout() | json }}</pre>
+        </div>
+      }
+
+    </div><!-- /canvas-viewport -->
+  </div><!-- /canvas-area -->
+
+</div><!-- /poc-layout -->

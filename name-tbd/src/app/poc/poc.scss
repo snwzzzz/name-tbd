@@ -1,75 +1,203 @@
+@use 'sass:math';
+
+// ─── Artboard dimensions (keep in sync with poc.ts constants) ────────────────
+$aw: 1440px;
+$ah: 810px;
+
 :host {
   display: block;
   height: 100vh;
+  overflow: hidden;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-// ─── Two-panel container ──────────────────────────────────────────────────────
-.poc-container {
+// ─── Top-level flex layout ────────────────────────────────────────────────────
+.poc-layout {
   display: flex;
   height: 100%;
-  background-color: #f0f0f0;
+  overflow: hidden;
 }
 
-// ─── Left panel ──────────────────────────────────────────────────────────────
-.left-panel {
+// ─── Left palette panel ───────────────────────────────────────────────────────
+.palette-panel {
   width: 250px;
   flex-shrink: 0;
   height: 100%;
   overflow-y: auto;
-  border-right: 1px solid #d0d0d0;
+  border-right: 1px solid #2a2a3a;
+  z-index: 2;
 }
 
-// ─── Right panel ─────────────────────────────────────────────────────────────
-.right-panel {
+// ─── Right canvas area ────────────────────────────────────────────────────────
+.canvas-area {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-// ─── Canvas card ─────────────────────────────────────────────────────────────
-.canvas-wrapper {
-  background: #ffffff;
-  border: 1px solid #d0d0d0;
-  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: #13131f;
 }
 
-.canvas-header {
+// ─── Toolbar ──────────────────────────────────────────────────────────────────
+.canvas-toolbar {
+  height: 44px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  background: #fafafa;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 0 16px;
+  gap: 12px;
+  background: #0f0f1a;
+  border-bottom: 1px solid #1e1e30;
+  user-select: none;
 }
 
-.canvas-title {
-  font-weight: 600;
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.artboard-name {
   font-size: 13px;
-  color: #333;
+  font-weight: 600;
+  color: #c0c0d4;
+  letter-spacing: 0.01em;
 }
 
-.canvas-hint {
-  font-size: 12px;
-  color: #999;
+.artboard-dims {
+  font-size: 11px;
+  color: #4a4a60;
+  font-family: 'JetBrains Mono', monospace;
 }
 
-.canvas-body {
-  min-height: 400px;
-  background: #f8f8f8;
-  padding: 4px; // GridStack margin handles internal spacing
+.toolbar-right {
+  margin-left: auto;
 }
 
-// ─── Grid item content injected on drop ──────────────────────────────────────
-.grid-stack-item-content {
-  // GridStack sets position: absolute — we just style the inner content.
+.toolbar-hint {
+  font-size: 11px;
+  color: #383852;
+  white-space: nowrap;
+}
+
+// ─── Zoom controls ────────────────────────────────────────────────────────────
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: #1a1a2a;
+  border: 1px solid #2a2a40;
+  border-radius: 6px;
+  padding: 3px;
+}
+
+.zoom-btn {
+  background: transparent;
+  border: none;
+  color: #9090b0;
+  font-size: 14px;
+  font-weight: 500;
+  height: 26px;
+  min-width: 26px;
+  padding: 0 6px;
   border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  line-height: 1;
+
+  &:hover {
+    background: #2a2a40;
+    color: #d0d0e8;
+  }
+
+  &:active {
+    background: #3a3a50;
+  }
+}
+
+.icon-btn {
+  font-size: 16px;
+}
+
+.zoom-pct {
+  min-width: 52px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #7878a0;
+  text-align: center;
+
+  &:hover {
+    color: #d0d0e8;
+  }
+}
+
+// ─── Infinite-canvas viewport ─────────────────────────────────────────────────
+.canvas-viewport {
+  flex: 1;
+  position: relative;
   overflow: hidden;
+
+  // Figma-style dot-grid background
+  background-color: #13131f;
+  background-image: radial-gradient(circle, #282838 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+
+  cursor: default;
+  outline: none;
+
+  &.is-panning {
+    cursor: grab;
+
+    &:active { cursor: grabbing; }
+  }
+}
+
+// ─── Artboard (the 16:9 "page") ───────────────────────────────────────────────
+.artboard {
+  // Centered in viewport via negative margin (half of artboard size)
+  position: absolute;
+  top:  50%;
+  left: 50%;
+  margin-left: math.div(-$aw, 2);   // -720px
+  margin-top:  math.div(-$ah, 2);   // -405px
+  width:  $aw;
+  height: $ah;
+
+  // Pan happens via transform (set by [style.transform] binding)
+  transform-origin: center center;
+  will-change: transform;
+
+  background-color: #ffffff;
+  // Visual grid overlay matching the 24 columns and 18 rows
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: calc(100% / 24) calc(100% / 18);
+
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.5),
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 32px 80px rgba(0, 0, 0, 0.4);
+
+  // Prevent text selection from interfering with pan gestures
+  user-select: none;
+}
+
+// ─── GridStack container matches artboard exactly ────────────────────────────
+// GridStack mounts on .grid-stack with position:relative + overflow:hidden.
+// row:18 × cellHeight:45px = 810px height (artboard height).
+// The grid MUST NOT add scrollbars — row count is fixed.
+:host ::ng-deep .artboard .grid-stack {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+// ─── Dropped grid items ───────────────────────────────────────────────────────
+:host ::ng-deep .grid-stack-item-content {
+  border-radius: 3px;
+  overflow: hidden; 
 }
 
 .grid-item-content {
@@ -77,42 +205,92 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e8f0fe;
-  border: 1px solid #aac4f7;
-  border-radius: 4px;
+  background: hsl(220 85% 96%);
+  border: 1.5px solid hsl(220 60% 75%);
+  border-radius: 3px;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: hsl(220 85% 93%);
+    border-color: hsl(220 60% 60%);
+  }
+
+  // Different accent colours per component type (expandable in Phase 2)
+  &[data-type='detail-section'] {
+    background: hsl(260 80% 96%);
+    border-color: hsl(260 60% 72%);
+  }
+  &[data-type='chart'] {
+    background: hsl(160 70% 94%);
+    border-color: hsl(160 55% 60%);
+  }
+  &[data-type='text'] {
+    background: hsl(45 85% 95%);
+    border-color: hsl(45 60% 68%);
+  }
+  &[data-type='image'] {
+    background: hsl(340 70% 96%);
+    border-color: hsl(340 55% 72%);
+  }
 }
 
-.grid-item-label {
-  font-size: 12px;
+.grid-item-type {
+  font-size: 11px;
   font-weight: 600;
-  color: #1a56db;
+  color: hsl(220 50% 40%);
   text-transform: capitalize;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
 }
 
-// ─── Debug panel ─────────────────────────────────────────────────────────────
-.layout-debug {
-  background: #1e1e2e;
+// ─── GridStack placeholder highlight ─────────────────────────────────────────
+:host ::ng-deep .grid-stack-placeholder > .placeholder-content {
+  background: hsl(220 90% 60% / 0.15) !important;
+  border: 2px dashed hsl(220 70% 60%) !important;
+  border-radius: 4px !important;
+}
+
+// ─── Debug overlay ────────────────────────────────────────────────────────────
+.debug-overlay {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 260px;
+  max-height: 220px;
+  overflow: hidden auto;
+  background: rgba(10, 10, 20, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid #2a2a40;
   border-radius: 8px;
-  padding: 12px 16px;
-  color: #cdd6f4;
-  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  padding: 10px 12px;
+  z-index: 100;
+}
+
+.debug-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
 }
 
 .debug-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: #89b4fa;
-  margin: 0 0 8px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-size: 9px;
+  font-weight: 700;
+  color: #6080d8;
+  letter-spacing: 0.12em;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.debug-count {
+  font-size: 9px;
+  color: #454560;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .debug-json {
-  font-size: 11px;
-  line-height: 1.6;
+  font-size: 9.5px;
+  line-height: 1.55;
   margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: #a6e3a1;
+  color: #70c090;
+  white-space: pre;
+  font-family: 'JetBrains Mono', monospace;
 }
