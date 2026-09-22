@@ -1,6 +1,16 @@
 import { AfterViewInit, Component } from '@angular/core';
 import { GridStack } from 'gridstack';
 
+interface PaletteItem {
+  type: string;
+  label: string;
+  icon: string;
+  w: number;
+  h: number;
+  minH?: number;
+  maxH?: number;
+}
+
 @Component({
   selector: 'app-component-list',
   standalone: true,
@@ -15,12 +25,13 @@ export class ComponentList implements AfterViewInit {
    * component configurations (type, label, default w/h, icon, config schema)
    * — each entry maps to the Detail Section popup model.
    */
-  readonly items = [
+  readonly items: PaletteItem[] = [
     { type: 'button',         label: 'Button',         icon: '🔘', w: 2, h: 1 },
     { type: 'detail-section', label: 'Detail Section', icon: '📋', w: 4, h: 2 },
     { type: 'chart',          label: 'Chart',          icon: '📊', w: 6, h: 3 },
     { type: 'text',           label: 'Text Block',     icon: '📝', w: 3, h: 2 },
-    { type: 'image',          label: 'Image',          icon: '🖼️',  w: 3, h: 3 },
+    { type: 'image',          label: 'Image',          icon: '🖼️', w: 3, h: 3 },
+    { type: 'form',           label: 'Dynamic Form',   icon: '📋', w: 4, h: 3, minH: 3 },
   ];
 
   ngAfterViewInit(): void {

@@ -7,10 +7,14 @@ import {
   computed,
   signal,
   viewChild,
+  ViewContainerRef,
+  ComponentRef,
+  inject,
 } from '@angular/core';
 import { JsonPipe } from '@angular/common';
 import { GridStack, GridStackNode } from 'gridstack';
 import { ComponentList } from '../component-list/component-list';
+import { ButtonWidgetComponent } from '../widgets/button-widget/button-widget.component';
 
 // ─── Artboard constants (16:9 website viewport reference) ─────────────────────
 // 24 columns × 60px = 1440px wide
@@ -51,6 +55,9 @@ export class Poc implements AfterViewInit, OnDestroy {
 
   // ─── Layout state ──────────────────────────────────────────────────────────
   readonly layout = signal<LayoutItem[]>([]);
+
+  private vcr = inject(ViewContainerRef);
+  private widgetRefs = new Map<string, ComponentRef<any>>();
 
   // ─── Zoom / Pan state ──────────────────────────────────────────────────────
   readonly zoom  = signal(1);
@@ -149,12 +156,21 @@ export class Poc implements AfterViewInit, OnDestroy {
           draggable: { handle: '.grid-stack-item-content' },
 
           // PHASE 2: set disableResize:false + wire the 'change' event to sync layout().
-          disableResize: true,
+          disableResize: false,
           removable:     false,
         },
         this.gridContainerRef().nativeElement,
       )!;
       this.grid = grid;
+      
+      // Expose for our dynamic form demo
+      (window as any)._pocGrid = grid;
+      (window as any).resizeGridItem = (btn: HTMLElement) => {
+        const item = btn.closest('.grid-stack-item') as any;
+        if (item && (window as any)._pocGrid) {
+          (window as any)._pocGrid.resizeToContent(item);
+        }
+      };
 
       // 'added' fires when an external widget is dropped onto the grid.
       grid.on('added', (_event: Event, nodes: GridStackNode[]) => {
@@ -165,13 +181,46 @@ export class Poc implements AfterViewInit, OnDestroy {
           // Replace the palette card content with a grid-placed widget label.
           const contentEl = node.el?.querySelector('.grid-stack-item-content');
           if (contentEl) {
-            contentEl.innerHTML = `
-              <div class="grid-item-content" data-type="${type}">
-                <span class="grid-item-type">${type}</span>
-                <!-- PHASE 2: replace innerHTML with ViewContainerRef.createComponent()
-                     and pass the ComponentConfig (Detail Section popup/data-model)
-                     to the dynamically loaded Angular component. -->
-              </div>`;
+            // Remove the palette-card class that was cloned from the sidebar 
+            // so we don't carry over the 9px 12px padding!
+            contentEl.classList.remove('palette-card');
+            
+            if (type === 'form') {
+              // Demonstrating sizeToContent: a widget that grows as inputs are added.
+              // GridStack 14 natively listens to DOM height changes when sizeToContent is true.
+              contentEl.innerHTML = `
+                <div class="grid-item-content form-widget" data-type="form" style="display:flex; flex-direction:column; padding:16px; align-items:stretch; justify-content:flex-start;">
+                  <div style="font-size:12px; font-weight:600; margin-bottom:8px;">Dynamic Form</div>
+                  <div class="inputs-container" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+                    <input type="text" placeholder="Input 1" style="padding:4px; border:1px solid #ccc; border-radius:4px;">
+                  </div>
+                  <button onclick="
+                    const c = this.previousElementSibling; 
+                    const count = c.children.length + 1;
+                    c.insertAdjacentHTML('beforeend', '<input type=text placeholder=\\'Input ' + count + '\\' style=\\'padding:4px; border:1px solid #ccc; border-radius:4px; margin-top:4px;\\'>');
+                    window.resizeGridItem(this);
+                  " style="padding:6px; cursor:pointer; background:#e2e8f0; border:none; border-radius:4px;">Add Input</button>
+                </div>
+              `;
+            } else if (type === 'button') {
+              contentEl.innerHTML = '';
+              const compRef = this.vcr.createComponent(ButtonWidgetComponent);
+              compRef.instance.label = 'Angular Button Component';
+              
+              // We need to manually trigger change detection for the dynamic component
+              compRef.changeDetectorRef.detectChanges();
+              
+              contentEl.appendChild(compRef.location.nativeElement);
+              this.widgetRefs.set(id, compRef);
+            } else {
+              contentEl.innerHTML = `
+                <div class="grid-item-content" data-type="${type}">
+                  <span class="grid-item-type">${type}</span>
+                  <!-- PHASE 2: replace innerHTML with ViewContainerRef.createComponent()
+                       and pass the ComponentConfig (Detail Section popup/data-model)
+                       to the dynamically loaded Angular component. -->
+                </div>`;
+            }
           }
 
           // Re-enter Angular zone to update the layout signal.
@@ -182,6 +231,16 @@ export class Poc implements AfterViewInit, OnDestroy {
             ]);
             console.log('[POC] layout:', this.layout());
           });
+        });
+      });
+      // Cleanup Angular components when widgets are removed
+      grid.on('removed', (_event: Event, nodes: GridStackNode[]) => {
+        nodes.forEach(node => {
+          const id = node.id as string;
+          if (id && this.widgetRefs.has(id)) {
+            this.widgetRefs.get(id)!.destroy();
+            this.widgetRefs.delete(id);
+          }
         });
       });
     });

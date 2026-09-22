@@ -21,112 +21,136 @@ $ah: 810px;
 // ─── Left palette panel ───────────────────────────────────────────────────────
 .palette-panel {
   width: 250px;
-  flex-shrink: 0;
   height: 100%;
   overflow-y: auto;
-  border-right: 1px solid #2a2a3a;
+  border-right: 1px solid #e2e8f0;
+  background: #ffffff;
   z-index: 2;
 }
 
-// ─── Right canvas area ────────────────────────────────────────────────────────
 .canvas-area {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #13131f;
+  background: #f1f3f5;
 }
 
-// ─── Toolbar ──────────────────────────────────────────────────────────────────
+// ─── Enterprise Toolbar ───────────────────────────────────────────────────────
 .canvas-toolbar {
-  height: 44px;
+  height: 48px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  gap: 12px;
-  background: #0f0f1a;
-  border-bottom: 1px solid #1e1e30;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
   user-select: none;
 }
 
-.toolbar-left {
+.toolbar-left, .toolbar-center, .toolbar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+}
+
+.toolbar-left {
+  flex: 1;
+  gap: 12px;
 }
 
 .artboard-name {
   font-size: 13px;
   font-weight: 600;
-  color: #c0c0d4;
-  letter-spacing: 0.01em;
+  color: #1e293b;
 }
 
 .artboard-dims {
-  font-size: 11px;
-  color: #4a4a60;
-  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.toolbar-center {
+  flex: 0 0 auto;
+  justify-content: center;
 }
 
 .toolbar-right {
-  margin-left: auto;
-}
-
-.toolbar-hint {
-  font-size: 11px;
-  color: #383852;
-  white-space: nowrap;
+  flex: 1;
+  justify-content: flex-end;
 }
 
 // ─── Zoom controls ────────────────────────────────────────────────────────────
 .zoom-controls {
   display: flex;
   align-items: center;
-  gap: 3px;
-  background: #1a1a2a;
-  border: 1px solid #2a2a40;
+  gap: 4px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
-  padding: 3px;
+  padding: 4px;
 }
 
 .zoom-btn {
   background: transparent;
   border: none;
-  color: #9090b0;
-  font-size: 14px;
+  color: #475569;
+  font-size: 13px;
   font-weight: 500;
   height: 26px;
-  min-width: 26px;
-  padding: 0 6px;
+  min-width: 28px;
+  padding: 0 8px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
-  line-height: 1;
+  transition: all 0.15s;
 
   &:hover {
-    background: #2a2a40;
-    color: #d0d0e8;
+    background: #e2e8f0;
+    color: #0f172a;
   }
 
   &:active {
-    background: #3a3a50;
+    background: #cbd5e1;
   }
 }
 
-.icon-btn {
-  font-size: 16px;
+.zoom-divider {
+  width: 1px;
+  height: 16px;
+  background: #cbd5e1;
+  margin: 0 4px;
 }
 
 .zoom-pct {
-  min-width: 52px;
+  min-width: 56px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: #7878a0;
+  font-size: 12px;
   text-align: center;
+}
 
-  &:hover {
-    color: #d0d0e8;
+// ─── Keybind Hints ────────────────────────────────────────────────────────────
+.keybind-hints {
+  display: flex;
+  gap: 12px;
+}
+
+.hint-item {
+  font-size: 11px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  kbd {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    color: #475569;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 2px 6px;
   }
 }
 
@@ -136,10 +160,8 @@ $ah: 810px;
   position: relative;
   overflow: hidden;
 
-  // Figma-style dot-grid background
-  background-color: #13131f;
-  background-image: radial-gradient(circle, #282838 1.5px, transparent 1.5px);
-  background-size: 28px 28px;
+  // Solid light background
+  background-color: #f1f3f5;
 
   cursor: default;
   outline: none;
@@ -169,16 +191,14 @@ $ah: 810px;
   background-color: #ffffff;
   // Visual grid overlay matching the 24 columns and 18 rows
   background-image:
-    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
   background-size: calc(100% / 24) calc(100% / 18);
 
   border-radius: 2px;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    0 1px 3px rgba(0, 0, 0, 0.5),
-    0 8px 32px rgba(0, 0, 0, 0.6),
-    0 32px 80px rgba(0, 0, 0, 0.4);
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    0 8px 24px rgba(0, 0, 0, 0.05);
 
   // Prevent text selection from interfering with pan gestures
   user-select: none;
@@ -197,44 +217,52 @@ $ah: 810px;
 // ─── Dropped grid items ───────────────────────────────────────────────────────
 :host ::ng-deep .grid-stack-item-content {
   border-radius: 3px;
-  overflow: hidden; 
+  overflow: hidden;
+
+  .grid-item-content {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(220 85% 96%);
+    border: 1.5px solid hsl(220 60% 75%);
+    border-radius: 3px;
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover {
+      background: hsl(220 85% 93%);
+      border-color: hsl(220 60% 60%);
+    }
+
+    // Allow dynamic widgets to grow in height so sizeToContent works
+    &.form-widget {
+      height: max-content;
+      min-height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    // Different accent colours per component type (expandable in Phase 2)
+    &[data-type='detail-section'] {
+      background: hsl(260 80% 96%);
+      border-color: hsl(260 60% 72%);
+    }
+    &[data-type='chart'] {
+      background: hsl(160 70% 94%);
+      border-color: hsl(160 55% 60%);
+    }
+    &[data-type='text'] {
+      background: hsl(45 85% 95%);
+      border-color: hsl(45 60% 68%);
+    }
+    &[data-type='image'] {
+      background: hsl(340 70% 96%);
+      border-color: hsl(340 55% 72%);
+    }
+  }
 }
 
-.grid-item-content {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: hsl(220 85% 96%);
-  border: 1.5px solid hsl(220 60% 75%);
-  border-radius: 3px;
-  transition: background 0.15s, border-color 0.15s;
-
-  &:hover {
-    background: hsl(220 85% 93%);
-    border-color: hsl(220 60% 60%);
-  }
-
-  // Different accent colours per component type (expandable in Phase 2)
-  &[data-type='detail-section'] {
-    background: hsl(260 80% 96%);
-    border-color: hsl(260 60% 72%);
-  }
-  &[data-type='chart'] {
-    background: hsl(160 70% 94%);
-    border-color: hsl(160 55% 60%);
-  }
-  &[data-type='text'] {
-    background: hsl(45 85% 95%);
-    border-color: hsl(45 60% 68%);
-  }
-  &[data-type='image'] {
-    background: hsl(340 70% 96%);
-    border-color: hsl(340 55% 72%);
-  }
-}
-
-.grid-item-type {
+:host ::ng-deep .grid-item-type {
   font-size: 11px;
   font-weight: 600;
   color: hsl(220 50% 40%);

@@ -20,10 +20,12 @@
       -->
       <li>
         <div
-          class="gs-drag-item"
+          class="gs-drag-item palette-item"
           [attr.data-type]="item.type"
           [attr.gs-w]="item.w"
           [attr.gs-h]="item.h"
+          [attr.gs-min-h]="item.minH"
+          [attr.gs-size-to-content]="item.type === 'form' ? 'true' : null"
         >
           <!-- .grid-stack-item-content wrapper is required so the dropped widget
                renders with correct dimensions inside the grid (GridStack's CSS

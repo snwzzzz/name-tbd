@@ -7,25 +7,33 @@
 
   <!-- ─── RIGHT: canvas area ───────────────────────────────────────────── -->
   <div class="canvas-area">
-
-    <!-- Toolbar -->
+  
+    <!-- Enterprise Toolbar -->
     <div class="canvas-toolbar">
       <div class="toolbar-left">
         <span class="artboard-name">Website Canvas</span>
-        <span class="artboard-dims">1440 × 810 · 24 col · 18 row</span>
+        <span class="artboard-dims">1440 × 810</span>
       </div>
 
-      <div class="zoom-controls">
-        <button id="btn-zoom-fit"   class="zoom-btn icon-btn" (click)="zoomFit()"   title="Fit (F)">⊡</button>
-        <button id="btn-zoom-out"   class="zoom-btn"          (click)="zoomOut()"   title="Zoom out">−</button>
-        <button id="btn-zoom-reset" class="zoom-btn zoom-pct" (click)="zoomReset()" title="Reset to 100%">{{ zoomPercent() }}%</button>
-        <button id="btn-zoom-in"    class="zoom-btn"          (click)="zoomIn()"    title="Zoom in">+</button>
+      <div class="toolbar-center">
+        <div class="zoom-controls">
+          <button class="zoom-btn" (click)="zoomOut()" title="Zoom out">−</button>
+          <button class="zoom-btn zoom-pct" (click)="zoomReset()" title="Reset to 100%">{{ zoomPercent() }}%</button>
+          <button class="zoom-btn" (click)="zoomIn()" title="Zoom in">+</button>
+          <div class="zoom-divider"></div>
+          <button class="zoom-btn" (click)="zoomFit()" title="Fit (F)">Fit</button>
+        </div>
       </div>
 
       <div class="toolbar-right">
-        <span class="toolbar-hint">Ctrl+Scroll zoom · Scroll pan · Space+Drag pan</span>
+        <div class="keybind-hints">
+          <span class="hint-item"><kbd>Ctrl</kbd> + Scroll to zoom</span>
+          <span class="hint-item"><kbd>Space</kbd> + Drag to pan</span>
+        </div>
       </div>
     </div>
+
+
 
     <!-- Infinite-canvas viewport -->
     <div class="canvas-viewport"

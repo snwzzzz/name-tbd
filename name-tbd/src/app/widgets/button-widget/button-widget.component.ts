@@ -1,0 +1,50 @@
+import { Component, Input } from '@angular/core';
+
+@Component({
+  selector: 'app-button-widget',
+  standalone: true,
+  template: `
+    <div class="button-wrapper">
+      <button class="dynamic-button">
+        {{ label }}
+      </button>
+    </div>
+  `,
+  styles: [`
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    :host {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .button-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+    }
+    .dynamic-button {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: #3b82f6;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      pointer-events: none; /* Make it unclickable so GridStack handles the click selection */
+      
+      /* Text overflow protection */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  `]
+})
+export class ButtonWidgetComponent {
+  @Input() label: string = 'Angular Button';
+}
