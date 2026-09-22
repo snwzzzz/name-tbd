@@ -167,6 +167,27 @@ export class Poc implements AfterViewInit, OnDestroy {
       const syncLayout = () => {
         this.ngZone.run(() => {
           const mapNode = (n: GridStackNode): LayoutItem => {
+            // If this node is a container with a subGrid, recalculate its minimum bounds!
+            if (n.subGrid && n.grid) {
+              let maxChildMinW = parseInt(n.el?.getAttribute('data-base-min-w') || String(n.minW || 2));
+              // Store original minW if not already stored, so we know the container's absolute minimum
+              if (!n.el?.hasAttribute('data-base-min-w')) {
+                n.el?.setAttribute('data-base-min-w', String(maxChildMinW));
+              }
+
+              n.subGrid.engine.nodes.forEach(child => {
+                const childMinW = child.minW || child.w || 1;
+                if (childMinW > maxChildMinW) {
+                  maxChildMinW = childMinW;
+                }
+              });
+
+              if (n.minW !== maxChildMinW) {
+                // Instantly update the GridStack engine so the user cannot resize the container below this bound
+                n.grid.update(n.el!, { minW: maxChildMinW });
+              }
+            }
+
             return {
               id: n.id as string || n.el?.getAttribute('data-gs-id') || `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
               x: n.x ?? 0,
@@ -268,6 +289,28 @@ export class Poc implements AfterViewInit, OnDestroy {
           }
 
         });
+
+        // Pass 2: Ensure any subgrid we just dropped into is large enough to hold its new children
+        nodes.forEach((node) => {
+          if (node.grid && node.grid !== grid) {
+            const parentNode = node.grid.parentGridNode;
+            if (parentNode && parentNode.grid) {
+              // Read original intended constraints from the DOM element (since GridStack might have clamped node.w during drop)
+              const origW = parseInt(node.el?.getAttribute('gs-w') || String(node.w || 1));
+              const origMinW = parseInt(node.el?.getAttribute('gs-min-w') || String(node.minW || origW));
+              
+              const requiredW = Math.max(parentNode.w || 1, origW, origMinW);
+              
+              if (requiredW > (parentNode.w || 1)) {
+                // Resize parent container to fit the newly dropped child
+                parentNode.grid.update(parentNode.el!, { w: requiredW });
+                // Now that the parent is bigger, restore the child's true width
+                node.grid.update(node.el!, { w: origW, minW: origMinW });
+              }
+            }
+          }
+        });
+
         syncLayout();
       });
 

@@ -262,8 +262,9 @@ $ah: 810px;
   }
   
   &.container-widget {
-    background: transparent;
-    // Structural component: no visible border or background so it blends seamlessly
+    background: rgba(0, 0, 0, 0.03); // light gray for testing
+    inset: 0 !important; // override GridStack margin so it acts as a flush structural wrapper
+    overflow: hidden !important; // strictly enforce no scrollbars on the container itself
   }
 }
 

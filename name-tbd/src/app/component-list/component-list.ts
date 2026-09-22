@@ -7,6 +7,7 @@ interface PaletteItem {
   icon: string;
   w: number;
   h: number;
+  minW?: number;
   minH?: number;
   maxH?: number;
   resizable?: boolean;
@@ -27,13 +28,13 @@ export class ComponentList implements AfterViewInit {
    * — each entry maps to the Detail Section popup model.
    */
   readonly items: PaletteItem[] = [
-    { type: 'button',         label: 'Button',         icon: '🔘', w: 2, h: 1 },
+    { type: 'button',         label: 'Button',         icon: '🔘', w: 2, h: 1, minW: 1, minH: 1 },
     { type: 'detail-section', label: 'Detail Section', icon: '📋', w: 4, h: 2, resizable: false },
     { type: 'chart',          label: 'Chart',          icon: '📊', w: 6, h: 3, resizable: false },
     { type: 'text',           label: 'Text Block',     icon: '📝', w: 3, h: 2, resizable: false },
     { type: 'image',          label: 'Image',          icon: '🖼️', w: 3, h: 3, resizable: false },
     { type: 'form',           label: 'Dynamic Form',   icon: '📋', w: 4, h: 3, minH: 3, resizable: false },
-    { type: 'container',      label: 'Container',      icon: '🗃️', w: 4, h: 3 },
+    { type: 'container',      label: 'Container',      icon: '🗃️', w: 4, h: 3, minW: 2, minH: 2 },
   ];
 
   ngAfterViewInit(): void {
