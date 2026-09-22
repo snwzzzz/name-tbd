@@ -1,3 +1,14 @@
 import { Routes } from '@angular/router';
+import { ApplicationContainer } from './application-container/application-container';
+import { Poc } from './poc/poc';
 
-export const routes: Routes = [];
+export const routes: Routes = [
+    {
+        path: 'console',
+        component: ApplicationContainer
+    },
+    {
+        path: "poc",
+        component: Poc
+    }
+];
