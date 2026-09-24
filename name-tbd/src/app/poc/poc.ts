@@ -10,6 +10,7 @@ import {
   ViewContainerRef,
   ComponentRef,
   inject,
+  Type
 } from '@angular/core';
 import { JsonPipe } from '@angular/common';
 import { GridStack, GridStackNode } from 'gridstack';
@@ -17,6 +18,11 @@ import { ComponentList } from '../component-list/component-list';
 import { ButtonWidgetComponent } from '../widgets/button-widget/button-widget.component';
 import { FormWidgetComponent } from '../widgets/form-widget/form-widget.component';
 import { DefaultWidgetComponent } from '../widgets/default-widget/default-widget.component';
+
+export const WIDGET_REGISTRY: Record<string, Type<any>> = {
+  'button': ButtonWidgetComponent,
+  'form': FormWidgetComponent,
+};
 
 // ─── Artboard constants (16:9 website viewport reference) ─────────────────────
 // 24 columns × 60px = 1440px wide
@@ -237,56 +243,35 @@ export class Poc implements AfterViewInit, OnDestroy {
             // so we don't carry over the 9px 12px padding!
             contentEl.classList.remove('palette-card');
             
-            switch (type) {
-              case 'container':
-                // Convert this widget into a nested GridStack (it natively enforces containment bounds)
-                contentEl.innerHTML = '';
-                // GridStack 14 natively tracks resize to recompute 'auto' columns if subGridOpts uses it
-                grid.makeSubGrid(node.el as any, {
-                  column: 'auto',
-                  row: node.h ?? 1,
-                  maxRow: node.h ?? 1,
-                  cellHeight: CELL_H, // inherit exact row height from parent scale
-                  margin: 0, // 0 margin so children sit flush inside this structural component
-                  acceptWidgets: '.gs-drag-item',
-                  disableResize: false,
-                  removable: false,
-                  mode: 'float',
-                }, undefined, false); // pass saveContent = false to avoid auto-creating a child widget
-                contentEl.classList.add('container-widget');
-                break;
-
-              case 'form': {
-                contentEl.innerHTML = '';
-                const compRef = this.vcr.createComponent(FormWidgetComponent);
-                compRef.changeDetectorRef.detectChanges();
-                contentEl.appendChild(compRef.location.nativeElement);
-                this.widgetRefs.set(id, compRef);
-                break;
+            if (type === 'container') {
+              // Convert this widget into a nested GridStack (it natively enforces containment bounds)
+              contentEl.innerHTML = '';
+              // GridStack 14 natively tracks resize to recompute 'auto' columns if subGridOpts uses it
+              grid.makeSubGrid(node.el as any, {
+                column: 'auto',
+                row: node.h ?? 1,
+                maxRow: node.h ?? 1,
+                cellHeight: CELL_H, // inherit exact row height from parent scale
+                margin: 0, // 0 margin so children sit flush inside this structural component
+                acceptWidgets: '.gs-drag-item',
+                disableResize: false,
+                removable: false,
+                mode: 'float',
+              }, undefined, false); // pass saveContent = false to avoid auto-creating a child widget
+              contentEl.classList.add('container-widget');
+            } else {
+              contentEl.innerHTML = '';
+              const componentClass = WIDGET_REGISTRY[type] || DefaultWidgetComponent;
+              const compRef = this.vcr.createComponent(componentClass);
+              
+              // Only pass type to the DefaultWidgetComponent so it can render the placeholder name
+              if (componentClass === DefaultWidgetComponent) {
+                compRef.setInput('type', type);
               }
-
-              case 'button': {
-                contentEl.innerHTML = '';
-                const compRef = this.vcr.createComponent(ButtonWidgetComponent);
-                compRef.instance.label = 'Angular Button Component';
-                
-                // We need to manually trigger change detection for the dynamic component
-                compRef.changeDetectorRef.detectChanges();
-                
-                contentEl.appendChild(compRef.location.nativeElement);
-                this.widgetRefs.set(id, compRef);
-                break;
-              }
-
-              default: {
-                contentEl.innerHTML = '';
-                const compRef = this.vcr.createComponent(DefaultWidgetComponent);
-                compRef.instance.type = type;
-                compRef.changeDetectorRef.detectChanges();
-                contentEl.appendChild(compRef.location.nativeElement);
-                this.widgetRefs.set(id, compRef);
-                break;
-              }
+              
+              compRef.changeDetectorRef.detectChanges();
+              contentEl.appendChild(compRef.location.nativeElement);
+              this.widgetRefs.set(id, compRef);
             }
           }
 
