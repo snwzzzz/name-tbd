@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, inject, ChangeDetectorRef } from '@angular/core';
 
 @Component({
   selector: 'app-form-widget',
@@ -8,15 +8,24 @@ import { Component } from '@angular/core';
 })
 export class FormWidgetComponent {
   inputCount = 1;
+  private el = inject(ElementRef);
+  private cdr = inject(ChangeDetectorRef);
 
   addInput() {
     this.inputCount++;
-    // The resize logic will be handled by GridStack if sizeToContent is true,
-    // or by a ResizeObserver in a real implementation. For this PoC:
+    this.cdr.detectChanges(); // Ensure Angular updates the DOM immediately
+    
+    // Use setTimeout to allow browser layout to complete
     setTimeout(() => {
-      const btn = document.activeElement as HTMLElement;
-      if (btn && (window as any).resizeGridItem) {
-        (window as any).resizeGridItem(btn);
+      const itemEl = this.el.nativeElement.closest('.grid-stack-item') as any;
+      const gridEl = this.el.nativeElement.closest('.grid-stack') as any;
+      
+      console.log('Form widget resizing. itemEl:', itemEl, 'gridEl:', gridEl);
+      
+      const gridInstance = itemEl?.gridstackNode?.grid || gridEl?.gridstack;
+      
+      if (itemEl && gridInstance) {
+        gridInstance.resizeToContent(itemEl);
       }
     }, 0);
   }

@@ -217,14 +217,7 @@ export class Poc implements AfterViewInit, OnDestroy {
         });
       };
       
-      // Expose for our dynamic form demo
-      (window as any)._pocGrid = grid;
-      (window as any).resizeGridItem = (btn: HTMLElement) => {
-        const item = btn.closest('.grid-stack-item') as any;
-        if (item && (window as any)._pocGrid) {
-          (window as any)._pocGrid.resizeToContent(item);
-        }
-      };
+
 
       // 'added' fires when an external widget is dropped onto the grid (or subgrid).
       grid.on('added', (_event: Event, nodes: GridStackNode[]) => {
