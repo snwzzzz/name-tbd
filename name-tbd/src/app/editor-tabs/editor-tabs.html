@@ -1,0 +1,13 @@
+<div class="tabs-container">
+  @for (tab of tabs(); track tab.id) {
+    <div class="tab" [class.active]="tab.active" (click)="selectTab(tab.id)">
+      <span class="title">{{ tab.title }}</span>
+      <button class="close-btn" (click)="closeTab(tab.id, $event)">
+        <div>×</div>
+      </button>
+    </div>
+  }
+  <div class="add-button-container">
+    <button class="add-tab-btn" (click)="addTab()">+</button>
+  </div>
+</div>

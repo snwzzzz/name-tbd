@@ -1,4 +1,4 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, signal, computed } from '@angular/core';
 import { IconButton } from '../icon-button/icon-button';
 import { LucideLayoutList, LucideFileChartColumn } from '@lucide/angular';
 import { ComponentList } from '../component-list/component-list';
@@ -10,52 +10,55 @@ import { ComponentList } from '../component-list/component-list';
   styleUrl: './recourse-navigation.scss',
 })
 export class RecourseNavigation {
-  activeTab: 'components' | 'layers' | null = 'components';
+  activeTab = signal<'components' | 'layers' | null>('components');
+  sidebarWidth = signal(300);
+  isResizing = signal(false);
 
   layoutListIcon = LucideLayoutList;
   fileChartColumnIcon = LucideFileChartColumn;
 
-  // Resize State
-  sidebarWidth = 300;
-  isResizing = false;
+  // Computed state
+  isSidebarExpanded = computed(() => this.activeTab() !== null);
 
-  get isSidebarExpanded(): boolean {
-    return this.activeTab !== null;
-  }
+  // Resize State for Math
+  private startX = 0;
+  private startWidth = 0;
 
   selectTab(tab: 'components' | 'layers') {
-    if (this.activeTab === tab) {
-      this.activeTab = null;
+    if (this.activeTab() === tab) {
+      this.activeTab.set(null);
     } else {
-      this.activeTab = tab;
+      this.activeTab.set(tab);
       // When expanding, restore a reasonable width if it was collapsed very small
-      if (this.sidebarWidth < 200) {
-        this.sidebarWidth = 300; 
+      if (this.sidebarWidth() < 200) {
+        this.sidebarWidth.set(300); 
       }
     }
   }
 
   startResize(event: MouseEvent) {
-    this.isResizing = true;
+    this.isResizing.set(true);
+    this.startX = event.clientX;
+    this.startWidth = this.sidebarWidth();
     event.preventDefault(); 
   }
 
   @HostListener('document:mousemove', ['$event'])
   onMouseMove(event: MouseEvent) {
-    if (!this.isResizing) return;
+    if (!this.isResizing()) return;
     
-    // Calculate new width based on mouse position. 
-    // Assuming sidebar starts at left edge of the window.
-    let newWidth = event.clientX;
+    // Calculate new width based on delta from start position. 
+    const deltaX = event.clientX - this.startX;
+    let newWidth = this.startWidth + deltaX;
     
     if (newWidth < 200) newWidth = 200; // Min expanded width
     if (newWidth > 800) newWidth = 800; // Max expanded width
     
-    this.sidebarWidth = newWidth;
+    this.sidebarWidth.set(newWidth);
   }
 
   @HostListener('document:mouseup')
   onMouseUp() {
-    this.isResizing = false;
+    this.isResizing.set(false);
   }
 }

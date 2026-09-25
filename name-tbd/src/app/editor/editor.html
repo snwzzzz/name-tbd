@@ -1,6 +1,19 @@
-<div class="editor-layout">
-  <app-recourse-navigation></app-recourse-navigation>
-  <main class="editor-main">
-    <p>editor works!</p>
-  </main>
+<div class="editor-container">
+  <app-navbar></app-navbar>
+  <div class="editor-body">
+    <app-recourse-navigation></app-recourse-navigation>
+    <div class="editor-content-area">
+      <app-editor-tabs #tabs></app-editor-tabs>
+      <main class="editor-main">
+        <p>Active File:</p>
+        <pre>
+@for (tab of tabs.tabs(); track tab.id) {
+  @if (tab.active) {
+    {{ tab.title }} content goes here...
+  }
+}
+        </pre>
+      </main>
+    </div>
+  </div>
 </div>
