@@ -2,11 +2,15 @@
   display: flex;
   background-color: var(--color-bg-subtle);
   overflow-x: auto;
+  overflow-y: hidden;
   border-bottom: 1px solid var(--color-border);
+  
+  /* Hide scrollbar completely across all browsers */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 
-  /* Hide scrollbar */
   &::-webkit-scrollbar {
-    display: none;
+    display: none; /* Chrome, Safari, Opera */
   }
 }
 
@@ -35,6 +39,9 @@
   .title {
     flex: 1;
     font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .close-btn {
@@ -82,4 +89,38 @@
       background-color: var(--color-surface-hover);
     }
   }
+}
+
+/* CDK Drag and Drop Animations */
+.cdk-drag-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.5rem;
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  min-width: 9rem;
+  cursor: grabbing;
+  box-sizing: border-box;
+  overflow: hidden !important;
+
+  .title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.tabs-container.cdk-drop-list-dragging .tab:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }

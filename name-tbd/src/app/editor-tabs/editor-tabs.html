@@ -1,6 +1,17 @@
-<div class="tabs-container">
+<div class="tabs-container"
+     cdkDropList
+     cdkDropListOrientation="horizontal"
+     [cdkDropListAutoScrollDisabled]="true"
+     (cdkDropListDropped)="onDropCdk($event)">
   @for (tab of tabs(); track tab.id) {
-    <div class="tab" [class.active]="tab.active" (click)="selectTab(tab.id)">
+    <div class="tab" 
+         cdkDrag
+         [class.active]="tab.active" 
+         (click)="selectTab(tab.id)">
+         
+      <!-- Custom drag placeholder for smooth animations -->
+      <div *cdkDragPlaceholder class="tab cdk-drag-placeholder"></div>
+
       <span class="title">{{ tab.title }}</span>
       <button class="close-btn" (click)="closeTab(tab.id, $event)">
         <div>×</div>

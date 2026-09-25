@@ -1,21 +1,17 @@
 import { Component, signal, inject, OnInit, effect } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { LucideX, LucideFile, LucideFileCode, LucideImage } from '@lucide/angular';
 import { NgComponentOutlet } from '@angular/common';
-import { IconButton } from '../icon-button/icon-button';
+import { CdkDrag, CdkDropList, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-editor-tabs',
-  imports: [NgComponentOutlet, IconButton],
+  imports: [NgComponentOutlet, CdkDrag, CdkDropList],
   templateUrl: './editor-tabs.html',
   styleUrl: './editor-tabs.scss',
 })
 export class EditorTabs implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-
-  closeIcon = LucideX;
-  fileIcon = LucideFile;
 
   private nextId = 4;
   
@@ -103,5 +99,14 @@ export class EditorTabs implements OnInit {
     this.tabs.update((tabs) => [...tabs, newTab]);
 
     this.selectTab(newId);
+  }
+
+  // --- CDK Drag & Drop ---
+  onDropCdk(event: CdkDragDrop<any[]>) {
+    this.tabs.update(tabs => {
+      const newTabs = [...tabs];
+      moveItemInArray(newTabs, event.previousIndex, event.currentIndex);
+      return newTabs;
+    });
   }
 }
