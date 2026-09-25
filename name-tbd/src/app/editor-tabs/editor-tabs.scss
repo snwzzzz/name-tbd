@@ -4,7 +4,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   border-bottom: 1px solid var(--color-border);
-  
+
   /* Hide scrollbar completely across all browsers */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
@@ -23,7 +23,7 @@
   color: var(--color-text-secondary);
   border-right: calc(1rem / 16) solid var(--color-border);
   cursor: pointer;
-  min-width: 9rem;
+  min-width: 10rem;
   user-select: none;
   transition: background-color 0.1s ease;
 
@@ -36,12 +36,25 @@
     background-color: var(--color-surface-subtle);
   }
 
-  .title {
-    flex: 1;
-    font-size: 0.9rem;
-    white-space: nowrap;
+  .content {
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    text-overflow: ellipsis;
+
+    .title {
+      font-size: 0.875rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mode {
+      font-size: 0.7rem;
+      color: var(--color-text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 
   .close-btn {
@@ -101,15 +114,34 @@
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  min-width: 9rem;
+  min-width: 10rem;
   cursor: grabbing;
   box-sizing: border-box;
   overflow: hidden !important;
 
-  .title {
-    white-space: nowrap;
+  .content {
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    text-overflow: ellipsis;
+
+    .title {
+      font-size: 1rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mode {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .close-btn {
+    opacity: 1; /* Keep close button visible while dragging */
   }
 }
 
