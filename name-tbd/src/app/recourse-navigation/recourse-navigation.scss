@@ -1,0 +1,21 @@
+.recourse-navigation {
+  display: flex;
+  flex-direction: column;
+  border-right: calc(1rem / 16) solid var(--color-border, #ccc);
+  background-color: var(--color-border, #fff);
+
+  transition: width 0.2s ease;
+  overflow: hidden;
+  height: 100%;
+
+  .icon-bar {
+    background-color: var(--color-surface, #fff);
+    height: 100%;
+    width: 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 0;
+    gap: 0.5rem;
+  }
+}

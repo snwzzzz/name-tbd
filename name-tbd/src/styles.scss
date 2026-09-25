@@ -1,6 +1,64 @@
 // GridStack core styles — required for grid lines, drag placeholder, and item positioning.
 @import 'gridstack/dist/gridstack.min.css';
 
+// =====================================================
+// COLOR TOKENS
+// =====================================================
+
+:root {
+  // Brand
+  --color-primary: #2F89FF;
+  --color-primary-light: #DBEBFF;
+
+  // Backgrounds
+  --color-bg: #FFFFFF;
+  --color-bg-subtle: #F5F5F5;
+  --color-bg-canvas: #E0E0E0;
+
+  // Surfaces
+  --color-surface: #FFFFFF;
+  --color-surface-secondary: #E6E6E6;
+  --color-surface-hover: #D9D9D9;
+
+  // Borders
+  --color-border: #D9D9D9;
+  --color-border-strong: #979797;
+
+  // Text
+  --color-text-primary: #1F1F1F;
+  --color-text-secondary: #666666;
+  --color-text-disabled: #999999;
+}
+
+// =====================================================
+// DARK THEME
+// =====================================================
+
+[data-theme="dark"] {
+  // Brand
+  --color-primary: #2F89FF;
+  --color-primary-light: #17365F;
+
+  // Backgrounds
+  --color-bg: #181818;
+  --color-bg-subtle: #202020;
+  --color-bg-canvas: #252525;
+
+  // Surfaces
+  --color-surface: #1C1C1C;
+  --color-surface-secondary: #292929;
+  --color-surface-hover: #333333;
+
+  // Borders
+  --color-border: #3A3A3A;
+  --color-border-strong: #666666;
+
+  // Text
+  --color-text-primary: #F5F5F5;
+  --color-text-secondary: #B5B5B5;
+  --color-text-disabled: #707070;
+}
+
 // Global reset
 *,
 *::before,
@@ -14,5 +72,6 @@ body {
   padding: 0;
   height: 100%;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #f0f0f0;
+  background-color: var(--color-bg-canvas);
+  color: var(--color-text-primary);
 }
