@@ -1,10 +1,10 @@
 import { AfterViewInit, Component } from '@angular/core';
 import { GridStack } from 'gridstack';
+import { LucideComponent } from '@lucide/angular';
 
 interface PaletteItem {
   type: string;
   label: string;
-  icon: string;
   w: number;
   h: number;
   minW?: number;
@@ -16,7 +16,7 @@ interface PaletteItem {
 @Component({
   selector: 'app-component-list',
   standalone: true,
-  imports: [],
+  imports: [LucideComponent],
   templateUrl: './component-list.html',
   styleUrl: './component-list.scss',
 })
@@ -28,13 +28,13 @@ export class ComponentList implements AfterViewInit {
    * — each entry maps to the Detail Section popup model.
    */
   readonly items: PaletteItem[] = [
-    { type: 'button',         label: 'Button',         icon: '🔘', w: 2, h: 1, minW: 1, minH: 1 },
-    { type: 'detail-section', label: 'Detail Section', icon: '📋', w: 4, h: 2, resizable: false },
-    { type: 'chart',          label: 'Chart',          icon: '📊', w: 6, h: 3, resizable: false },
-    { type: 'text',           label: 'Text Block',     icon: '📝', w: 3, h: 2, resizable: false },
-    { type: 'image',          label: 'Image',          icon: '🖼️', w: 3, h: 3, resizable: false },
-    { type: 'form',           label: 'Dynamic Form',   icon: '📋', w: 4, h: 3, minH: 3, resizable: false },
-    { type: 'container',      label: 'Container',      icon: '🗃️', w: 4, h: 3, minW: 2, minH: 2 },
+    { type: 'button',         label: 'Button',         w: 2, h: 1, minW: 1, minH: 1 },
+    { type: 'detail-section', label: 'Detail Section', w: 4, h: 2, resizable: false },
+    { type: 'chart',          label: 'Chart',          w: 6, h: 3, resizable: false },
+    { type: 'text',           label: 'Text Block',     w: 3, h: 2, resizable: false },
+    { type: 'image',          label: 'Image',          w: 3, h: 3, resizable: false },
+    { type: 'form',           label: 'Dynamic Form',   w: 4, h: 3, minH: 3, resizable: false },
+    { type: 'container',      label: 'Container',      w: 4, h: 3, minW: 2, minH: 2 },
   ];
 
   ngAfterViewInit(): void {

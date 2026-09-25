@@ -8,6 +8,13 @@
   </div>
 
   <div class="actions">
+    <button class="theme-toggle" (click)="toggleTheme()" [attr.aria-label]="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'">
+      @if (isDarkMode) {
+        ☀️ Light
+      } @else {
+        🌙 Dark
+      }
+    </button>
     <!-- User icon, settings, etc -->
   </div>
 </nav>

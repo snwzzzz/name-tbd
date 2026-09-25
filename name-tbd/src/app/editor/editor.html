@@ -3,7 +3,10 @@
   <div class="editor-body">
     <app-recourse-navigation></app-recourse-navigation>
     <div class="editor-content-area">
-      <app-editor-tabs #tabs></app-editor-tabs>
+      <div class="editor-top-bar">
+        <app-editor-tabs #tabs class="tabs-area"></app-editor-tabs>
+        <app-mode-dropdown></app-mode-dropdown>
+      </div>
       <main class="editor-main">
         <p>Active File:</p>
         <pre>
