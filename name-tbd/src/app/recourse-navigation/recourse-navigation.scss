@@ -4,7 +4,7 @@
   gap: calc(1rem / 16);
   border-right: calc(1rem / 16) solid var(--color-border);
   background-color: var(--color-border);
-  
+
   transition: width 0.2s ease;
   overflow: hidden;
   height: 100%;
@@ -40,11 +40,10 @@
     top: 0;
     cursor: col-resize;
     z-index: 10;
-    
+
     &:hover {
-      background-color: var(--color-primary, #2F89FF);
+      background-color: var(--color-primary, #2f89ff);
       opacity: 0.5;
     }
   }
 }
-
