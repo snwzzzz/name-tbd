@@ -1,0 +1,260 @@
+@use 'sass:math';
+
+// ─── Artboard dimensions (keep in sync with poc.ts constants) ────────────────
+$aw: 90rem;
+$ah: 50.625rem;
+
+:host {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+// ─── Top-level flex layout ────────────────────────────────────────────────────
+.canvas-layout {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+// ─── Left palette panel (REMOVED) ─────────────────────────────────────────────
+
+.canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-bg-canvas);
+}
+
+// ─── Zoom controls ────────────────────────────────────────────────────────────
+.zoom-controls.floating {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 50;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--color-surface);
+  border: 0.0625rem solid var(--color-border);
+  border-radius: 0.375rem;
+  padding: 0.25rem;
+}
+
+.zoom-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  height: 1.625rem;
+  min-width: 1.75rem;
+  padding: 0 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &:active {
+    background: var(--color-border);
+  }
+}
+
+.zoom-divider {
+  width: 0.0625rem;
+  height: 1rem;
+  background: var(--color-border);
+  margin: 0 0.25rem;
+}
+
+.zoom-pct {
+  min-width: 3.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+// ─── Infinite-canvas viewport ─────────────────────────────────────────────────
+.canvas-viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+
+  // Solid light background
+  background-color: var(--color-bg-canvas);
+
+  cursor: default;
+  outline: none;
+
+  &.is-panning {
+    cursor: grab;
+
+    &:active { cursor: grabbing; }
+  }
+}
+
+// ─── Artboard (the 16:9 "page") ───────────────────────────────────────────────
+.artboard {
+  // Centered in viewport via negative margin (half of artboard size)
+  position: absolute;
+  top:  50%;
+  left: 50%;
+  margin-left: math.div(-$aw, 2);   // -45rem
+  margin-top:  math.div(-$ah, 2);   // -25.3125rem
+  width:  $aw;
+  height: $ah;
+
+  // Pan happens via transform (set by [style.transform] binding)
+  transform-origin: center center;
+  will-change: transform;
+
+  background-color: var(--color-surface);
+  // Visual grid overlay matching the 24 columns and 18 rows
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 0.0625rem, transparent 0.0625rem),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 0.0625rem, transparent 0.0625rem);
+  background-size: calc(100% / 24) calc(100% / 18);
+
+  border-radius: 0.125rem;
+  box-shadow:
+    0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.1),
+    0 0.5rem 1.5rem rgba(0, 0, 0, 0.05);
+
+  // Prevent text selection from interfering with pan gestures
+  user-select: none;
+}
+
+// ─── GridStack container matches artboard exactly ────────────────────────────
+// GridStack mounts on .grid-stack with position:relative + overflow:hidden.
+// row:18 × cellHeight:2.8125rem = 50.625rem height (artboard height).
+// The grid MUST NOT add scrollbars — row count is fixed.
+:host ::ng-deep .artboard .grid-stack {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+// ─── Dropped grid items ───────────────────────────────────────────────────────
+:host ::ng-deep .grid-stack-item-content {
+  border-radius: 0.1875rem;
+  overflow: hidden;
+
+  .grid-item-content {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(220 85% 96%);
+    border: 0.0938rem solid hsl(220 60% 75%);
+    border-radius: 0.1875rem;
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover {
+      background: hsl(220 85% 93%);
+      border-color: hsl(220 60% 60%);
+    }
+
+    // Allow dynamic widgets to grow in height so sizeToContent works
+    &.form-widget {
+      height: max-content;
+      min-height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    // Different accent colours per component type (expandable in Phase 2)
+    &[data-type='detail-section'] {
+      background: hsl(260 80% 96%);
+      border-color: hsl(260 60% 72%);
+    }
+    &[data-type='chart'] {
+      background: hsl(160 70% 94%);
+      border-color: hsl(160 55% 60%);
+    }
+    &[data-type='text'] {
+      background: hsl(45 85% 95%);
+      border-color: hsl(45 60% 68%);
+    }
+    &[data-type='image'] {
+      background: hsl(340 70% 96%);
+      border-color: hsl(340 55% 72%);
+    }
+  }
+  
+  &.container-widget {
+    background: rgba(0, 0, 0, 0.03); // light gray for testing
+    inset: 0 !important; // override GridStack margin so it acts as a flush structural wrapper
+    overflow: hidden !important; // strictly enforce no scrollbars on the container itself
+  }
+}
+
+:host ::ng-deep .grid-item-type {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: hsl(220 50% 40%);
+  text-transform: capitalize;
+  letter-spacing: 0.04em;
+}
+
+// ─── GridStack placeholder highlight ─────────────────────────────────────────
+:host ::ng-deep .grid-stack-placeholder > .placeholder-content {
+  background: hsl(220 90% 60% / 0.15) !important;
+  border: 0.125rem dashed hsl(220 70% 60%) !important;
+  border-radius: 0.25rem !important;
+}
+
+// ─── Debug overlay ────────────────────────────────────────────────────────────
+.debug-overlay {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  width: 16.25rem;
+  max-height: 13.75rem;
+  overflow: hidden auto;
+  background: rgba(10, 10, 20, 0.88);
+  backdrop-filter: blur(0.75rem);
+  border: 0.0625rem solid #2a2a40;
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  z-index: 100;
+}
+
+.debug-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.375rem;
+}
+
+.debug-title {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: #6080d8;
+  letter-spacing: 0.12em;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.debug-count {
+  font-size: 0.5625rem;
+  color: #454560;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.debug-json {
+  font-size: 0.5938rem;
+  line-height: 1.55;
+  margin: 0;
+  color: #70c090;
+  white-space: pre;
+  font-family: 'JetBrains Mono', monospace;
+}
