@@ -1,0 +1,88 @@
+<div class="canvas-layout">
+  <div class="canvas-area">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="add-node-btn" (click)="addNode('Trigger')">New Trigger</button>
+      <button class="add-node-btn" (click)="addNode('Action')">New Action</button>
+      <button class="add-node-btn" (click)="addNode('Condition')">New Condition</button>
+    </div>
+
+    <!-- Foblex flow wrapper -->
+    <f-flow 
+      fDraggable
+      (fLoaded)="onLoaded()"
+      (fDeleteSelected)="onDeleteSelected($event)"
+      class="canvas-viewport"
+      [class.is-panning]="isPanning()"
+      (mousedown)="onViewportMouseDown($event)"
+      (mousemove)="onViewportMouseMove($event)"
+      (fCreateConnection)="onConnectionCreated($event)"
+      (fReassignConnection)="onConnectionReassigned($event)">
+
+      <f-canvas fZoom 
+        [position]="panPos()" 
+        (fCanvasChange)="onCanvasChange($event)">
+        <!-- Background grid -->
+        <f-background>
+        </f-background>
+
+        <!-- Connection for Create -->
+        <f-connection-for-create fBehavior="floating" fType="bezier">
+        </f-connection-for-create>
+
+        <!-- Nodes -->
+        @for (node of nodes(); track node.id) {
+          <div fNode 
+               fDragHandle
+               [fNodeId]="node.id"
+               [fNodePosition]="node.position"
+               (fNodePositionChange)="onNodePositionChange(node.id, $event)"
+               class="workflow-node">
+            
+            <div class="node-content">
+              <div class="node-title">{{ node.type }}</div>
+            </div>
+
+            <!-- Ports -->
+            <div class="node-ports">
+              <div fNodeOutput [fOutputId]="node.id + '-out'" [fOutputConnectableSide]="'right'" class="port out-port"></div>
+              <div fNodeInput [fInputId]="node.id + '-in'" [fInputConnectableSide]="'left'" class="port in-port"></div>
+            </div>
+          </div>
+        }
+
+        <!-- Connections -->
+        @for (connection of connections(); track connection.id) {
+          <f-connection 
+            fBehavior="floating"
+            fType="bezier"
+            [fConnectionId]="connection.id" 
+            [fSourceId]="connection.fromPort || connection.fromNode" 
+            [fTargetId]="connection.toPort || connection.toNode">
+          </f-connection>
+        }
+      </f-canvas>
+
+      <!-- Floating Zoom Controls matching canvas.html -->
+      <div class="zoom-controls floating">
+        <button class="zoom-btn" (click)="zoomOut()" title="Zoom out">−</button>
+        <button class="zoom-btn zoom-pct" (click)="zoomReset()" title="Reset to 100%">{{ zoomPercent() }}%</button>
+        <button class="zoom-btn" (click)="zoomIn()" title="Zoom in">+</button>
+        <div class="zoom-divider"></div>
+        <button class="zoom-btn" (click)="zoomFit()" title="Fit (F)">Fit</button>
+      </div>
+
+      <!-- Debug overlay for state -->
+      @if (nodes().length > 0) {
+        <div class="debug-overlay">
+          <div class="debug-header">
+            <span class="debug-title">WORKFLOW STATE</span>
+            <span class="debug-count">{{ nodes().length }} node{{ nodes().length !== 1 ? 's' : '' }}</span>
+          </div>
+          <pre class="debug-json">{{ { nodes: nodes(), connections: connections() } | json }}</pre>
+        </div>
+      }
+
+    </f-flow>
+  </div>
+</div>
