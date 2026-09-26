@@ -15,5 +15,12 @@ export const routes: Routes = [
   {
     path: 'editor',
     component: Editor,
+    children: [
+      { path: ':tabId/edit', loadComponent: () => import('./canvas/canvas').then(m => m.Canvas) },
+      { path: ':tabId/workflow', loadComponent: () => import('./workflow-editor/workflow-editor').then(m => m.WorkflowEditor) },
+      { path: ':tabId/data', loadComponent: () => import('./data-editor/data-editor').then(m => m.DataEditor) },
+      { path: ':tabId', redirectTo: ':tabId/edit', pathMatch: 'full' },
+      { path: '', redirectTo: '1/edit', pathMatch: 'full' }
+    ]
   },
 ];

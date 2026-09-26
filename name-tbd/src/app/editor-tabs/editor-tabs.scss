@@ -27,7 +27,7 @@
   transition: background-color 0.1s ease;
 
   &.active {
-    color: var(--color-primary,);
+    color: var(--color-primary);
     border-bottom: calc(1rem / 16) solid var(--color-primary);
   }
 

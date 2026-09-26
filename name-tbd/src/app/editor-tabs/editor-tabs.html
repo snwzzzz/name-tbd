@@ -6,13 +6,13 @@
   (cdkDropListDropped)="onDropCdk($event)"
 >
   @for (tab of tabs(); track tab.id) {
-    <div class="tab" cdkDrag [class.active]="tab.active" (click)="selectTab(tab.id)">
+    <div class="tab" cdkDrag [class.active]="activeTabId() === tab.id" (click)="selectTab(tab.id)">
       <!-- Custom drag placeholder for smooth animations -->
       <div *cdkDragPlaceholder class="tab cdk-drag-placeholder"></div>
 
       <div class="content">
         <span class="title">{{ tab.title }}</span>
-        <span class="mode"> current Mode</span>
+        <span class="mode">{{ tab.mode || 'edit' }}</span>
       </div>
       <button class="close-btn" (click)="closeTab(tab.id, $event)">
         <div>×</div>
