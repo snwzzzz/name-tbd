@@ -33,6 +33,13 @@ public class UiComponent extends AuditableEntity {
     @JoinColumn(name = "workflow_id")
     private Workflow workflow;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private UiComponent parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<UiComponent> children = new java.util.ArrayList<>();
+
     @Embeddable
     public record UiComponentId(@GeneratedValue Long id) {}
 }

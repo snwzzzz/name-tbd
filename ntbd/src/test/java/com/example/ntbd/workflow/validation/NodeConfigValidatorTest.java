@@ -53,4 +53,27 @@ class NodeConfigValidatorTest {
         assertThatCode(() -> validator.validate(node))
                 .doesNotThrowAnyException();
     }
+
+    @Test
+    void validates_valid_email_config() {
+        var node = Node.builder()
+                .type("EMAIL")
+                .props(Map.of("to", "user@example.com", "subject", "Hello"))
+                .build();
+
+        assertThatCode(() -> validator.validate(node))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void throws_on_invalid_email_config() {
+        var node = Node.builder()
+                .type("EMAIL")
+                .props(Map.of("to", "user@example.com")) // missing subject
+                .build();
+
+        assertThatThrownBy(() -> validator.validate(node))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("subject");
+    }
 }

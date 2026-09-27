@@ -17,7 +17,8 @@ public class NodeConfigValidator {
     private final Validator validator;
     private final Map<String, Class<?>> configTypeRegistry = Map.of(
             "CONDITION", ConditionConfig.class,
-            "WEBHOOK", WebhookConfig.class
+            "WEBHOOK", WebhookConfig.class,
+            "EMAIL", EmailConfig.class
     );
 
     public void validate(Node node) {

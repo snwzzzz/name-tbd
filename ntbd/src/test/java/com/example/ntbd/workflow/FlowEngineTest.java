@@ -85,4 +85,49 @@ class FlowEngineTest {
 
         assertThat(workflow.getStatus()).isEqualTo(WorkflowStatus.FAILED);
     }
+
+    @Test
+    void marks_workflow_failed_when_handler_throws_exception() {
+        // Issue F: tests the catch(Exception e) block in FlowEngine — not the failure-result path
+        var node1 = Node.builder().id(new Node.NodeId(1L)).type("BOOM").props(Map.of()).build();
+        var workflow = Workflow.builder()
+                .id(new Workflow.WorkflowId(10L))
+                .status(WorkflowStatus.ACTIVE)
+                .nodes(List.of(node1))
+                .build();
+
+        when(workflowRepository.findById(new Workflow.WorkflowId(10L))).thenReturn(Optional.of(workflow));
+        when(edgeRepository.findBySourceNode_Workflow_Id(new Workflow.WorkflowId(10L))).thenReturn(List.of());
+
+        NodeHandler boomHandler = mock(NodeHandler.class);
+        when(boomHandler.handle(eq(node1), any())).thenThrow(new RuntimeException("Unexpected boom"));
+        when(registry.getHandler("BOOM")).thenReturn(boomHandler);
+
+        flowEngine.executeWorkflow(10L, Map.of());
+
+        assertThat(workflow.getStatus()).isEqualTo(WorkflowStatus.FAILED);
+    }
+
+    @Test
+    void completes_workflow_when_node_returns_port_with_no_matching_edge() {
+        // Issue G: dead-end — handler returns a port name that has no outgoing edge → COMPLETED, no exception
+        var node1 = Node.builder().id(new Node.NodeId(1L)).type("START").props(Map.of()).build();
+        var workflow = Workflow.builder()
+                .id(new Workflow.WorkflowId(10L))
+                .status(WorkflowStatus.ACTIVE)
+                .nodes(List.of(node1))
+                .build();
+
+        when(workflowRepository.findById(new Workflow.WorkflowId(10L))).thenReturn(Optional.of(workflow));
+        // No edges — so "unreachable_port" has no match
+        when(edgeRepository.findBySourceNode_Workflow_Id(new Workflow.WorkflowId(10L))).thenReturn(List.of());
+
+        NodeHandler startHandler = mock(NodeHandler.class);
+        when(startHandler.handle(eq(node1), any())).thenReturn(ExecutionResult.success("unreachable_port", null));
+        when(registry.getHandler("START")).thenReturn(startHandler);
+
+        flowEngine.executeWorkflow(10L, Map.of());
+
+        assertThat(workflow.getStatus()).isEqualTo(WorkflowStatus.COMPLETED);
+    }
 }
