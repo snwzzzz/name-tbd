@@ -6,17 +6,24 @@ import {
   OnDestroy,
   computed,
   signal,
+  effect,
   viewChild,
   ViewContainerRef,
   ComponentRef,
   inject,
-  Type
+  Type,
+  HostListener
 } from '@angular/core';
 import { JsonPipe } from '@angular/common';
 import { GridStack, GridStackNode } from 'gridstack';
 import { ButtonWidgetComponent } from '../widgets/button-widget/button-widget.component';
 import { FormWidgetComponent } from '../widgets/form-widget/form-widget.component';
 import { DefaultWidgetComponent } from '../widgets/default-widget/default-widget.component';
+import { CdkMenuModule } from '@angular/cdk/menu';
+import { Dialog, DialogModule } from '@angular/cdk/dialog';
+import { WorkflowStateService } from '../services/workflow-state.service';
+import { TabsService } from '../services/tabs.service';
+import { FormsModule } from '@angular/forms';
 
 export const WIDGET_REGISTRY: Record<string, Type<any>> = {
   'button': ButtonWidgetComponent,
@@ -28,29 +35,20 @@ export const WIDGET_REGISTRY: Record<string, Type<any>> = {
 // 18 rows    × 45px = 810px tall  → 1440 × 810 = exactly 16:9
 // One grid cell (1×1) = 60 × 45px
 // Typical button (w:2, h:1) content = ~112 × 37px after 4px margins ✓
+import { LayoutItem, LayoutStateService } from '../services/layout-state.service';
+
 const AW = 1440;             // artboard width  (px)
 const AH = 810;              // artboard height (px)  — AW * 9/16
 const COLS = 24;             // grid columns
 const ROWS = 18;             // grid rows  (fixed — locks canvas at 16:9)
 const CELL_H = AH / ROWS;   // 45px per row
 
-export interface LayoutItem {
-  id: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  /** Component type key ('button' | 'detail-section' | …).
-   *  PHASE 2: widen to a full ComponentConfig carrying the Detail Section
-   *  popup / data-model so the 'added' handler can pass it to createComponent(). */
-  type: string;
-  children?: LayoutItem[];
-}
+
 
 @Component({
   selector: 'app-canvas',
   standalone: true,
-  imports: [JsonPipe],
+  imports: [JsonPipe, CdkMenuModule, DialogModule, FormsModule],
   templateUrl: './canvas.html',
   styleUrl: './canvas.scss',
 })
@@ -66,12 +64,24 @@ export class Canvas implements AfterViewInit, OnDestroy {
 
   private vcr = inject(ViewContainerRef);
   private widgetRefs = new Map<string, ComponentRef<any>>();
+  dialog = inject(Dialog);
+  private workflowState = inject(WorkflowStateService);
+  private tabsService = inject(TabsService);
+  private layoutStateService = inject(LayoutStateService);
 
   // ─── Zoom / Pan state ──────────────────────────────────────────────────────
   readonly zoom  = signal(1);
   readonly panX  = signal(0);
   readonly panY  = signal(0);
   readonly isPanning = signal(false);
+
+  readonly contextMenuState = signal<{ x: number, y: number, item: any } | null>(null);
+
+  @HostListener('document:click')
+  @HostListener('document:contextmenu')
+  closeContextMenu() {
+    this.contextMenuState.set(null);
+  }
 
   /** CSS transform applied to the artboard element for panning only. */
   readonly artboardTransform = computed(
@@ -94,7 +104,46 @@ export class Canvas implements AfterViewInit, OnDestroy {
   private _onMouseUp!: () => void;
   private _onWheel!:   (e: WheelEvent) => void;
 
-  constructor(private ngZone: NgZone) {}
+  private isRestoring = false;
+  private gridReady = signal(false);
+
+  constructor(private ngZone: NgZone) {
+    effect(() => {
+      const tabId = this.tabsService.activeTabId();
+      const ready = this.gridReady();
+      if (tabId && ready && this.grid) {
+        this.ngZone.runOutsideAngular(() => {
+          this.isRestoring = true;
+          this.grid!.removeAll();
+          
+          const savedLayout = this.layoutStateService.getLayout(tabId);
+          const loadNodes = (items: LayoutItem[], parentGrid: GridStack) => {
+            items.forEach(item => {
+               const div = document.createElement('div');
+               div.className = 'grid-stack-item';
+               div.setAttribute('data-type', item.type);
+               if (item.id) div.setAttribute('data-gs-id', item.id);
+               
+               const content = document.createElement('div');
+               content.className = 'grid-stack-item-content';
+               div.appendChild(content);
+               
+               const widgetNode = (parentGrid as any).addWidget({ el: div, id: item.id, x: item.x, y: item.y, w: item.w, h: item.h });
+               const node = widgetNode?.gridstackNode;
+               if (item.children && item.children.length > 0 && node && node.subGrid) {
+                 loadNodes(item.children, node.subGrid as GridStack);
+               }
+            });
+          };
+          
+          if (savedLayout.length > 0) {
+            loadNodes(savedLayout, this.grid!);
+          }
+          this.isRestoring = false;
+        });
+      }
+    });
+  }
 
   ngAfterViewInit(): void {
     // ── Global keyboard listeners ──────────────────────────────────────────
@@ -217,6 +266,11 @@ export class Canvas implements AfterViewInit, OnDestroy {
           if (this.grid) {
             const newLayout = this.grid.engine.nodes.map(mapNode);
             this.layout.set(newLayout);
+            if (this.isRestoring) return;
+            const tabId = this.tabsService.activeTabId();
+            if (tabId) {
+              this.layoutStateService.saveLayout(tabId, newLayout);
+            }
             console.log('[CANVAS] layout:', newLayout);
           }
         });
@@ -228,10 +282,10 @@ export class Canvas implements AfterViewInit, OnDestroy {
       grid.on('added', (_event: Event, nodes: GridStackNode[]) => {
         nodes.forEach((node) => {
           const type = node.el?.getAttribute('data-type') ?? 'unknown';
-          const id   = `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+          const id = node.el?.getAttribute('data-gs-id') || node.id || `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
           
           if (node.el) {
-             node.el.setAttribute('data-gs-id', id);
+             node.el.setAttribute('data-gs-id', id as string);
              node.id = id;
           }
 
@@ -271,6 +325,16 @@ export class Canvas implements AfterViewInit, OnDestroy {
               compRef.changeDetectorRef.detectChanges();
               contentEl.appendChild(compRef.location.nativeElement);
               this.widgetRefs.set(id, compRef);
+              
+              // Add right-click listener
+              contentEl.addEventListener('contextmenu', (e: Event) => {
+                const me = e as MouseEvent;
+                me.preventDefault();
+                me.stopPropagation();
+                
+                const currentItem = this.layout().find(i => i.id === id) || { id, type };
+                this.contextMenuState.set({ x: me.clientX, y: me.clientY, item: currentItem });
+              });
             }
           }
 
@@ -345,7 +409,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
         }
         syncLayout();
       });
-
+      this.ngZone.run(() => this.gridReady.set(true));
     });
   }
 
@@ -438,5 +502,15 @@ export class Canvas implements AfterViewInit, OnDestroy {
     this.panY.update((y) => y + dy);
     this.lastMouseX = e.clientX;
     this.lastMouseY = e.clientY;
+  }
+
+  // ─── Logic Flow ────────────────────────────────────────────────────────
+  addLogicToItem(item: LayoutItem): void {
+    const tabId = this.tabsService.activeTabId();
+    if (tabId) {
+      this.workflowState.addTriggerForElement(tabId, item.id, 'element_click');
+      this.tabsService.setMode('workflow');
+    }
+    this.contextMenuState.set(null);
   }
 }

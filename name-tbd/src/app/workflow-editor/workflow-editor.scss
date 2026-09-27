@@ -72,50 +72,139 @@
 .workflow-node {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0.375rem;
-  padding: 1rem;
-  width: 150px;
+  border-radius: 8px;
+  width: 180px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  position: relative;
   
-  .node-content {
+  // Specific node styles
+  &.trigger-node {
+    border-color: hsl(150 60% 60%);
+    .node-header { background: hsl(150 60% 95%); }
+  }
+  
+  &.condition-node {
+    border-color: hsl(40 80% 60%);
+    .node-header { background: hsl(40 80% 95%); }
+  }
+
+  &.action-node {
+    border-color: hsl(220 60% 60%);
+    .node-header { background: hsl(220 60% 95%); }
+  }
+
+  .node-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 600;
+    font-size: 13px;
+    color: #334155;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .node-title {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-text-primary);
+    gap: 8px;
+    border-radius: 8px 8px 0 0;
   }
 
+  .node-body {
+    padding: 12px;
+    font-size: 12px;
+    color: #64748b;
+
+    .meta-row {
+      margin-bottom: 4px;
+    }
+    
+    .condition-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      
+      .cond-input, .cond-select {
+        padding: 4px 6px;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        font-size: 11px;
+        outline: none;
+        
+        &:focus {
+          border-color: hsl(220 60% 60%);
+        }
+      }
+    }
+  }
+
+  /* Keep node-ports relative so we can absolute position the ports */
   .node-ports {
-    position: relative;
-    width: 100%;
-    height: 16px;
-    margin-top: 8px;
-  }
-  
-  .port {
     position: absolute;
-    width: 12px;
-    height: 12px;
-    background: var(--color-bg-canvas);
-    border: 2px solid hsl(220 60% 60%);
-    border-radius: 50%;
-    top: 2px;
-    
-    &.in-port {
-      left: -20px;
-    }
-    
-    &.out-port {
-      right: -20px;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; /* Let clicks pass through to node */
+
+    .port {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #fff;
+      border: 2px solid hsl(220 60% 60%);
+      border-radius: 50%;
+      cursor: crosshair;
+      pointer-events: all;
+      z-index: 10;
+      
+      &:hover {
+        background: hsl(220 60% 90%);
+        transform: scale(1.2);
+      }
     }
 
-    &:hover {
-      background: hsl(220 60% 60%);
+    .in-port {
+      left: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .out-port {
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      
+      &.true-port {
+        border-color: hsl(150 60% 60%);
+      }
+      &.false-port {
+        border-color: hsl(0 60% 60%);
+      }
+    }
+
+    .branch-ports {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      pointer-events: all;
+      
+      .branch-port-row {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        
+        .branch-label {
+          font-size: 10px;
+          color: #64748b;
+          margin-right: 12px;
+          font-weight: 600;
+        }
+        
+        .out-port {
+          position: absolute;
+          right: -6px;
+          top: 50%;
+          transform: translateY(-50%);
+        }
+      }
     }
   }
 }
@@ -242,3 +331,4 @@
   white-space: pre;
   font-family: 'JetBrains Mono', monospace;
 }
+\n.delete-node-btn { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px; padding: 0 4px; margin-left: auto; border-radius: 4px; }\n.delete-node-btn:hover { background: #fee2e2; color: #ef4444; }

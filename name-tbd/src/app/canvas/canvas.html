@@ -47,4 +47,16 @@
     </div><!-- /canvas-viewport -->
   </div><!-- /canvas-area -->
 
-</div><!-- /canvas-layout -->
+  <!-- Custom Context Menu -->
+  @if (contextMenuState(); as ctx) {
+    <div class="custom-context-menu" 
+         [style.left.px]="ctx.x" 
+         [style.top.px]="ctx.y"
+         (click)="$event.stopPropagation()">
+      <div class="menu-item" (click)="addLogicToItem(ctx.item)">
+        ⚡ Add Logic / Edit Action
+      </div>
+    </div>
+  }
+
+</div>

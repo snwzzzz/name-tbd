@@ -1,11 +1,10 @@
 import { Component, inject } from '@angular/core';
-import { NgComponentOutlet } from '@angular/common';
-import { CdkDrag, CdkDropList, CdkDragDrop } from '@angular/cdk/drag-drop';
+import { CdkDrag, CdkDropList, CdkDragDrop, CdkDragPlaceholder } from '@angular/cdk/drag-drop';
 import { TabsService } from '../services/tabs.service';
 
 @Component({
   selector: 'app-editor-tabs',
-  imports: [NgComponentOutlet, CdkDrag, CdkDropList],
+  imports: [CdkDrag, CdkDropList, CdkDragPlaceholder],
   templateUrl: './editor-tabs.html',
   styleUrl: './editor-tabs.scss',
 })
