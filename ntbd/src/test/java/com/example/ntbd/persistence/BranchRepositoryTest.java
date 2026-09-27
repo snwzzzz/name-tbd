@@ -48,7 +48,7 @@ public class BranchRepositoryTest {
         var branch = Branch.builder()
                 .name("main")
                 .description("Main development branch")
-                .createdAt(LocalDateTime.now())
+                
                 .createdBy(savedUser)
                 .application(savedApplication)
                 .build();
@@ -77,21 +77,21 @@ public class BranchRepositoryTest {
                 Branch.builder()
                         .name("Branch A")
                         .description("Main development branch")
-                        .createdAt(LocalDateTime.now())
+                        
                         .createdBy(savedUser)
                         .application(app1)
                         .build(),
                 Branch.builder()
                         .name("Branch B")
                         .description("Main development branch")
-                        .createdAt(LocalDateTime.now())
+                        
                         .createdBy(savedUser)
                         .application(app1)
                         .build(),
                 Branch.builder()
                         .name("main")
                         .description("Main development branch")
-                        .createdAt(LocalDateTime.now())
+                        
                         .createdBy(savedUser)
                         .application(app2)
                         .build())
@@ -126,7 +126,7 @@ public class BranchRepositoryTest {
         var branch = Branch.builder()
                 .name("main")
                 .description("Main development branch")
-                .createdAt(LocalDateTime.now())
+                
                 .createdBy(savedUser)
                 .application(savedApplication)
                 .build();

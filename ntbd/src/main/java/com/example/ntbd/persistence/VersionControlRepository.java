@@ -16,9 +16,9 @@ public interface VersionControlRepository extends JpaRepository<VersionControl, 
     SELECT vc
     FROM VersionControl vc
     WHERE vc.branch.id = :branchId
-    ORDER BY vc.timestamp DESC
+    ORDER BY vc.createdAt DESC
     """)
-    List<VersionControl> findVersionControlByBranchOrderByTimestamp(
+    List<VersionControl> findVersionControlByBranchOrderByCreatedAt(
             Branch.BranchId branchId,
             Pageable pageable
     );

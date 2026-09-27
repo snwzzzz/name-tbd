@@ -52,7 +52,7 @@ public class VersionControlRepositoryTest {
         var branch = Branch.builder()
                 .name("main")
                 .description("Main development branch")
-                .createdAt(LocalDateTime.now())
+                
                 .createdBy(savedUser)
                 .application(savedApplication)
                 .build();
@@ -63,7 +63,7 @@ public class VersionControlRepositoryTest {
                 .version(new Version("1.0.0"))
                 .branch(savedBranch)
                 .applicationDefinition("{}")
-                .timestamp(LocalDateTime.now())
+                
                 .modifiedBy(savedUser)
                 .build();
 
@@ -93,7 +93,7 @@ public class VersionControlRepositoryTest {
         var branch = Branch.builder()
                 .name("main")
                 .description("Main development branch")
-                .createdAt(LocalDateTime.now())
+                
                 .createdBy(savedUser)
                 .application(savedApplication)
                 .build();
@@ -104,7 +104,7 @@ public class VersionControlRepositoryTest {
                 .version(new Version("1.0.0"))
                 .branch(savedBranch)
                 .applicationDefinition("{}")
-                .timestamp(LocalDateTime.now())
+                
                 .modifiedBy(savedUser)
                 .build();
 
@@ -112,12 +112,12 @@ public class VersionControlRepositoryTest {
                 .version(new Version("1.2.0"))
                 .branch(savedBranch)
                 .applicationDefinition("{}")
-                .timestamp(LocalDateTime.now())
+                
                 .modifiedBy(savedUser)
                 .build();
 
         var savedVersionControl = versionControlRepository.saveAllAndFlush(List.of(versionControl1, versionControl2));
-        assertThat(versionControlRepository.findVersionControlByBranchOrderByTimestamp(savedBranch.getId(), Pageable.unpaged()).size()).isEqualTo(2);
+        assertThat(versionControlRepository.findVersionControlByBranchOrderByCreatedAt(savedBranch.getId(), Pageable.unpaged()).size()).isEqualTo(2);
     }
 
 }

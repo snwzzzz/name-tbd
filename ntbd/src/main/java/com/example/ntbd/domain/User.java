@@ -13,7 +13,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "\"user\"")
-public class User {
+public class User extends AuditableEntity {
 
     @EmbeddedId
     private UserId id;

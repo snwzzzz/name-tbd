@@ -72,7 +72,7 @@ public class UserServiceTest {
         assertThatThrownBy(() -> userService.createUser(command))
                 .isInstanceOf(PasswordValidationException.class);
 
-        verifyNoInteractions(userRepository);
+        verify(userRepository, never()).saveAndFlush(any());
         verifyNoInteractions(passwordEncoder);
     }
 

@@ -19,8 +19,8 @@ public class BranchMapperTest {
                 .id(new Branch.BranchId(10L))
                 .name("main")
                 .description("Main branch")
-                .createdAt(LocalDateTime.of(2026, 1, 1, 12, 0))
-                .lastModified(LocalDateTime.of(2026, 1, 2, 12, 0))
+                
+                
                 .latestVersion(new Version("1.0.0"))
                 .createdBy(user)
                 .application(application)
@@ -59,8 +59,8 @@ public class BranchMapperTest {
                 .id(null)
                 .name("no-relations")
                 .description("No relations set")
-                .createdAt(LocalDateTime.now())
-                .lastModified(null)
+                
+                
                 .latestVersion(null)
                 .createdBy(null)
                 .application(null)

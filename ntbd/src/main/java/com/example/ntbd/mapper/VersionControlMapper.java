@@ -14,7 +14,7 @@ public class VersionControlMapper {
                 versionControl.getId() != null ? versionControl.getId().id() : null,
                 versionControl.getVersion() != null ? versionControl.getVersion().value() : null,
                 BranchMapper.toDto(versionControl.getBranch()),
-                versionControl.getTimestamp(),
+                versionControl.getCreatedAt(),
                 versionControl.getApplicationDefinition(),
                 UserMapper.toDto(versionControl.getModifiedBy())
         );
@@ -23,14 +23,16 @@ public class VersionControlMapper {
     public static VersionControl toEntity(VersionControlDto versionControlDto) {
         if (versionControlDto == null) return null;
 
-        return VersionControl.builder()
+        VersionControl vc = VersionControl.builder()
                 .id(versionControlDto.id() != null ? new VersionControl.VersionControlId(versionControlDto.id()) : null)
                 .version(versionControlDto.version() != null ? new Version(versionControlDto.version()) : null)
                 .branch(BranchMapper.toEntity(versionControlDto.branch()))
-                .timestamp(versionControlDto.timestamp())
                 .applicationDefinition(versionControlDto.applicationDefinition())
                 .modifiedBy(UserMapper.toEntity(versionControlDto.modifiedBy()))
                 .build();
+        vc.setCreatedAt(versionControlDto.timestamp());
+        
+        return vc;
     }
 
 }

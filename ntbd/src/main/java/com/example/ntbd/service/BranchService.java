@@ -45,8 +45,6 @@ public class BranchService {
                 .createdBy(user)
                 .name(command.name())
                 .description(command.description())
-                .createdAt(LocalDateTime.now())
-                .lastModified(LocalDateTime.now())
                 .build();
 
         return BranchMapper.toDto(branchRepository.saveAndFlush(branch));

@@ -15,7 +15,7 @@ public class BranchMapper {
                 branch.getDescription(),
                 branch.getCreatedAt(),
                 branch.getLastModified(),
-                branch.getLatestVersion().value(),
+                branch.getLatestVersion() != null ? branch.getLatestVersion().value() : null,
                 UserMapper.toDto(branch.getCreatedBy()),
                 ApplicationMapper.toDto(branch.getApplication())
         );
@@ -24,16 +24,17 @@ public class BranchMapper {
     public static Branch toEntity(BranchDto branchDto) {
         if (branchDto == null) return null;
 
-        return Branch.builder()
+        Branch branch = Branch.builder()
                 .id(branchDto.id() != null ? new Branch.BranchId(branchDto.id()) : null)
                 .name(branchDto.name())
                 .description(branchDto.description())
-                .createdAt(branchDto.createdAt())
-                .lastModified(branchDto.lastModified())
-                .latestVersion(new Version(branchDto.latestVersion()))
+                .latestVersion(branchDto.latestVersion() != null ? new Version(branchDto.latestVersion()) : null)
                 .createdBy(UserMapper.toEntity(branchDto.createdBy()))
                 .application(ApplicationMapper.toEntity(branchDto.application()))
                 .build();
+        branch.setCreatedAt(branchDto.createdAt());
+        branch.setLastModified(branchDto.lastModified());
+        return branch;
     }
 
 }

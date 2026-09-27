@@ -44,16 +44,14 @@ public class VersionControlService {
         VersionControl versionControl = VersionControl.builder()
                 .branch(branch)
                 .modifiedBy(user)
-                .timestamp(LocalDateTime.now())
                 .applicationDefinition(command.applicationDefinition())
                 .version(new Version(command.version()))
                 .build();
 
         VersionControl savedVersion = versionControlRepository.save(versionControl);
 
-        // 4. Update the branch pointer and timestamp within the same transaction
+        // 5. Update the branch pointer and timestamp within the same transaction
         branch.setLatestVersion(versionControl.getVersion());
-        branch.setLastModified(LocalDateTime.now());
         branchRepository.save(branch);
 
         return VersionControlMapper.toDto(savedVersion);
@@ -61,7 +59,7 @@ public class VersionControlService {
 
     @Transactional
     public List<VersionControlDto> findByBranchId(Long branchId) {
-        return versionControlRepository.findVersionControlByBranchOrderByTimestamp(new Branch.BranchId(branchId), Pageable.unpaged())
+        return versionControlRepository.findVersionControlByBranchOrderByCreatedAt(new Branch.BranchId(branchId), Pageable.unpaged())
                 .stream()
                 .map(VersionControlMapper::toDto)
                 .toList();
@@ -71,7 +69,7 @@ public class VersionControlService {
     @Transactional
     public Optional<VersionControlDto> findLatestByBranchId(Long branchId) {
         return versionControlRepository
-                .findVersionControlByBranchOrderByTimestamp(
+                .findVersionControlByBranchOrderByCreatedAt(
                         new Branch.BranchId(branchId),
                         PageRequest.of(0, 1)
                 )

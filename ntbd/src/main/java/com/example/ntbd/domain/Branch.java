@@ -15,7 +15,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "\"branch\"")
-public class Branch {
+public class Branch extends AuditableEntity {
 
     @EmbeddedId
     private BranchId id;
@@ -26,18 +26,15 @@ public class Branch {
     @Column(nullable = false)
     private String description;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    private LocalDateTime lastModified;
-
     @Convert(converter = VersionConverter.class)
     private Version latestVersion;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "created_by_id", nullable = false)
     private User createdBy;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "application_id", nullable = false)
     private Application application;
 
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "branch")

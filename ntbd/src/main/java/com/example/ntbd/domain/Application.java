@@ -13,7 +13,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "\"application\"")
-public class Application {
+public class Application extends AuditableEntity {
 
     @EmbeddedId
     private ApplicationId id;

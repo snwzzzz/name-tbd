@@ -20,7 +20,7 @@ public class VersionControlMapperTest {
                 .id(new Branch.BranchId(5L))
                 .name("main")
                 .description("Main branch")
-                .createdAt(LocalDateTime.of(2026, 1, 1, 12, 0))
+                
                 .createdBy(branchCreator)
                 .application(application)
                 .build();
@@ -29,7 +29,7 @@ public class VersionControlMapperTest {
                 .id(new VersionControl.VersionControlId(100L))
                 .version(new Version("1.0.0"))
                 .branch(branch)
-                .timestamp(LocalDateTime.of(2026, 1, 1, 12, 0))
+                
                 .applicationDefinition("{}")
                 .modifiedBy(user)
                 .build();
@@ -41,7 +41,7 @@ public class VersionControlMapperTest {
         assertNotNull(dto.branch());
         assertEquals(branch.getId().id(), dto.branch().id());
         assertEquals(branch.getName(), dto.branch().name());
-        assertEquals(versionControl.getTimestamp(), dto.timestamp());
+        assertEquals(versionControl.getCreatedAt(), dto.timestamp());
         assertEquals(versionControl.getApplicationDefinition(), dto.applicationDefinition());
         assertNotNull(dto.modifiedBy());
         assertEquals(user.getId().id(), dto.modifiedBy().id());
@@ -52,7 +52,7 @@ public class VersionControlMapperTest {
         assertEquals(dto.version(), mapped.getVersion().value());
         assertNotNull(mapped.getBranch());
         assertEquals(dto.branch().name(), mapped.getBranch().getName());
-        assertEquals(dto.timestamp(), mapped.getTimestamp());
+        assertEquals(dto.timestamp(), mapped.getCreatedAt());
         assertEquals(dto.applicationDefinition(), mapped.getApplicationDefinition());
         assertNotNull(mapped.getModifiedBy());
         assertEquals(dto.modifiedBy().id(), mapped.getModifiedBy().getId().id());
@@ -64,14 +64,14 @@ public class VersionControlMapperTest {
                 .id(new Branch.BranchId(7L))
                 .name("dev")
                 .description("Dev branch")
-                .createdAt(LocalDateTime.now())
+                
                 .build();
 
         VersionControl versionControl = VersionControl.builder()
                 .id(null)
                 .version(new Version("2.0.0"))
                 .branch(branch)
-                .timestamp(LocalDateTime.now())
+                
                 .applicationDefinition("{}")
                 .modifiedBy(null)
                 .build();

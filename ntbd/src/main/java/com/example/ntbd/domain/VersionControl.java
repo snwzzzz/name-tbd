@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "\"version_control\"",
         uniqueConstraints = @UniqueConstraint(columnNames = {"version", "branch_id"}))
-public class VersionControl {
+public class VersionControl extends AuditableEntity {
 
     @EmbeddedId
     private VersionControlId id;
@@ -30,13 +30,12 @@ public class VersionControl {
     @JoinColumn(name = "branch_id", nullable = false)
     private Branch branch;
 
-    @Column(nullable = false)
-    private LocalDateTime timestamp;
-
-    @Column(nullable = false)
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(nullable = false, columnDefinition = "json")
     private String applicationDefinition;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "modified_by_id", nullable = false)
     private User modifiedBy;
 
     @Embeddable
