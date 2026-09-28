@@ -16,12 +16,12 @@ export interface LayoutItem {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class LayoutStateService {
   private uiService = inject(UiComponentControllerService);
   private pageService = inject(PageControllerService);
-  
+
   private layouts = signal<Record<string, LayoutItem[]>>({});
 
   loadLayoutForTab(pageId: string) {
@@ -38,11 +38,11 @@ export class LayoutStateService {
           y: dto.y || 0,
           w: dto.w || 100,
           h: dto.h || 40,
-          props: dto.props || {}
+          props: dto.props || {},
         }));
-        this.layouts.update(l => ({ ...l, [pageId]: layout }));
+        this.layouts.update((l) => ({ ...l, [pageId]: layout }));
       }),
-      map(() => this.layouts()[pageId])
+      map(() => this.layouts()[pageId]),
     );
   }
 
@@ -51,18 +51,18 @@ export class LayoutStateService {
   }
 
   saveLayout(pageId: string, layout: LayoutItem[]): void {
-    this.layouts.update(l => ({ ...l, [pageId]: layout }));
+    this.layouts.update((l) => ({ ...l, [pageId]: layout }));
   }
 
   updateComponent(pageId: string, item: LayoutItem): Observable<any> {
     if (item.id.startsWith('new-') || item.id.startsWith('item-')) return of(null);
-    
+
     return this.uiService.updateComponent(Number(item.id), {
       x: item.x,
       y: item.y,
       w: item.w,
       h: item.h,
-      props: item.props || {}
+      props: item.props || {},
     });
   }
 
@@ -74,7 +74,7 @@ export class LayoutStateService {
       y: item.y,
       w: item.w,
       h: item.h,
-      props: item.props || {}
+      props: item.props || {},
     });
   }
 }

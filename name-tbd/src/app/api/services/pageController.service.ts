@@ -25,9 +25,9 @@ export class PageControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    getPages(observe?: 'body', options?: RequestOptions<'blob'>): Observable<Array<PageDto>>;
-    getPages(observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<Array<PageDto>>>;
-    getPages(observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<Array<PageDto>>>;
+    getPages(observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<PageDto>>;
+    getPages(observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<PageDto>>>;
+    getPages(observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<PageDto>>>;
     getPages(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/pages`;
 
@@ -39,13 +39,12 @@ export class PageControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
@@ -84,9 +83,9 @@ export class PageControllerService {
         });
     }
 
-    getPage(id: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<PageDto>;
-    getPage(id: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<PageDto>>;
-    getPage(id: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<PageDto>>;
+    getPage(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<PageDto>;
+    getPage(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<PageDto>>;
+    getPage(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<PageDto>>;
     getPage(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/pages/${id}`;
 
@@ -98,22 +97,21 @@ export class PageControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
         });
     }
 
-    getComponents1(id: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<Array<UiComponentDto>>;
-    getComponents1(id: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<Array<UiComponentDto>>>;
-    getComponents1(id: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<Array<UiComponentDto>>>;
+    getComponents1(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<UiComponentDto>>;
+    getComponents1(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<UiComponentDto>>>;
+    getComponents1(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<UiComponentDto>>>;
     getComponents1(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/pages/${id}/ui-components`;
 
@@ -125,13 +123,12 @@ export class PageControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

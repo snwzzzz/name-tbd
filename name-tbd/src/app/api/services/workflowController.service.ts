@@ -25,9 +25,9 @@ export class WorkflowControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    getNode(workflowId: number, nodeId: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<NodeDto>;
-    getNode(workflowId: number, nodeId: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<NodeDto>>;
-    getNode(workflowId: number, nodeId: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<NodeDto>>;
+    getNode(workflowId: number, nodeId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<NodeDto>;
+    getNode(workflowId: number, nodeId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<NodeDto>>;
+    getNode(workflowId: number, nodeId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<NodeDto>>;
     getNode(workflowId: number, nodeId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/workflows/${workflowId}/nodes/${nodeId}`;
 
@@ -39,13 +39,12 @@ export class WorkflowControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
@@ -106,9 +105,9 @@ export class WorkflowControllerService {
         });
     }
 
-    getWorkflowsByBranch(branchId: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<Array<WorkflowDto>>;
-    getWorkflowsByBranch(branchId: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<Array<WorkflowDto>>>;
-    getWorkflowsByBranch(branchId: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<Array<WorkflowDto>>>;
+    getWorkflowsByBranch(branchId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<WorkflowDto>>;
+    getWorkflowsByBranch(branchId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<WorkflowDto>>>;
+    getWorkflowsByBranch(branchId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<WorkflowDto>>>;
     getWorkflowsByBranch(branchId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/workflows`;
 
@@ -125,14 +124,13 @@ export class WorkflowControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
             params,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
@@ -171,9 +169,9 @@ export class WorkflowControllerService {
         });
     }
 
-    getNodes(workflowId: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<Array<NodeDto>>;
-    getNodes(workflowId: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<Array<NodeDto>>>;
-    getNodes(workflowId: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<Array<NodeDto>>>;
+    getNodes(workflowId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<NodeDto>>;
+    getNodes(workflowId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<NodeDto>>>;
+    getNodes(workflowId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<NodeDto>>>;
     getNodes(workflowId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/workflows/${workflowId}/nodes`;
 
@@ -185,22 +183,21 @@ export class WorkflowControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
         });
     }
 
-    createNode(workflowId: number, newNodeCommand: NewNodeCommand, observe?: 'body', options?: RequestOptions<'blob'>): Observable<NodeDto>;
-    createNode(workflowId: number, newNodeCommand: NewNodeCommand, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<NodeDto>>;
-    createNode(workflowId: number, newNodeCommand: NewNodeCommand, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<NodeDto>>;
+    createNode(workflowId: number, newNodeCommand: NewNodeCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<NodeDto>;
+    createNode(workflowId: number, newNodeCommand: NewNodeCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<NodeDto>>;
+    createNode(workflowId: number, newNodeCommand: NewNodeCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<NodeDto>>;
     createNode(workflowId: number, newNodeCommand: NewNodeCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/workflows/${workflowId}/nodes`;
 
@@ -212,7 +209,7 @@ export class WorkflowControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
         // Set Content-Type for JSON requests if not already set
         if (!headers.has('Content-Type')) {
@@ -223,16 +220,15 @@ export class WorkflowControllerService {
             body: newNodeCommand,
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
         });
     }
 
-    createEdge(workflowId: number, newEdgeCommand: NewEdgeCommand, observe?: 'body', options?: RequestOptions<'blob'>): Observable<EdgeDto>;
-    createEdge(workflowId: number, newEdgeCommand: NewEdgeCommand, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<EdgeDto>>;
-    createEdge(workflowId: number, newEdgeCommand: NewEdgeCommand, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<EdgeDto>>;
+    createEdge(workflowId: number, newEdgeCommand: NewEdgeCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<EdgeDto>;
+    createEdge(workflowId: number, newEdgeCommand: NewEdgeCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<EdgeDto>>;
+    createEdge(workflowId: number, newEdgeCommand: NewEdgeCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<EdgeDto>>;
     createEdge(workflowId: number, newEdgeCommand: NewEdgeCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/workflows/${workflowId}/edges`;
 
@@ -244,7 +240,7 @@ export class WorkflowControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
         // Set Content-Type for JSON requests if not already set
         if (!headers.has('Content-Type')) {
@@ -255,7 +251,6 @@ export class WorkflowControllerService {
             body: newEdgeCommand,
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
@@ -289,9 +284,9 @@ export class WorkflowControllerService {
         });
     }
 
-    getEdge(workflowId: number, edgeId: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<EdgeDto>;
-    getEdge(workflowId: number, edgeId: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<EdgeDto>>;
-    getEdge(workflowId: number, edgeId: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<EdgeDto>>;
+    getEdge(workflowId: number, edgeId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<EdgeDto>;
+    getEdge(workflowId: number, edgeId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<EdgeDto>>;
+    getEdge(workflowId: number, edgeId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<EdgeDto>>;
     getEdge(workflowId: number, edgeId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/workflows/${workflowId}/edges/${edgeId}`;
 
@@ -303,13 +298,12 @@ export class WorkflowControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
@@ -338,9 +332,9 @@ export class WorkflowControllerService {
         });
     }
 
-    getWorkflow(id: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<WorkflowDto>;
-    getWorkflow(id: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<WorkflowDto>>;
-    getWorkflow(id: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<WorkflowDto>>;
+    getWorkflow(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<WorkflowDto>;
+    getWorkflow(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<WorkflowDto>>;
+    getWorkflow(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<WorkflowDto>>;
     getWorkflow(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/workflows/${id}`;
 
@@ -352,13 +346,12 @@ export class WorkflowControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
