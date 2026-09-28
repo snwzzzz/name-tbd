@@ -104,7 +104,17 @@ export class Welcome implements OnInit {
         path,
       })
       .subscribe((page) => {
-        this.openPage(page.id!);
+        let parsed = page as any;
+        if (page instanceof Blob) {
+          page.text().then(text => {
+            parsed = JSON.parse(text);
+            this.pages.update(pages => [...pages, parsed]);
+            this.openPage(parsed.id!, parsed.name);
+          });
+        } else {
+          this.pages.update(pages => [...pages, parsed]);
+          this.openPage(parsed.id!, parsed.name);
+        }
       });
   }
 
@@ -116,11 +126,22 @@ export class Welcome implements OnInit {
         status: 'DRAFT',
       })
       .subscribe((wf) => {
-        this.openWorkflow(wf.id!);
+        
+        let parsed = wf as any;
+        if (wf instanceof Blob) {
+          wf.text().then(text => {
+            parsed = JSON.parse(text);
+            this.workflows.update(wfs => [...wfs, parsed]);
+            this.openWorkflow(parsed.id!, parsed.name);
+          });
+        } else {
+          this.workflows.update(wfs => [...wfs, parsed]);
+          this.openWorkflow(parsed.id!, parsed.name);
+        }
       });
   }
 
-  openPage(id: number) {
+  openPage(id: number, pageName?: string) {
     const tabId = this.tabsService.activeTabId();
     const existingTab = this.tabsService.tabs().find((t) => t.id === id.toString());
 
@@ -129,15 +150,15 @@ export class Welcome implements OnInit {
         this.tabsService.closeTab(tabId);
       }
       this.router.navigate(['/editor', id.toString(), 'edit']);
-    } else if (tabId) {
+    } else {
       const page = this.pages().find((p) => p.id === id);
-      const title = page ? page.name : `Page ${id}`;
-      this.tabsService.updateTabState(tabId, { id: id.toString(), title, mode: 'edit' });
+      const title = pageName || (page ? page.name : `Page ${id}`);
+      if (tabId) this.tabsService.updateTabState(tabId, { id: id.toString(), title, mode: 'edit' });
       this.router.navigate(['/editor', id.toString(), 'edit']);
     }
   }
 
-  openWorkflow(id: number) {
+  openWorkflow(id: number, wfName?: string) {
     const tabId = this.tabsService.activeTabId();
     const existingTab = this.tabsService.tabs().find((t) => t.id === id.toString());
 
@@ -146,10 +167,10 @@ export class Welcome implements OnInit {
         this.tabsService.closeTab(tabId);
       }
       this.router.navigate(['/editor', id.toString(), 'workflow']);
-    } else if (tabId) {
+    } else {
       const wf = this.workflows().find((w) => w.id === id);
-      const title = wf ? wf.name : `Workflow ${id}`;
-      this.tabsService.updateTabState(tabId, { id: id.toString(), title, mode: 'workflow' });
+      const title = wfName || (wf ? wf.name : `Workflow ${id}`);
+      if (tabId) if (tabId) this.tabsService.updateTabState(tabId, { id: id.toString(), title, mode: 'workflow' });
       this.router.navigate(['/editor', id.toString(), 'workflow']);
     }
   }
