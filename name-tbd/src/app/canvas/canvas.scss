@@ -99,7 +99,9 @@ $ah: 50.625rem;
   &.is-panning {
     cursor: grab;
 
-    &:active { cursor: grabbing; }
+    &:active {
+      cursor: grabbing;
+    }
   }
 }
 
@@ -107,11 +109,11 @@ $ah: 50.625rem;
 .artboard {
   // Centered in viewport via negative margin (half of artboard size)
   position: absolute;
-  top:  50%;
+  top: 50%;
   left: 50%;
-  margin-left: math.div(-$aw, 2);   // -45rem
-  margin-top:  math.div(-$ah, 2);   // -25.3125rem
-  width:  $aw;
+  margin-left: math.div(-$aw, 2); // -45rem
+  margin-top: math.div(-$ah, 2); // -25.3125rem
+  width: $aw;
   height: $ah;
 
   // Pan happens via transform (set by [style.transform] binding)
@@ -157,7 +159,9 @@ $ah: 50.625rem;
     background: hsl(220 85% 96%);
     border: 0.0938rem solid hsl(220 60% 75%);
     border-radius: 0.1875rem;
-    transition: background 0.15s, border-color 0.15s;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
 
     &:hover {
       background: hsl(220 85% 93%);
@@ -190,7 +194,7 @@ $ah: 50.625rem;
       border-color: hsl(340 55% 72%);
     }
   }
-  
+
   &.container-widget {
     background: rgba(0, 0, 0, 0.03); // light gray for testing
     inset: 0 !important; // override GridStack margin so it acts as a flush structural wrapper
@@ -265,17 +269,17 @@ $ah: 50.625rem;
   z-index: 10000;
   background: white;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 4px 0;
   min-width: 160px;
   border: 1px solid #e2e8f0;
-  
+
   .menu-item {
     padding: 8px 16px;
     font-size: 13px;
     cursor: pointer;
     color: #334155;
-    
+
     &:hover {
       background: #f1f5f9;
     }
@@ -306,7 +310,8 @@ $ah: 50.625rem;
     font-weight: 600;
   }
 
-  input, select {
+  input,
+  select {
     padding: 6px;
     border: 1px solid #cbd5e1;
     border-radius: 4px;
@@ -325,7 +330,7 @@ $ah: 50.625rem;
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
-    
+
     &:hover {
       background: hsl(220 60% 50%);
     }
@@ -347,8 +352,10 @@ $ah: 50.625rem;
   cursor: pointer;
   z-index: 100;
   opacity: 0;
-  transition: opacity 0.2s, background 0.2s;
-  
+  transition:
+    opacity 0.2s,
+    background 0.2s;
+
   &:hover {
     background: rgba(220, 38, 38, 0.9); /* red */
   }
@@ -356,4 +363,8 @@ $ah: 50.625rem;
 
 ::ng-deep .grid-stack-item:hover > .widget-remove-btn {
   opacity: 1;
+}
+
+::ng-deep .grid-stack-item.selected > .grid-stack-item-content {
+  outline: 3px solid #ffa200; /* Tailwind amber-500 */
 }

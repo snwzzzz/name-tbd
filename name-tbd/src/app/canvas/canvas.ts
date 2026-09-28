@@ -77,10 +77,29 @@ export class Canvas implements AfterViewInit, OnDestroy {
 
   readonly contextMenuState = signal<{ x: number, y: number, item: any } | null>(null);
 
-  @HostListener('document:click')
+  @HostListener('document:pointerdown', ['$event'])
   @HostListener('document:contextmenu')
-  closeContextMenu() {
+  onDocumentInteraction(e?: MouseEvent) {
+    if (e && e.type === 'contextmenu') {
+      this.contextMenuState.set(null);
+      return;
+    }
     this.contextMenuState.set(null);
+    if (e && e.type === 'pointerdown') {
+      const target = e.target as HTMLElement;
+      // Find closest grid-stack-item
+      const item = target ? target.closest('.grid-stack-item') : null;
+      
+      // Remove selected from all others
+      document.querySelectorAll('.grid-stack-item.selected').forEach(el => {
+        if (el !== item) el.classList.remove('selected');
+      });
+      
+      // Add selected to current
+      if (item) {
+        item.classList.add('selected');
+      }
+    }
   }
 
   /** CSS transform applied to the artboard element for panning only. */
@@ -196,9 +215,9 @@ export class Canvas implements AfterViewInit, OnDestroy {
         const tag = (document.activeElement as HTMLElement)?.tagName ?? '';
         if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;
         
-        const hoveredItems = document.querySelectorAll('.grid-stack-item:hover');
-        if (hoveredItems.length > 0) {
-          const deepest = hoveredItems[hoveredItems.length - 1];
+        const selectedItems = document.querySelectorAll('.grid-stack-item.selected');
+        if (selectedItems.length > 0) {
+          const deepest = selectedItems[selectedItems.length - 1];
           const node = (deepest as any).gridstackNode;
           if (node && node.grid) {
              node.grid.removeWidget(deepest as HTMLElement, true, true);
