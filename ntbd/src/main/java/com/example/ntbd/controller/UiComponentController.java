@@ -31,4 +31,11 @@ public class UiComponentController {
     public ResponseEntity<UiComponentDto> getComponent(@PathVariable Long id) {
         return ResponseEntity.ok(uiComponentService.findById(id));
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UiComponentDto> updateComponent(
+            @PathVariable Long id,
+            @RequestBody com.example.ntbd.commands.UpdateUiComponentCommand command) {
+        return ResponseEntity.ok(uiComponentService.updateComponent(id, command));
+    }
 }

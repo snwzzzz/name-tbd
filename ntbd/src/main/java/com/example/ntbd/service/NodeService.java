@@ -58,6 +58,25 @@ public class NodeService {
     }
 
     @Transactional
+    public NodeDto updateNode(Long id, com.example.ntbd.commands.UpdateNodeCommand command) {
+        Node node = nodeRepository.findById(new Node.NodeId(id))
+                .orElseThrow(() -> new NodeNotFoundException(id));
+        
+        if (command.props() != null) {
+            node.setProps(command.props());
+            nodeConfigValidator.validate(node);
+        }
+        if (command.x() != null) {
+            node.setX(command.x());
+        }
+        if (command.y() != null) {
+            node.setY(command.y());
+        }
+        
+        return NodeMapper.toDto(nodeRepository.saveAndFlush(node));
+    }
+
+    @Transactional
     public void deleteNode(Long id) {
         if (!nodeRepository.existsById(new Node.NodeId(id))) {
             throw new NodeNotFoundException(id);

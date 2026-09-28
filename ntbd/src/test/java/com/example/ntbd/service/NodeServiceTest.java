@@ -193,4 +193,30 @@ public class NodeServiceTest {
 
         verify(nodeRepository, never()).deleteById(any());
     }
+    
+    // ---- updateNode ----
+    
+    @Test
+    void updateNode_updates_fields_and_validates() {
+        var node = Node.builder()
+                .id(new Node.NodeId(1L))
+                .type("CONDITION")
+                .x(10.0).y(20.0)
+                .build();
+                
+        when(nodeRepository.findById(new Node.NodeId(1L))).thenReturn(Optional.of(node));
+        when(nodeRepository.saveAndFlush(any())).thenReturn(node);
+        
+        var props = Map.<String, Object>of("field", "status", "operator", "eq", "value", "active");
+        var command = new com.example.ntbd.commands.UpdateNodeCommand(props, 50.0, 60.0);
+        
+        nodeService.updateNode(1L, command);
+        
+        verify(nodeConfigValidator).validate(node);
+        verify(nodeRepository).saveAndFlush(node);
+        
+        assertThat(node.getX()).isEqualTo(50.0);
+        assertThat(node.getY()).isEqualTo(60.0);
+        assertThat(node.getProps()).isEqualTo(props);
+    }
 }

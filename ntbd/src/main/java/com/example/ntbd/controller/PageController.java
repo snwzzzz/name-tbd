@@ -16,6 +16,7 @@ import java.util.List;
 public class PageController {
 
     private final PageService pageService;
+    private final com.example.ntbd.service.UiComponentService uiComponentService;
 
     @PostMapping
     public ResponseEntity<PageDto> createPage(@RequestBody NewPageCommand command) {
@@ -30,5 +31,10 @@ public class PageController {
     @GetMapping("/{id}")
     public ResponseEntity<PageDto> getPage(@PathVariable Long id) {
         return ResponseEntity.ok(pageService.findById(id));
+    }
+
+    @GetMapping("/{id}/ui-components")
+    public ResponseEntity<List<com.example.ntbd.dto.UiComponentDto>> getComponents(@PathVariable Long id) {
+        return ResponseEntity.ok(uiComponentService.findByPageId(id));
     }
 }

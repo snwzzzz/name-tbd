@@ -80,6 +80,14 @@ public class WorkflowController {
         return ResponseEntity.ok(nodeService.findById(nodeId));
     }
 
+    @PutMapping("/{workflowId}/nodes/{nodeId}")
+    public ResponseEntity<NodeDto> updateNode(
+            @PathVariable Long workflowId,
+            @PathVariable Long nodeId,
+            @RequestBody com.example.ntbd.commands.UpdateNodeCommand command) {
+        return ResponseEntity.ok(nodeService.updateNode(nodeId, command));
+    }
+
     @DeleteMapping("/{workflowId}/nodes/{nodeId}")
     public ResponseEntity<Void> deleteNode(@PathVariable Long workflowId, @PathVariable Long nodeId) {
         nodeService.deleteNode(nodeId);

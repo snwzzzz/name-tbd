@@ -62,4 +62,35 @@ class UiComponentServiceTest {
         when(uiComponentRepository.findById(new UiComponent.UiComponentId(1L))).thenReturn(Optional.empty());
         assertThrows(UiComponentNotFoundException.class, () -> uiComponentService.findById(1L));
     }
+
+    @Test
+    void updateComponent() {
+        UiComponent component = UiComponent.builder()
+                .id(new UiComponent.UiComponentId(1L))
+                .type("Button")
+                .x(10.0).y(20.0).w(100.0).h(50.0)
+                .build();
+        
+        when(uiComponentRepository.findById(new UiComponent.UiComponentId(1L))).thenReturn(Optional.of(component));
+        when(uiComponentRepository.saveAndFlush(any(UiComponent.class))).thenReturn(component);
+
+        var command = new com.example.ntbd.commands.UpdateUiComponentCommand(null, 15.0, 25.0, null, null);
+        UiComponentDto result = uiComponentService.updateComponent(1L, command);
+
+        assertNotNull(result);
+        assertEquals(15.0, component.getX());
+        assertEquals(25.0, component.getY());
+        assertEquals(100.0, component.getW());
+        verify(uiComponentRepository).saveAndFlush(component);
+    }
+
+    @Test
+    void findByPageId() {
+        UiComponent component = UiComponent.builder().type("Button").id(new UiComponent.UiComponentId(1L)).build();
+        when(uiComponentRepository.findByPage_Id(new Page.PageId(1L))).thenReturn(java.util.List.of(component));
+        
+        java.util.List<UiComponentDto> results = uiComponentService.findByPageId(1L);
+        assertEquals(1, results.size());
+        assertEquals("Button", results.get(0).type());
+    }
 }

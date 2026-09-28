@@ -70,4 +70,34 @@ public class UiComponentService {
                 .map(UiComponentMapper::toDto)
                 .orElseThrow(() -> new UiComponentNotFoundException("UI Component not found with id " + id));
     }
+    @Transactional
+    public List<UiComponentDto> findByPageId(Long pageId) {
+        return uiComponentRepository.findByPage_Id(new Page.PageId(pageId)).stream()
+                .map(UiComponentMapper::toDto)
+                .toList();
+    }
+
+    @Transactional
+    public UiComponentDto updateComponent(Long id, com.example.ntbd.commands.UpdateUiComponentCommand command) {
+        UiComponent component = uiComponentRepository.findById(new UiComponent.UiComponentId(id))
+                .orElseThrow(() -> new UiComponentNotFoundException("UI Component not found with id " + id));
+
+        if (command.props() != null) {
+            component.setProps(command.props());
+        }
+        if (command.x() != null) {
+            component.setX(command.x());
+        }
+        if (command.y() != null) {
+            component.setY(command.y());
+        }
+        if (command.w() != null) {
+            component.setW(command.w());
+        }
+        if (command.h() != null) {
+            component.setH(command.h());
+        }
+        
+        return UiComponentMapper.toDto(uiComponentRepository.saveAndFlush(component));
+    }
 }

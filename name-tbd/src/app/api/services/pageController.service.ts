@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestOptions, PageDto, NewPageCommand } from "../models";
+import { RequestOptions, PageDto, NewPageCommand, UiComponentDto } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class PageControllerService {
@@ -89,6 +89,33 @@ export class PageControllerService {
     getPage(id: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<PageDto>>;
     getPage(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/pages/${id}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', '*/*');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            responseType: 'blob',
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    getComponents1(id: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<Array<UiComponentDto>>;
+    getComponents1(id: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<Array<UiComponentDto>>>;
+    getComponents1(id: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<Array<UiComponentDto>>>;
+    getComponents1(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/pages/${id}/ui-components`;
 
         let headers: HttpHeaders;
         if (options?.headers instanceof HttpHeaders) {
