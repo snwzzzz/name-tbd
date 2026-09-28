@@ -1,4 +1,5 @@
 // GridStack core styles — required for grid lines, drag placeholder, and item positioning.
+
 @import 'gridstack/dist/gridstack.min.css';
 
 // =====================================================
@@ -9,6 +10,32 @@
   // Brand
   --color-primary: #2f89ff;
   --color-primary-light: #dbebff;
+  --color-primary-dark: #1769d1;
+
+  --color-secondary: #6b7280;
+  --color-secondary-light: #e5e7eb;
+  --color-secondary-dark: #374151;
+
+  // Semantic
+  --color-neutral: #9ca3af;
+  --color-neutral-light: #f3f4f6;
+  --color-neutral-dark: #4b5563;
+
+  --color-success: #22c55e;
+  --color-success-light: #dcfce7;
+  --color-success-dark: #15803d;
+
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --color-warning-dark: #b45309;
+
+  --color-danger: #ef4444;
+  --color-danger-light: #fee2e2;
+  --color-danger-dark: #b91c1c;
+
+  --color-info: #3b82f6;
+  --color-info-light: #dbeafe;
+  --color-info-dark: #1d4ed8;
 
   // Backgrounds
   --color-bg: #ffffff;
@@ -38,6 +65,32 @@
   // Brand
   --color-primary: #2f89ff;
   --color-primary-light: #17365f;
+  --color-primary-dark: #75b1ff;
+
+  --color-secondary: #9ca3af;
+  --color-secondary-light: #2d2d2d;
+  --color-secondary-dark: #d1d5db;
+
+  // Semantic
+  --color-neutral: #6b7280;
+  --color-neutral-light: #262626;
+  --color-neutral-dark: #a3a3a3;
+
+  --color-success: #22c55e;
+  --color-success-light: #123b24;
+  --color-success-dark: #4ade80;
+
+  --color-warning: #f59e0b;
+  --color-warning-light: #3d2d0b;
+  --color-warning-dark: #fbbf24;
+
+  --color-danger: #ef4444;
+  --color-danger-light: #401b1b;
+  --color-danger-dark: #f87171;
+
+  --color-info: #3b82f6;
+  --color-info-light: #172e52;
+  --color-info-dark: #60a5fa;
 
   // Backgrounds
   --color-bg: #181818;
@@ -59,7 +112,10 @@
   --color-text-disabled: #707070;
 }
 
-// Global reset
+// =====================================================
+// GLOBAL RESET
+// =====================================================
+
 *,
 *::before,
 *::after {
@@ -84,9 +140,10 @@ body {
 // =====================================================
 // DRAG GHOST STYLES (GridStack)
 // =====================================================
+
 .gs-drag-item.ui-draggable-dragging {
   // Fix the width so it looks like a card while dragging
-  width: 14rem; 
+  width: 14rem;
   cursor: grabbing !important;
   z-index: 9999;
   list-style: none;
@@ -96,8 +153,8 @@ body {
     align-items: center;
     gap: 0.5rem;
     padding: 0.5625rem 0.75rem;
-    background: #f0f5ff;
-    border: 1px solid #aac4f7;
+    background: var(--color-primary-light);
+    border: 1px solid var(--color-primary);
     border-radius: 0.375rem;
     box-shadow: 0 0.25rem 0.75rem rgba(26, 86, 219, 0.2);
     font-family: 'Inter', system-ui, sans-serif;
