@@ -55,6 +55,19 @@
   --color-text-primary: #1f1f1f;
   --color-text-secondary: #666666;
   --color-text-disabled: #999999;
+
+  // =====================================================
+  // TYPOGRAPHY TOKENS
+  // =====================================================
+  --font-size-2xs: 0.6875rem; // 11px
+  --font-size-xs:  0.75rem;   // 12px
+  --font-size-sm:  0.875rem;  // 14px
+  --font-size-base: 1rem;     // 16px (Standard text)
+  --font-size-md:  1.125rem;  // 18px
+  --font-size-lg:  1.25rem;   // 20px
+  --font-size-xl:  1.5rem;    // 24px
+  --font-size-2xl: 1.75rem;   // 28px
+  --font-size-3xl: 2rem;      // 32px
 }
 
 // =====================================================
@@ -133,6 +146,8 @@ body {
     -apple-system,
     sans-serif;
   font-weight: 500;
+  font-size: var(--font-size-base);
+  line-height: 1.5;
   background-color: var(--color-bg-canvas);
   color: var(--color-text-primary);
 }
@@ -178,5 +193,74 @@ body {
       flex: 1;
       color: var(--color-primary);
     }
+  }
+}
+
+// =====================================================
+// CDK OVERLAY & MODAL STYLES
+// =====================================================
+@import '@angular/cdk/overlay-prebuilt.css';
+
+// Body scroll lock
+body.modal-open-scroll-locked {
+  overflow: hidden !important;
+}
+
+// Modal Backdrop with smooth fade transition
+.app-modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.6);
+  opacity: 1;
+  transition: opacity 0.15s ease-out;
+
+  &.app-modal-backdrop-exit {
+    opacity: 0;
+  }
+}
+
+// Modal Panel Container & Animations
+.app-modal-panel {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  outline: none;
+  animation: modal-enter 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  &.app-modal-exit {
+    animation: modal-exit 0.15s ease-in forwards;
+  }
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-modal-backdrop,
+  .app-modal-panel {
+    transition: none !important;
+    animation: none !important;
   }
 }

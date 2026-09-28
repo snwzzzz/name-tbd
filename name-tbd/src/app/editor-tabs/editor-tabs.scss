@@ -41,14 +41,14 @@
     overflow: hidden;
 
     .title {
-      font-size: 0.875rem;
+      font-size: var(--font-size-base);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .mode {
-      font-size: 0.7rem;
+      font-size: var(--font-size-2xs);
       color: var(--color-text-secondary);
       white-space: nowrap;
       overflow: hidden;

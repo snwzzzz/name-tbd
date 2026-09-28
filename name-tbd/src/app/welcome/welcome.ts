@@ -1,17 +1,24 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
 import { PageControllerService } from '../api/services/pageController.service';
 import { WorkflowControllerService } from '../api/services/workflowController.service';
 import { PageDto, WorkflowDto } from '../api/models';
 import { TabsService } from '../services/tabs.service';
-import { Button } from '../components/button/button';
+import { ModalService } from '../components/modal';
+import {
+  CreatePageModalComponent,
+  CreatePageResult,
+} from './create-page-modal/create-page-modal.component';
+import {
+  OpenPageModalComponent,
+  OpenPageModalData,
+} from './open-page-modal/open-page-modal.component';
 
 @Component({
   selector: 'app-welcome',
   standalone: true,
-  imports: [CommonModule, FormsModule, Button],
+  imports: [CommonModule],
   templateUrl: './welcome.html',
   styleUrls: ['./welcome.scss'],
 })
@@ -19,18 +26,11 @@ export class Welcome implements OnInit {
   private pageService = inject(PageControllerService);
   private workflowService = inject(WorkflowControllerService);
   private tabsService = inject(TabsService);
+  private modalService = inject(ModalService);
   private router = inject(Router);
 
   pages = signal<PageDto[]>([]);
   workflows = signal<WorkflowDto[]>([]);
-
-  // Modal states
-  showNewPageModal = false;
-  showOpenPageModal = false;
-
-  // Form bindings
-  newPageName = '';
-  newPagePath = '';
 
   ngOnInit() {
     this.loadRecent();
@@ -63,24 +63,47 @@ export class Welcome implements OnInit {
     });
   }
 
-  closeModals() {
-    this.showNewPageModal = false;
-    this.showOpenPageModal = false;
-    this.newPageName = '';
-    this.newPagePath = '';
+  openCreatePageModal(): void {
+    const modalRef = this.modalService.open<CreatePageModalComponent, undefined, CreatePageResult>(
+      CreatePageModalComponent,
+      {
+        width: '440px',
+        ariaLabel: 'Create New Page',
+      }
+    );
+
+    modalRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.createPage(result.name, result.path);
+      }
+    });
   }
 
-  createPage() {
-    if (!this.newPageName || !this.newPagePath) return;
+  openOpenPageModal(): void {
+    const modalRef = this.modalService.open<OpenPageModalComponent, OpenPageModalData, number>(
+      OpenPageModalComponent,
+      {
+        data: { pages: this.pages() },
+        width: '520px',
+        ariaLabel: 'Open Page',
+      }
+    );
 
+    modalRef.afterClosed().subscribe((selectedPageId) => {
+      if (selectedPageId !== undefined) {
+        this.openPage(selectedPageId);
+      }
+    });
+  }
+
+  createPage(name: string, path: string) {
     this.pageService
       .createPage({
         branchId: -1,
-        name: this.newPageName,
-        path: this.newPagePath,
+        name,
+        path,
       })
       .subscribe((page) => {
-        this.closeModals();
         this.openPage(page.id!);
       });
   }
@@ -101,7 +124,6 @@ export class Welcome implements OnInit {
     const tabId = this.tabsService.activeTabId();
     const existingTab = this.tabsService.tabs().find((t) => t.id === id.toString());
 
-    this.closeModals();
     if (existingTab) {
       if (tabId && tabId.startsWith('welcome-')) {
         this.tabsService.closeTab(tabId);
@@ -119,7 +141,6 @@ export class Welcome implements OnInit {
     const tabId = this.tabsService.activeTabId();
     const existingTab = this.tabsService.tabs().find((t) => t.id === id.toString());
 
-    this.closeModals();
     if (existingTab) {
       if (tabId && tabId.startsWith('welcome-')) {
         this.tabsService.closeTab(tabId);

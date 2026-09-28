@@ -10,7 +10,7 @@
 
   .logo {
     font-weight: bold;
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
     cursor: pointer;
     flex: 1;
   }
@@ -24,7 +24,7 @@
     a {
       color: var(--color-text-dim, #969696);
       text-decoration: none;
-      font-size: 0.9rem;
+      font-size: var(--font-size-base);
       padding: 0.25rem 0.5rem;
       border-radius: 4px;
       transition: all 0.2s;
@@ -54,7 +54,7 @@
       padding: 0.25rem 0.5rem;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 0.85rem;
+      font-size: var(--font-size-xs);
       display: flex;
       align-items: center;
       gap: 0.25rem;

@@ -1,0 +1,33 @@
+.confirm-dialog {
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text-primary);
+
+  .dialog-header {
+    margin-bottom: 0.75rem;
+
+    .dialog-title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      margin: 0;
+      color: var(--color-text-primary);
+    }
+  }
+
+  .dialog-body {
+    margin-bottom: 1.5rem;
+
+    .dialog-message {
+      font-size: var(--font-size-base);
+      color: var(--color-text-secondary);
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
+
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+}

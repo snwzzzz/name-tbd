@@ -7,7 +7,7 @@
   color: white;
   font-family: inherit;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   line-height: 1;
 
   background-color: var(--color-primary);
@@ -30,18 +30,18 @@
   }
 }
 
-/* SIZES — unchanged */
+/* SIZES */
 .btn-size-sm {
   padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
+  font-size: var(--font-size-xs);
 }
 .btn-size-md {
   padding: 0.5rem 1rem;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
 }
 .btn-size-lg {
   padding: 0.75rem 1.5rem;
-  font-size: 1.125rem;
+  font-size: var(--font-size-md);
 }
 
 /* =========================================

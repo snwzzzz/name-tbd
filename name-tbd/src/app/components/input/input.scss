@@ -16,19 +16,19 @@
    ========================================= */
 .app-input.input-size-sm {
   padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
+  font-size: var(--font-size-xs);
   border-radius: 0.2rem;
 }
 
 .app-input.input-size-md {
   padding: 0.5rem 0.75rem;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   border-radius: 0.25rem;
 }
 
 .app-input.input-size-lg {
   padding: 0.75rem 1rem;
-  font-size: 1.125rem;
+  font-size: var(--font-size-md);
   border-radius: 0.3rem;
 }
 
