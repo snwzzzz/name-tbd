@@ -48,6 +48,10 @@ public class UiComponentService {
                 .props(command.props())
                 .workflow(workflow)
                 .parent(parent)
+                .x(command.x())
+                .y(command.y())
+                .w(command.w())
+                .h(command.h())
                 .build();
 
         return UiComponentMapper.toDto(uiComponentRepository.saveAndFlush(component));

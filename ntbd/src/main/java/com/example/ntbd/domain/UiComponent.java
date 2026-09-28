@@ -38,7 +38,20 @@ public class UiComponent extends AuditableEntity {
     private UiComponent parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private java.util.List<UiComponent> children = new java.util.ArrayList<>();
+
+    @Column(name = "pos_x")
+    private Double x;
+
+    @Column(name = "pos_y")
+    private Double y;
+
+    @Column(name = "pos_w")
+    private Double w;
+
+    @Column(name = "pos_h")
+    private Double h;
 
     @Embeddable
     public record UiComponentId(@GeneratedValue Long id) {}

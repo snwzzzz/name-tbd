@@ -33,6 +33,8 @@ public class NodeService {
                 .workflow(workflow)
                 .type(command.type())
                 .props(command.props())
+                .x(command.x())
+                .y(command.y())
                 .build();
 
         // Validate props against the type-specific schema before persisting

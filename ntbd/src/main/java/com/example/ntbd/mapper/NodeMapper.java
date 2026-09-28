@@ -19,6 +19,8 @@ public class NodeMapper {
                 workflowId,
                 node.getType(),
                 node.getProps(),
+                node.getX(),
+                node.getY(),
                 node.getCreatedAt(),
                 node.getLastModified()
         );
@@ -31,6 +33,8 @@ public class NodeMapper {
                 .id(dto.id() != null ? new Node.NodeId(dto.id()) : null)
                 .type(dto.type())
                 .props(dto.props())
+                .x(dto.x())
+                .y(dto.y())
                 .workflow(dto.workflowId() != null
                         ? Workflow.builder().id(new Workflow.WorkflowId(dto.workflowId())).build()
                         : null)

@@ -8,6 +8,10 @@ public record UiComponentDto(
         String type,
         Map<String, Object> props,
         Long workflowId,
-        Long parentId
+        Long parentId,
+        Double x,
+        Double y,
+        Double w,
+        Double h
 ) {
 }

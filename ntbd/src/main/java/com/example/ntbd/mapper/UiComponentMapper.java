@@ -14,7 +14,11 @@ public class UiComponentMapper {
                 component.getType(),
                 component.getProps(),
                 component.getWorkflow() != null && component.getWorkflow().getId() != null ? component.getWorkflow().getId().id() : null,
-                component.getParent() != null && component.getParent().getId() != null ? component.getParent().getId().id() : null
+                component.getParent() != null && component.getParent().getId() != null ? component.getParent().getId().id() : null,
+                component.getX(),
+                component.getY(),
+                component.getW(),
+                component.getH()
         );
     }
 }

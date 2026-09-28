@@ -36,7 +36,7 @@ public class NodeMapperTest {
 
     @Test
     void maps_dto_to_node_entity() {
-        var dto = new NodeDto(1L, 10L, "CONDITION", Map.of("field", "status"), null, null);
+        var dto = new NodeDto(1L, 10L, "CONDITION", Map.of("field", "status"), 0.0, 0.0, null, null);
 
         Node node = NodeMapper.toEntity(dto);
 

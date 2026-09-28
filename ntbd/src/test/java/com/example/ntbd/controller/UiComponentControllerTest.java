@@ -27,8 +27,8 @@ class UiComponentControllerTest {
 
     @Test
     void createComponent() {
-        NewUiComponentCommand command = new NewUiComponentCommand(1L, "Button", Map.of(), null, null);
-        UiComponentDto dto = new UiComponentDto(1L, 1L, "Button", Map.of(), null, null);
+        NewUiComponentCommand command = new NewUiComponentCommand(1L, "Button", Map.of(), null, null, 0.0, 0.0, 0.0, 0.0);
+        UiComponentDto dto = new UiComponentDto(1L, 1L, "Button", Map.of(), null, null, 0.0, 0.0, 0.0, 0.0);
         
         when(uiComponentService.createComponent(command)).thenReturn(dto);
 

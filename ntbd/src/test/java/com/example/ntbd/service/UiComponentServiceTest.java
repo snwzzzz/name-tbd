@@ -39,7 +39,7 @@ class UiComponentServiceTest {
 
     @Test
     void createComponent() {
-        NewUiComponentCommand command = new NewUiComponentCommand(1L, "Button", Map.of("label", "Click"), null, null);
+        NewUiComponentCommand command = new NewUiComponentCommand(1L, "Button", Map.of("label", "Click"), null, null, 0.0, 0.0, 0.0, 0.0);
         Page page = new Page();
         page.setId(new Page.PageId(1L));
 

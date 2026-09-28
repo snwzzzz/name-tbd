@@ -56,7 +56,7 @@ public class NodeServiceTest {
                 .id(new Workflow.WorkflowId(1L))
                 .name("W").status(WorkflowStatus.ACTIVE).build();
         var command = new NewNodeCommand(1L, "CONDITION",
-                Map.of("field", "status", "operator", "eq", "value", "active"));
+                Map.of("field", "status", "operator", "eq", "value", "active"), 0.0, 0.0);
 
         when(workflowRepository.findById(new Workflow.WorkflowId(1L))).thenReturn(Optional.of(workflow));
         when(nodeRepository.saveAndFlush(any(Node.class))).thenAnswer(inv -> {
@@ -85,7 +85,7 @@ public class NodeServiceTest {
         var workflow = Workflow.builder()
                 .id(new Workflow.WorkflowId(1L))
                 .name("W").status(WorkflowStatus.ACTIVE).build();
-        var command = new NewNodeCommand(1L, "CONDITION", Map.of("field", "status")); // missing operator/value
+        var command = new NewNodeCommand(1L, "CONDITION", Map.of("field", "status"), 0.0, 0.0); // missing operator/value
 
         when(workflowRepository.findById(new Workflow.WorkflowId(1L))).thenReturn(Optional.of(workflow));
         doThrow(new IllegalArgumentException("Invalid node configuration: operator must not be blank"))
@@ -100,7 +100,7 @@ public class NodeServiceTest {
 
     @Test
     void createNode_throws_when_workflow_not_found() {
-        var command = new NewNodeCommand(99L, "CONDITION", Map.of());
+        var command = new NewNodeCommand(99L, "CONDITION", Map.of(), 0.0, 0.0);
         when(workflowRepository.findById(new Workflow.WorkflowId(99L))).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> nodeService.createNode(command))
@@ -116,7 +116,7 @@ public class NodeServiceTest {
                 .id(new Workflow.WorkflowId(1L))
                 .name("W").status(WorkflowStatus.ACTIVE).build();
         var props = Map.<String, Object>of("url", "http://example.com");
-        var command = new NewNodeCommand(1L, "WEBHOOK", props);
+        var command = new NewNodeCommand(1L, "WEBHOOK", props, 0.0, 0.0);
 
         when(workflowRepository.findById(new Workflow.WorkflowId(1L))).thenReturn(Optional.of(workflow));
         when(nodeRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));

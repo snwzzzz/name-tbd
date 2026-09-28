@@ -8,6 +8,8 @@ public record NodeDto(
         Long workflowId,
         String type,
         Map<String, Object> props,
+        Double x,
+        Double y,
         LocalDateTime createdAt,
         LocalDateTime lastModified
 ) {}

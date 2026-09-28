@@ -5,5 +5,7 @@ import java.util.Map;
 public record NewNodeCommand(
         Long workflowId,
         String type,
-        Map<String, Object> props
+        Map<String, Object> props,
+        Double x,
+        Double y
 ) {}

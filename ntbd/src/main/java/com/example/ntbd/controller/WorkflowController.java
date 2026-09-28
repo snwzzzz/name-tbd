@@ -66,7 +66,7 @@ public class WorkflowController {
             @PathVariable Long workflowId,
             @RequestBody NewNodeCommand command) {
         // Merge workflowId from path into command
-        var enriched = new NewNodeCommand(workflowId, command.type(), command.props());
+        var enriched = new NewNodeCommand(workflowId, command.type(), command.props(), command.x(), command.y());
         return ResponseEntity.status(HttpStatus.CREATED).body(nodeService.createNode(enriched));
     }
 
