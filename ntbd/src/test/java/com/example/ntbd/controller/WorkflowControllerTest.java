@@ -156,9 +156,7 @@ public class WorkflowControllerTest {
         when(nodeService.createNode(any()))
                 .thenThrow(new IllegalArgumentException("Invalid node configuration: operator must not be blank"));
 
-        var body = """
-                {"type":"CONDITION","props":{"field":"status"}}
-                """;
+        var body = "{\"type\":\"CONDITION\",\"props\":{\"field\":\"status\"}}";
 
         mockMvc.perform(post("/api/workflows/1/nodes")
                         .contentType(MediaType.APPLICATION_JSON)

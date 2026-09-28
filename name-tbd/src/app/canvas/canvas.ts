@@ -48,7 +48,7 @@ const CELL_H = AH / ROWS;   // 45px per row
 @Component({
   selector: 'app-canvas',
   standalone: true,
-  imports: [JsonPipe, CdkMenuModule, DialogModule, FormsModule],
+  imports: [CdkMenuModule, DialogModule, FormsModule],
   templateUrl: './canvas.html',
   styleUrl: './canvas.scss',
 })
@@ -121,14 +121,28 @@ export class Canvas implements AfterViewInit, OnDestroy {
             items.forEach(item => {
                const div = document.createElement('div');
                div.className = 'grid-stack-item';
-               div.setAttribute('data-type', item.type);
-               if (item.id) div.setAttribute('data-gs-id', item.id);
+               div.setAttribute('data-type', item.type || 'unknown');
+               if (item.id) div.setAttribute('data-gs-id', item.id.toString());
                
                const content = document.createElement('div');
                content.className = 'grid-stack-item-content';
                div.appendChild(content);
                
                const widgetNode = (parentGrid as any).addWidget({ el: div, id: item.id, x: item.x, y: item.y, w: item.w, h: item.h });
+               if (item.type === 'container') {
+                 content.classList.add('container-widget');
+                 (parentGrid as any).makeSubGrid(div, {
+                   column: 'auto',
+                   row: item.h ?? 1,
+                   maxRow: item.h ?? 1,
+                   cellHeight: 45, // CELL_H from outer scope
+                   margin: 0,
+                   acceptWidgets: '.gs-drag-item, .grid-stack-item',
+                   disableResize: false,
+                   removable: false,
+                   mode: 'float',
+                 }, undefined, false);
+               }
                const node = widgetNode?.gridstackNode;
                if (item.children && item.children.length > 0 && node && node.subGrid) {
                  loadNodes(item.children, node.subGrid as GridStack);
@@ -205,7 +219,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
 
           // Accept items dragged from ComponentList palette (our own selector avoids
           // adding .grid-stack-item to palette cards, which would break their layout).
-          acceptWidgets: '.gs-drag-item',
+          acceptWidgets: '.gs-drag-item, .grid-stack-item',
 
           // 'float' mode: widgets stay exactly where dropped, no gravity packing.
           mode: 'float',
@@ -223,7 +237,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
       
       const syncLayout = () => {
         this.ngZone.run(() => {
-          const mapNode = (n: GridStackNode): LayoutItem => {
+          const mapNode = (n: GridStackNode, parentId?: string): LayoutItem => {
             // If this node is a container with a subGrid, recalculate its minimum bounds!
             if (n.subGrid && n.grid) {
               const baseMinW = parseInt(n.el?.getAttribute('data-base-min-w') || String(n.minW || 2));
@@ -254,18 +268,23 @@ export class Canvas implements AfterViewInit, OnDestroy {
             }
 
             return {
-              id: n.id as string || n.el?.getAttribute('data-gs-id') || `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              id: (() => {
+                const rawId = n.id || n.el?.getAttribute('data-gs-id');
+                if (rawId && !isNaN(Number(rawId))) return Number(rawId);
+                return rawId || `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+              })() as any,
               x: n.x ?? 0,
               y: n.y ?? 0,
               w: n.w ?? 2,
               h: n.h ?? 1,
               type: n.el?.getAttribute('data-type') || 'unknown',
-              children: n.subGrid ? n.subGrid.engine.nodes.map(mapNode) : undefined,
+              parentId: parentId ? (!isNaN(Number(parentId)) ? Number(parentId) : parentId) : undefined,
+              children: n.subGrid ? n.subGrid.engine.nodes.map(child => mapNode(child, n.id as string || n.el?.getAttribute('data-gs-id') as string)) : undefined,
             };
           };
           
           if (this.grid) {
-            const newLayout = this.grid.engine.nodes.map(mapNode);
+            const newLayout = this.grid.engine.nodes.map(n => mapNode(n, undefined));
             this.layout.set(newLayout);
             if (this.isRestoring) return;
             const tabId = this.tabsService.activeTabId();
@@ -308,7 +327,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
                 maxRow: node.h ?? 1,
                 cellHeight: CELL_H, // inherit exact row height from parent scale
                 margin: 0, // 0 margin so children sit flush inside this structural component
-                acceptWidgets: '.gs-drag-item',
+                acceptWidgets: '.gs-drag-item, .grid-stack-item',
                 disableResize: false,
                 removable: false,
                 mode: 'float',
@@ -334,27 +353,57 @@ export class Canvas implements AfterViewInit, OnDestroy {
                 me.preventDefault();
                 me.stopPropagation();
                 
-                const currentItem = this.layout().find(i => i.id === id) || { id, type };
+                const currentItem = this.layout().find(i => i.id?.toString() === id.toString()) || { id, type };
                 this.contextMenuState.set({ x: me.clientX, y: me.clientY, item: currentItem });
               });
             }
           }
 
-          if (!this.isRestoring && tabId && (!node.id || !node.id.toString().match(/^\d+$/))) {
-            this.layoutStateService.addComponent(tabId, {
-              id: node.id as string || node.el?.getAttribute('data-gs-id') as string,
+          if (!this.isRestoring && tabId) {
+            const parentNode = node.grid?.parentGridNode;
+            let parentId: any = parentNode ? (parentNode.id || parentNode.el?.getAttribute('data-gs-id')) : undefined;
+            if (parentId && !isNaN(Number(parentId))) parentId = Number(parentId);
+
+            if (!node.id || isNaN(Number(node.id))) {
+              this.layoutStateService.addComponent(tabId, {
+              id: (node.id || node.el?.getAttribute('data-gs-id')) as string,
               type: node.el?.getAttribute('data-type') || 'unknown',
               x: node.x || 0,
               y: node.y || 0,
               w: node.w || 100,
-              h: node.h || 40
+              h: node.h || 40,
+              parentId: parentId
             }).subscribe(dto => {
               if (dto && dto.id) {
                 const newId = dto.id.toString();
                 if (node.el) node.el.setAttribute('data-gs-id', newId);
                 node.id = newId;
+                
+                // If the user resized/moved the item before the DB save completed, sync it now
+                if (node.w !== dto.w || node.h !== dto.h || node.x !== dto.x || node.y !== dto.y) {
+                  this.layoutStateService.updateComponent(tabId, {
+                    id: dto.id,
+                    type: dto.type || 'unknown',
+                    x: node.x || 0,
+                    y: node.y || 0,
+                    w: node.w || 100,
+                    h: node.h || 40,
+                    parentId: dto.parentId || undefined
+                  } as any).subscribe();
+                }
               }
             });
+            } else {
+              this.layoutStateService.updateComponent(tabId, {
+                id: Number(node.id),
+                type: node.el?.getAttribute('data-type') || 'unknown',
+                x: node.x || 0,
+                y: node.y || 0,
+                w: node.w || 100,
+                h: node.h || 40,
+                parentId: parentId || undefined
+              } as any).subscribe();
+            }
           }
         });
 
@@ -400,7 +449,8 @@ export class Canvas implements AfterViewInit, OnDestroy {
       // Cleanup Angular components and nested GridStack instances when widgets are removed
       grid.on('removed', (_event: Event, nodes: GridStackNode[]) => {
         nodes.forEach(node => {
-          const id = node.id as string || node.el?.getAttribute('data-gs-id');
+          let id: any = node.id || node.el?.getAttribute('data-gs-id');
+            if (id && !isNaN(Number(id))) id = Number(id);
           if (id && this.widgetRefs.has(id)) {
             this.widgetRefs.get(id)!.destroy();
             this.widgetRefs.delete(id);
@@ -417,11 +467,15 @@ export class Canvas implements AfterViewInit, OnDestroy {
         const tabId = this.tabsService.activeTabId();
         if (tabId) {
           nodes?.forEach(node => {
-            const id = node.id as string || node.el?.getAttribute('data-gs-id');
+            let id: any = node.id || node.el?.getAttribute('data-gs-id');
+            if (id && !isNaN(Number(id))) id = Number(id);
             const type = node.el?.getAttribute('data-type') || 'unknown';
             if (id) {
+              const parentNode = node.grid?.parentGridNode;
+              let parentId: any = parentNode ? (parentNode.id || parentNode.el?.getAttribute('data-gs-id')) : undefined;
+              if (parentId && !isNaN(Number(parentId))) parentId = Number(parentId);
               this.layoutStateService.updateComponent(tabId, {
-                id, type, x: node.x || 0, y: node.y || 0, w: node.w || 100, h: node.h || 40
+                id, type, x: node.x || 0, y: node.y || 0, w: node.w || 100, h: node.h || 40, parentId
               }).subscribe();
             }
           });
@@ -541,7 +595,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
   addLogicToItem(item: LayoutItem): void {
     const tabId = this.tabsService.activeTabId();
     if (tabId) {
-      this.workflowState.addTriggerForElement(tabId, item.id, 'element_click');
+      this.workflowState.addTriggerForElement(tabId, item.id?.toString() || '', 'element_click');
       this.tabsService.setMode('workflow');
     }
     this.contextMenuState.set(null);

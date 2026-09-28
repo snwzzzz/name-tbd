@@ -98,6 +98,16 @@ public class UiComponentService {
             component.setH(command.h());
         }
         
+        if (command.parentId() != null) {
+            if (command.parentId() == -1L) {
+                component.setParent(null);
+            } else {
+                UiComponent parent = uiComponentRepository.findById(new UiComponent.UiComponentId(command.parentId()))
+                        .orElseThrow(() -> new UiComponentNotFoundException("Parent UI Component not found with id: " + command.parentId()));
+                component.setParent(parent);
+            }
+        }
+        
         return UiComponentMapper.toDto(uiComponentRepository.saveAndFlush(component));
     }
 }

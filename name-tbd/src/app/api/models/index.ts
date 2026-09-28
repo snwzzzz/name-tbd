@@ -27,6 +27,7 @@ export interface NodeDto {
 
 export interface UpdateUiComponentCommand {
     props?: Record<string, Record<string, unknown>>;
+    parentId?: number;
     x?: number;
     y?: number;
     w?: number;

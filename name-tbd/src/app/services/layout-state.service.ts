@@ -4,14 +4,11 @@ import { tap, map } from 'rxjs/operators';
 import { UiComponentControllerService } from '../api/services/uiComponentController.service';
 import { PageControllerService } from '../api/services/pageController.service';
 
-export interface LayoutItem {
-  id: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  type: string;
-  props?: any;
+import { UiComponentDto } from '../api/models';
+
+export interface LayoutItem extends Omit<UiComponentDto, 'id' | 'parentId'> {
+  id?: number | string;
+  parentId?: number | string;
   children?: LayoutItem[];
 }
 
@@ -31,16 +28,23 @@ export class LayoutStateService {
     return this.pageService.getComponents1(Number(pageId)).pipe(
       tap((data: any) => {
         const dtos = Array.isArray(data) ? data : [];
-        const layout: LayoutItem[] = dtos.map((dto: any) => ({
-          id: dto.id!.toString(),
-          type: dto.type!,
-          x: dto.x || 0,
-          y: dto.y || 0,
-          w: dto.w || 100,
-          h: dto.h || 40,
-          props: dto.props || {},
-        }));
-        this.layouts.update((l) => ({ ...l, [pageId]: layout }));
+        const layout: LayoutItem[] = dtos.map((dto: any) => ({ ...dto }));
+        
+        // Reconstruct hierarchy
+        const map = new Map<number | string, LayoutItem>();
+        layout.forEach(item => { if (item.id) map.set(item.id, item); });
+        const roots: LayoutItem[] = [];
+        layout.forEach(item => {
+          if (item.parentId && map.has(item.parentId)) {
+            const parent = map.get(item.parentId)!;
+            if (!parent.children) parent.children = [];
+            parent.children.push(item);
+          } else {
+            roots.push(item);
+          }
+        });
+        
+        this.layouts.update((l) => ({ ...l, [pageId]: roots }));
       }),
       map(() => this.layouts()[pageId]),
     );
@@ -55,15 +59,17 @@ export class LayoutStateService {
   }
 
   updateComponent(pageId: string, item: LayoutItem): Observable<any> {
-    if (item.id.startsWith('new-') || item.id.startsWith('item-')) return of(null);
+    // If it's a temp string ID, we can't update it yet in the DB.
+    if (!item.id || typeof item.id === 'string') return of(null);
 
-    return this.uiService.updateComponent(Number(item.id), {
+    return this.uiService.updateComponent(item.id, {
       x: item.x,
       y: item.y,
       w: item.w,
       h: item.h,
       props: item.props || {},
-    });
+      parentId: item.parentId || -1,
+    } as any);
   }
 
   addComponent(pageId: string, item: LayoutItem) {
@@ -75,6 +81,7 @@ export class LayoutStateService {
       w: item.w,
       h: item.h,
       props: item.props || {},
+      parentId: item.parentId && !isNaN(Number(item.parentId)) ? Number(item.parentId) : undefined,
     });
   }
 }

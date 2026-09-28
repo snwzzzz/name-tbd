@@ -74,7 +74,7 @@ class UiComponentServiceTest {
         when(uiComponentRepository.findById(new UiComponent.UiComponentId(1L))).thenReturn(Optional.of(component));
         when(uiComponentRepository.saveAndFlush(any(UiComponent.class))).thenReturn(component);
 
-        var command = new com.example.ntbd.commands.UpdateUiComponentCommand(null, 15.0, 25.0, null, null);
+        var command = new com.example.ntbd.commands.UpdateUiComponentCommand(null, null, 15.0, 25.0, null, null);
         UiComponentDto result = uiComponentService.updateComponent(1L, command);
 
         assertNotNull(result);
