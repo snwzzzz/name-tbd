@@ -331,3 +331,29 @@ $ah: 50.625rem;
     }
   }
 }
+
+::ng-deep .widget-remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+  
+  &:hover {
+    background: rgba(220, 38, 38, 0.9); /* red */
+  }
+}
+
+::ng-deep .grid-stack-item:hover > .widget-remove-btn {
+  opacity: 1;
+}

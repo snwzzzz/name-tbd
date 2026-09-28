@@ -38,4 +38,10 @@ public class UiComponentController {
             @RequestBody com.example.ntbd.commands.UpdateUiComponentCommand command) {
         return ResponseEntity.ok(uiComponentService.updateComponent(id, command));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteComponent(@PathVariable Long id) {
+        uiComponentService.deleteComponent(id);
+        return ResponseEntity.noContent().build();
+    }
 }

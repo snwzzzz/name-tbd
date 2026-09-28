@@ -106,6 +106,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
 
   private isRestoring = false;
   private gridReady = signal(false);
+  private lastKnownState = new Map<string, {x: number, y: number, w: number, h: number, parentId: string | number | undefined}>();
 
   constructor(private ngZone: NgZone) {
     effect(() => {
@@ -128,7 +129,17 @@ export class Canvas implements AfterViewInit, OnDestroy {
                content.className = 'grid-stack-item-content';
                div.appendChild(content);
                
-               const widgetNode = (parentGrid as any).addWidget({ el: div, id: item.id, x: item.x, y: item.y, w: item.w, h: item.h });
+               const isResizable = item.type === 'button' || item.type === 'container';
+               this.addRemoveButton(div, parentGrid as GridStack);
+               const widgetNode = (parentGrid as any).addWidget({ 
+                 el: div, 
+                 id: item.id, 
+                 x: item.x, 
+                 y: item.y, 
+                 w: item.w, 
+                 h: item.h,
+                 noResize: !isResizable
+               });
                if (item.type === 'container') {
                  content.classList.add('container-widget');
                  (parentGrid as any).makeSubGrid(div, {
@@ -150,7 +161,14 @@ export class Canvas implements AfterViewInit, OnDestroy {
             });
           };
           
-          if (savedLayout.length > 0) {
+          const populateLastKnown = (items: LayoutItem[]) => {
+              items.forEach(item => {
+                if (item.id) this.lastKnownState.set(item.id.toString(), {x: item.x || 0, y: item.y || 0, w: item.w || 100, h: item.h || 40, parentId: item.parentId});
+                if (item.children) populateLastKnown(item.children);
+              });
+            };
+            populateLastKnown(savedLayout);
+            if (savedLayout.length > 0) {
               loadNodes(savedLayout, this.grid!);
             }
             this.isRestoring = false;
@@ -173,6 +191,23 @@ export class Canvas implements AfterViewInit, OnDestroy {
         this.isPanning.set(true);
       }
       // Ctrl+0 = reset zoom, Ctrl++/= = zoom in, Ctrl+- = zoom out
+      
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const tag = (document.activeElement as HTMLElement)?.tagName ?? '';
+        if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;
+        
+        const hoveredItems = document.querySelectorAll('.grid-stack-item:hover');
+        if (hoveredItems.length > 0) {
+          const deepest = hoveredItems[hoveredItems.length - 1];
+          const node = (deepest as any).gridstackNode;
+          if (node && node.grid) {
+             node.grid.removeWidget(deepest as HTMLElement, true, true);
+             let delId: any = node.id || deepest.getAttribute('data-gs-id');
+             if (delId && !isNaN(Number(delId))) delId = Number(delId);
+             if (delId) this.layoutStateService.deleteComponent(delId).subscribe();
+          }
+        }
+      }
       if (e.ctrlKey || e.metaKey) {
         if (e.key === '0') { e.preventDefault(); this.zoomReset(); }
         if (e.key === '=' || e.key === '+') { e.preventDefault(); this.zoomIn(); }
@@ -285,6 +320,29 @@ export class Canvas implements AfterViewInit, OnDestroy {
           
           if (this.grid) {
             const newLayout = this.grid.engine.nodes.map(n => mapNode(n, undefined));
+            
+            if (!this.isRestoring) {
+              const tabId = this.tabsService.activeTabId();
+              if (tabId) {
+                // Flatten new layout to diff
+                const checkDiff = (items: LayoutItem[]) => {
+                  items.forEach(item => {
+                    if (item.id && !isNaN(Number(item.id))) {
+                      const idStr = item.id.toString();
+                      const last = this.lastKnownState.get(idStr);
+                      // Compare to last known state
+                      if (!last || last.x !== item.x || last.y !== item.y || last.w !== item.w || last.h !== item.h || last.parentId !== item.parentId) {
+                        // Changed! Update backend.
+                        this.layoutStateService.updateComponent(tabId, item).subscribe();
+                        this.lastKnownState.set(idStr, {x: item.x || 0, y: item.y || 0, w: item.w || 100, h: item.h || 40, parentId: item.parentId});
+                      }
+                    }
+                    if (item.children) checkDiff(item.children);
+                  });
+                };
+                checkDiff(newLayout);
+              }
+            }
             this.layout.set(newLayout);
             if (this.isRestoring) return;
             const tabId = this.tabsService.activeTabId();
@@ -306,6 +364,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
           const id = node.el?.getAttribute('data-gs-id') || node.id || `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
           
           if (node.el) {
+              if (node.grid) this.addRemoveButton(node.el, node.grid as GridStack);
              node.el.setAttribute('data-gs-id', id as string);
              node.id = id;
           }
@@ -451,6 +510,8 @@ export class Canvas implements AfterViewInit, OnDestroy {
         nodes.forEach(node => {
           let id: any = node.id || node.el?.getAttribute('data-gs-id');
             if (id && !isNaN(Number(id))) id = Number(id);
+          
+          
           if (id && this.widgetRefs.has(id)) {
             this.widgetRefs.get(id)!.destroy();
             this.widgetRefs.delete(id);
@@ -474,9 +535,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
               const parentNode = node.grid?.parentGridNode;
               let parentId: any = parentNode ? (parentNode.id || parentNode.el?.getAttribute('data-gs-id')) : undefined;
               if (parentId && !isNaN(Number(parentId))) parentId = Number(parentId);
-              this.layoutStateService.updateComponent(tabId, {
-                id, type, x: node.x || 0, y: node.y || 0, w: node.w || 100, h: node.h || 40, parentId
-              }).subscribe();
+              // Update handled by syncLayout diff logic now
             }
           });
         }
@@ -592,6 +651,23 @@ export class Canvas implements AfterViewInit, OnDestroy {
   }
 
   // ─── Logic Flow ────────────────────────────────────────────────────────
+  
+  private addRemoveButton(div: HTMLElement, gridInstance: GridStack) {
+    if (div.querySelector('.widget-remove-btn')) return;
+    const btn = document.createElement('div');
+    btn.className = 'widget-remove-btn';
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+    btn.title = 'Remove';
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      gridInstance.removeWidget(div, true, true);
+      let delId: any = div.getAttribute('data-gs-id');
+      if (delId && !isNaN(Number(delId))) delId = Number(delId);
+      if (delId) this.layoutStateService.deleteComponent(delId).subscribe();
+    };
+    div.appendChild(btn);
+  }
+
   addLogicToItem(item: LayoutItem): void {
     const tabId = this.tabsService.activeTabId();
     if (tabId) {

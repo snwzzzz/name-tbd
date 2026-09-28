@@ -84,6 +84,28 @@ export class UiComponentControllerService {
         });
     }
 
+    deleteComponent(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    deleteComponent(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    deleteComponent(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    deleteComponent(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/ui-components/${id}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+
+        return this.httpClient.request('delete', url, {
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
     getComponents(observe?: 'body', options?: RequestOptions<'blob'>): Observable<Array<UiComponentDto>>;
     getComponents(observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<Array<UiComponentDto>>>;
     getComponents(observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<Array<UiComponentDto>>>;

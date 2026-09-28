@@ -110,4 +110,12 @@ public class UiComponentService {
         
         return UiComponentMapper.toDto(uiComponentRepository.saveAndFlush(component));
     }
+
+    @Transactional
+    public void deleteComponent(Long id) {
+        if (!uiComponentRepository.existsById(new UiComponent.UiComponentId(id))) {
+            throw new UiComponentNotFoundException("UI Component not found with id " + id);
+        }
+        uiComponentRepository.deleteById(new UiComponent.UiComponentId(id));
+    }
 }

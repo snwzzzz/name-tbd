@@ -29,12 +29,14 @@ export class LayoutStateService {
       tap((data: any) => {
         const dtos = Array.isArray(data) ? data : [];
         const layout: LayoutItem[] = dtos.map((dto: any) => ({ ...dto }));
-        
+
         // Reconstruct hierarchy
         const map = new Map<number | string, LayoutItem>();
-        layout.forEach(item => { if (item.id) map.set(item.id, item); });
+        layout.forEach((item) => {
+          if (item.id) map.set(item.id, item);
+        });
         const roots: LayoutItem[] = [];
-        layout.forEach(item => {
+        layout.forEach((item) => {
           if (item.parentId && map.has(item.parentId)) {
             const parent = map.get(item.parentId)!;
             if (!parent.children) parent.children = [];
@@ -43,7 +45,7 @@ export class LayoutStateService {
             roots.push(item);
           }
         });
-        
+
         this.layouts.update((l) => ({ ...l, [pageId]: roots }));
       }),
       map(() => this.layouts()[pageId]),
@@ -70,6 +72,11 @@ export class LayoutStateService {
       props: item.props || {},
       parentId: item.parentId || -1,
     } as any);
+  }
+
+  deleteComponent(id: number | string): Observable<any> {
+    if (typeof id === 'string') return of(null);
+    return this.uiService.deleteComponent(id);
   }
 
   addComponent(pageId: string, item: LayoutItem) {
