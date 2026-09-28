@@ -46,13 +46,21 @@ export class WorkflowEditor implements AfterViewInit {
   private lastMouseY = 0;
 
   constructor() {
+    effect(() => {
+      const id = this.tabId();
+      if (id) {
+        const state = this.workflowState.getGraphForTab(id);
+        // Only set if they differ to avoid loops, or just set
+        if (state.nodes !== this.nodes()) this.nodes.set(state.nodes);
+        if (state.connections !== this.connections()) this.connections.set(state.connections);
+      }
+    }, { allowSignalWrites: true });
+
     this.route.paramMap.subscribe(params => {
       const id = params.get('tabId');
       if (id) {
         this.tabId.set(id);
-        const state = this.workflowState.getGraphForTab(id);
-        this.nodes.set(state.nodes);
-        this.connections.set(state.connections);
+        this.workflowState.loadGraphForTab(id);
       }
     });
   }
@@ -153,16 +161,22 @@ export class WorkflowEditor implements AfterViewInit {
 
     this.nodes.update(ns => [...ns, newNode]);
     this.saveStateToService();
+    this.workflowState.addNodeToAPI(this.tabId(), newNode);
   }
 
   updateCondition(nodeId: string, field: string, operator: string, value: any) {
+    let updatedNode: FlowNode | undefined;
     this.nodes.update(ns => ns.map(n => {
       if (n.id === nodeId && n.type === 'Condition') {
-        return { ...n, condition: { field, operator, value } } as ConditionNode;
+        updatedNode = { ...n, condition: { field, operator, value } } as ConditionNode;
+        return updatedNode;
       }
       return n;
     }));
     this.saveStateToService();
+    if (updatedNode) {
+      this.workflowState.updateNodeInAPI(this.tabId(), updatedNode);
+    }
   }
 
   // ─── Helpers to cast ─────────────────────────────────────────────────────
@@ -181,11 +195,21 @@ export class WorkflowEditor implements AfterViewInit {
   }
 
   onNodePositionChange(nodeId: string, position: { x: number, y: number }): void {
+    let updatedNode: FlowNode | undefined;
     this.nodes.update(nodes => 
-      nodes.map(n => n.id === nodeId ? { ...n, position } : n)
+      nodes.map(n => {
+        if (n.id === nodeId) {
+          updatedNode = { ...n, position };
+          return updatedNode;
+        }
+        return n;
+      })
     );
     this.saveStateToService();
     
+    if (updatedNode) {
+      this.workflowState.updateNodeInAPI(this.tabId(), updatedNode);
+    }
   }
 
   onConnectionCreated(event: FCreateConnectionEvent): void {

@@ -35,12 +35,12 @@ public class WorkflowController {
         return ResponseEntity.status(HttpStatus.CREATED).body(workflowService.createWorkflow(command));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(value = "/{id}", produces = "application/json")
     public ResponseEntity<WorkflowDto> getWorkflow(@PathVariable Long id) {
         return ResponseEntity.ok(workflowService.findById(id));
     }
 
-    @GetMapping
+    @GetMapping(produces = "application/json")
     public ResponseEntity<List<WorkflowDto>> getWorkflowsByBranch(@RequestParam Long branchId) {
         return ResponseEntity.ok(workflowService.findByBranchId(branchId));
     }
@@ -61,7 +61,7 @@ public class WorkflowController {
 
     // ---- Node endpoints ----
 
-    @PostMapping("/{workflowId}/nodes")
+    @PostMapping(value = "/{workflowId}/nodes", produces = "application/json")
     public ResponseEntity<NodeDto> createNode(
             @PathVariable Long workflowId,
             @RequestBody NewNodeCommand command) {
@@ -70,12 +70,12 @@ public class WorkflowController {
         return ResponseEntity.status(HttpStatus.CREATED).body(nodeService.createNode(enriched));
     }
 
-    @GetMapping("/{workflowId}/nodes")
+    @GetMapping(value = "/{workflowId}/nodes", produces = "application/json")
     public ResponseEntity<List<NodeDto>> getNodes(@PathVariable Long workflowId) {
         return ResponseEntity.ok(nodeService.findByWorkflowId(workflowId));
     }
 
-    @GetMapping("/{workflowId}/nodes/{nodeId}")
+    @GetMapping(value = "/{workflowId}/nodes/{nodeId}", produces = "application/json")
     public ResponseEntity<NodeDto> getNode(@PathVariable Long workflowId, @PathVariable Long nodeId) {
         return ResponseEntity.ok(nodeService.findById(nodeId));
     }
@@ -96,14 +96,14 @@ public class WorkflowController {
 
     // ---- Edge endpoints ----
 
-    @PostMapping("/{workflowId}/edges")
+    @PostMapping(value = "/{workflowId}/edges", produces = "application/json")
     public ResponseEntity<EdgeDto> createEdge(
             @PathVariable Long workflowId,
             @RequestBody NewEdgeCommand command) {
         return ResponseEntity.status(HttpStatus.CREATED).body(edgeService.createEdge(command));
     }
 
-    @GetMapping("/{workflowId}/edges/{edgeId}")
+    @GetMapping(value = "/{workflowId}/edges/{edgeId}", produces = "application/json")
     public ResponseEntity<EdgeDto> getEdge(@PathVariable Long workflowId, @PathVariable Long edgeId) {
         return ResponseEntity.ok(edgeService.findById(edgeId));
     }

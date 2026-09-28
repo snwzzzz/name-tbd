@@ -1,0 +1,85 @@
+<div class="welcome-container">
+  <div class="welcome-header">
+    <h1>Application Builder</h1>
+    <p>Design your UI, connect your workflows, and build faster.</p>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="card create-card" (click)="showNewPageModal = true">
+      <div class="icon"><i class="codicon codicon-layout"></i></div>
+      <h3>New UI Page</h3>
+      <p>Create a new blank page to design your interface.</p>
+    </div>
+
+    <div class="card create-card" (click)="createWorkflow()">
+      <div class="icon"><i class="codicon codicon-git-merge"></i></div>
+      <h3>New Workflow</h3>
+      <p>Build a new logic flow to connect your components.</p>
+    </div>
+
+    <div class="card create-card" (click)="showOpenPageModal = true">
+      <div class="icon"><i class="codicon codicon-folder-opened"></i></div>
+      <h3>Open Page...</h3>
+      <p>Browse and open existing pages in this application.</p>
+    </div>
+  </div>
+
+  <div class="recent-section">
+    <h3>Recent Workflows</h3>
+    <div class="list-container">
+      @for (workflow of workflows(); track workflow.id) {
+        <div class="list-item" (click)="openWorkflow(workflow.id!)">
+          <i class="codicon codicon-symbol-event"></i>
+          <span class="item-name">{{ workflow.name }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- Modal for New Page -->
+@if (showNewPageModal) {
+<div class="modal-backdrop">
+  <div class="modal">
+    <h3>Create New Page</h3>
+    <div class="form-group">
+      <label>Page Name</label>
+      <input type="text" [(ngModel)]="newPageName" placeholder="e.g. Dashboard">
+    </div>
+    <div class="form-group">
+      <label>Path</label>
+      <input type="text" [(ngModel)]="newPagePath" placeholder="e.g. /dashboard">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeModals()">Cancel</button>
+      <button class="btn-primary" (click)="createPage()" [disabled]="!newPageName || !newPagePath">Create Page</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Modal for Open Page -->
+@if (showOpenPageModal) {
+<div class="modal-backdrop" (click)="closeModals()">
+  <div class="modal open-modal" (click)="$event.stopPropagation()">
+    <h3>Open Page</h3>
+    <div class="page-list">
+      @for (page of pages(); track page.id) {
+        <div class="page-list-item" (click)="openPage(page.id!)">
+          <i class="codicon codicon-file"></i>
+          <div class="page-info">
+            <span class="page-name">{{ page.name }}</span>
+            <span class="page-path">{{ page.path }}</span>
+          </div>
+        </div>
+      }
+      @if (pages().length === 0) {
+        <div class="empty-state">No pages found in this branch.</div>
+      }
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeModals()">Close</button>
+    </div>
+  </div>
+</div>
+}

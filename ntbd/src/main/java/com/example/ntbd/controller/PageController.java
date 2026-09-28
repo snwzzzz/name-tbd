@@ -23,17 +23,17 @@ public class PageController {
         return ResponseEntity.status(HttpStatus.CREATED).body(pageService.createPage(command));
     }
 
-    @GetMapping
+    @GetMapping(produces = "application/json")
     public ResponseEntity<List<PageDto>> getPages() {
         return ResponseEntity.ok(pageService.findAll());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(value = "/{id}", produces = "application/json")
     public ResponseEntity<PageDto> getPage(@PathVariable Long id) {
         return ResponseEntity.ok(pageService.findById(id));
     }
 
-    @GetMapping("/{id}/ui-components")
+    @GetMapping(value = "/{id}/ui-components", produces = "application/json")
     public ResponseEntity<List<com.example.ntbd.dto.UiComponentDto>> getComponents(@PathVariable Long id) {
         return ResponseEntity.ok(uiComponentService.findByPageId(id));
     }

@@ -19,8 +19,9 @@ export const routes: Routes = [
       { path: ':tabId/edit', loadComponent: () => import('./canvas/canvas').then(m => m.Canvas) },
       { path: ':tabId/workflow', loadComponent: () => import('./workflow-editor/workflow-editor').then(m => m.WorkflowEditor) },
       { path: ':tabId/data', loadComponent: () => import('./data-editor/data-editor').then(m => m.DataEditor) },
-      { path: ':tabId', redirectTo: ':tabId/edit', pathMatch: 'full' },
-      { path: '', redirectTo: '1/edit', pathMatch: 'full' }
+      { path: ':tabId/welcome', loadComponent: () => import('./welcome/welcome').then(m => m.Welcome) },
+      { path: ':tabId', redirectTo: ':tabId/welcome', pathMatch: 'full' },
+      { path: '', redirectTo: '1/welcome', pathMatch: 'full' }
     ]
   },
 ];

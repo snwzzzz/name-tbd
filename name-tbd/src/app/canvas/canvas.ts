@@ -112,12 +112,12 @@ export class Canvas implements AfterViewInit, OnDestroy {
       const tabId = this.tabsService.activeTabId();
       const ready = this.gridReady();
       if (tabId && ready && this.grid) {
-        this.ngZone.runOutsideAngular(() => {
-          this.isRestoring = true;
-          this.grid!.removeAll();
-          
-          const savedLayout = this.layoutStateService.getLayout(tabId);
-          const loadNodes = (items: LayoutItem[], parentGrid: GridStack) => {
+        this.layoutStateService.loadLayoutForTab(tabId).subscribe((savedLayout: LayoutItem[]) => {
+          this.ngZone.runOutsideAngular(() => {
+            this.isRestoring = true;
+            this.grid!.removeAll();
+            
+            const loadNodes = (items: LayoutItem[], parentGrid: GridStack) => {
             items.forEach(item => {
                const div = document.createElement('div');
                div.className = 'grid-stack-item';
@@ -137,9 +137,10 @@ export class Canvas implements AfterViewInit, OnDestroy {
           };
           
           if (savedLayout.length > 0) {
-            loadNodes(savedLayout, this.grid!);
-          }
-          this.isRestoring = false;
+              loadNodes(savedLayout, this.grid!);
+            }
+            this.isRestoring = false;
+          });
         });
       }
     });
@@ -280,6 +281,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
 
       // 'added' fires when an external widget is dropped onto the grid (or subgrid).
       grid.on('added', (_event: Event, nodes: GridStackNode[]) => {
+        const tabId = this.tabsService.activeTabId();
         nodes.forEach((node) => {
           const type = node.el?.getAttribute('data-type') ?? 'unknown';
           const id = node.el?.getAttribute('data-gs-id') || node.id || `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -338,6 +340,22 @@ export class Canvas implements AfterViewInit, OnDestroy {
             }
           }
 
+          if (!this.isRestoring && tabId && (!node.id || !node.id.toString().match(/^\d+$/))) {
+            this.layoutStateService.addComponent(tabId, {
+              id: node.id as string || node.el?.getAttribute('data-gs-id') as string,
+              type: node.el?.getAttribute('data-type') || 'unknown',
+              x: node.x || 0,
+              y: node.y || 0,
+              w: node.w || 100,
+              h: node.h || 40
+            }).subscribe(dto => {
+              if (dto && dto.id) {
+                const newId = dto.id.toString();
+                if (node.el) node.el.setAttribute('data-gs-id', newId);
+                node.id = newId;
+              }
+            });
+          }
         });
 
         // Pass 2: Ensure any subgrid we just dropped into is large enough to hold its new children
@@ -394,7 +412,22 @@ export class Canvas implements AfterViewInit, OnDestroy {
         syncLayout();
       });
 
-      grid.on('change', () => syncLayout());
+      grid.on('change', (_event: Event, nodes: GridStackNode[]) => {
+        if (this.isRestoring) return;
+        const tabId = this.tabsService.activeTabId();
+        if (tabId) {
+          nodes?.forEach(node => {
+            const id = node.id as string || node.el?.getAttribute('data-gs-id');
+            const type = node.el?.getAttribute('data-type') || 'unknown';
+            if (id) {
+              this.layoutStateService.updateComponent(tabId, {
+                id, type, x: node.x || 0, y: node.y || 0, w: node.w || 100, h: node.h || 40
+              }).subscribe();
+            }
+          });
+        }
+        syncLayout();
+      });
 
       // On resize stop, we might need to syncLayout (which captures the new sizes)
       // and update the nested grid maxRow constraint to match the container's new row height

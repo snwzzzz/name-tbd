@@ -17,8 +17,10 @@
         <button class="zoom-btn zoom-pct" (click)="zoomReset()" title="Reset to 100%">{{ zoomPercent() }}%</button>
         <button class="zoom-btn" (click)="zoomIn()" title="Zoom in">+</button>
         <div class="zoom-divider"></div>
+<div style='position:absolute; top: 0; right: 0; z-index: 9999; background: red; color: white;'>LAYOUT LENGTH: {{ layout().length }}</div>
         <button class="zoom-btn" (click)="zoomFit()" title="Fit (F)">Fit</button>
       </div>
+<div style='position:absolute; top: 0; right: 0; z-index: 9999; background: red; color: white;'>LAYOUT LENGTH: {{ layout().length }}</div>
 
       <!-- The artboard: native zoom scaling to keep Drag and Drop working natively -->
       <div class="artboard"
@@ -30,8 +32,10 @@
              One grid cell (1×1) = 60×45px
              Typical button (w:2, h:1) = 120×45px cell / ~112×37px content  -->
         <div class="grid-stack" #gridContainer></div>
+<div style='position:absolute; top: 0; right: 0; z-index: 9999; background: red; color: white;'>LAYOUT LENGTH: {{ layout().length }}</div>
 
-      </div><!-- /artboard -->
+      </div>
+<div style='position:absolute; top: 0; right: 0; z-index: 9999; background: red; color: white;'>LAYOUT LENGTH: {{ layout().length }}</div><!-- /artboard -->
 
       <!-- Layout-state debug overlay (remove or gate behind a flag in production) -->
       @if (layout().length > 0) {
@@ -40,12 +44,16 @@
             <span class="debug-title">LAYOUT STATE</span>
             <span class="debug-count">{{ layout().length }} item{{ layout().length !== 1 ? 's' : '' }}</span>
           </div>
+<div style='position:absolute; top: 0; right: 0; z-index: 9999; background: red; color: white;'>LAYOUT LENGTH: {{ layout().length }}</div>
           <pre class="debug-json">{{ layout() | json }}</pre>
         </div>
+<div style='position:absolute; top: 0; right: 0; z-index: 9999; background: red; color: white;'>LAYOUT LENGTH: {{ layout().length }}</div>
       }
 
-    </div><!-- /canvas-viewport -->
-  </div><!-- /canvas-area -->
+    </div>
+<div style='position:absolute; top: 0; right: 0; z-index: 9999; background: red; color: white;'>LAYOUT LENGTH: {{ layout().length }}</div><!-- /canvas-viewport -->
+  </div>
+<div style='position:absolute; top: 0; right: 0; z-index: 9999; background: red; color: white;'>LAYOUT LENGTH: {{ layout().length }}</div><!-- /canvas-area -->
 
   <!-- Custom Context Menu -->
   @if (contextMenuState(); as ctx) {
@@ -56,7 +64,11 @@
       <div class="menu-item" (click)="addLogicToItem(ctx.item)">
         ⚡ Add Logic / Edit Action
       </div>
+<div style='position:absolute; top: 0; right: 0; z-index: 9999; background: red; color: white;'>LAYOUT LENGTH: {{ layout().length }}</div>
     </div>
+<div style='position:absolute; top: 0; right: 0; z-index: 9999; background: red; color: white;'>LAYOUT LENGTH: {{ layout().length }}</div>
   }
 
 </div>
+<div style='position:absolute; top: 0; right: 0; z-index: 9999; background: red; color: white;'>LAYOUT LENGTH: {{ layout().length }}</div>
+

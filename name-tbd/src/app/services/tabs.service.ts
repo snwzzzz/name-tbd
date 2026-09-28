@@ -21,16 +21,13 @@ export class TabsService {
   readonly activeTabId = signal<string | null>(null);
   readonly activeMode = signal<string>('edit');
 
-  private nextId = 4;
+  private nextId = 1;
 
   constructor() {
-    this.loadTabs();
+    this.tabs.set([
+      { id: 'welcome-0', title: 'Welcome', mode: 'welcome' }
+    ]);
     
-    // Automatically save tabs whenever the array changes
-    effect(() => {
-      localStorage.setItem('ide-tabs', JSON.stringify(this.tabs()));
-    });
-
     // Listen to router to update activeTabId and activeMode signals
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
@@ -40,26 +37,6 @@ export class TabsService {
     
     // Initial parse
     setTimeout(() => this.parseUrlForState(), 0);
-  }
-
-  private loadTabs() {
-    const saved = localStorage.getItem('ide-tabs');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        this.tabs.set(parsed);
-        const maxId = Math.max(...parsed.map((t: any) => parseInt(t.id, 10) || 0), 0);
-        this.nextId = maxId + 1;
-        return;
-      } catch (e) {
-        console.error('Failed to parse tabs from local storage', e);
-      }
-    }
-    this.tabs.set([
-      { id: '1', title: 'main.ts', mode: 'edit' },
-      { id: '2', title: 'styles.css', mode: 'edit' },
-      { id: '3', title: 'index.html', mode: 'edit' },
-    ]);
   }
 
   private parseUrlForState() {
@@ -97,10 +74,14 @@ export class TabsService {
   }
 
   addTab() {
-    const newId = (this.nextId++).toString();
-    const newTab: TabItem = { id: newId, title: `new-file-${newId}.ts`, mode: 'edit' };
+    const newId = `new-${this.nextId++}`;
+    const newTab: TabItem = { id: newId, title: `Welcome`, mode: 'welcome' };
     this.tabs.update(tabs => [...tabs, newTab]);
     this.selectTab(newId);
+  }
+
+  updateTabState(id: string, updates: Partial<TabItem>) {
+    this.tabs.update(tabs => tabs.map(t => t.id === id ? { ...t, ...updates } : t));
   }
 
   closeTab(id: string) {
