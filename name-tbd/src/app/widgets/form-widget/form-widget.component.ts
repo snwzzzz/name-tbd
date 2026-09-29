@@ -1,4 +1,5 @@
 import { Component, ElementRef, inject, ChangeDetectorRef } from '@angular/core';
+import { BaseWidget } from '../../core/base-widget';
 
 @Component({
   selector: 'app-form-widget',
@@ -6,7 +7,7 @@ import { Component, ElementRef, inject, ChangeDetectorRef } from '@angular/core'
   templateUrl: './form-widget.component.html',
   styleUrl: './form-widget.component.scss'
 })
-export class FormWidgetComponent {
+export class FormWidgetComponent extends BaseWidget {
   inputCount = 1;
   private el = inject(ElementRef);
   private cdr = inject(ChangeDetectorRef);

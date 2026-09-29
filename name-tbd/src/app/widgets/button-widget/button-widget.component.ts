@@ -1,4 +1,5 @@
-import { Component, Input } from '@angular/core';
+import { Component } from '@angular/core';
+import { BaseWidget } from '../../core/base-widget';
 
 @Component({
   selector: 'app-button-widget',
@@ -6,6 +7,6 @@ import { Component, Input } from '@angular/core';
   templateUrl: './button-widget.component.html',
   styleUrl: './button-widget.component.scss'
 })
-export class ButtonWidgetComponent {
-  @Input() label: string = 'Angular Button';
+export class ButtonWidgetComponent extends BaseWidget {
+  // label is now read from props().label
 }

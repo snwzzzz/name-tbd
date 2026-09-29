@@ -1,0 +1,50 @@
+.inspector-panel {
+  display: flex;
+  flex-direction: row-reverse;
+  background-color: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  height: 100%;
+  position: relative;
+  color: var(--color-text-primary);
+  transition: width 0.2s ease;
+  overflow: hidden;
+
+  &.resizing {
+    transition: none; /* Disable transition during drag */
+    user-select: none;
+  }
+
+  .icon-bar {
+    background-color: var(--color-surface);
+    height: 100%;
+    width: 3rem;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 0;
+    gap: 0.5rem;
+    border-left: 1px solid var(--color-border);
+  }
+
+  .content {
+    flex: 1;
+    overflow: hidden;
+    background-color: var(--color-surface);
+  }
+
+  .resizer {
+    width: 4px;
+    height: 100%;
+    position: absolute;
+    left: -2px;
+    top: 0;
+    cursor: col-resize;
+    z-index: 10;
+
+    &:hover {
+      background-color: var(--color-primary);
+      opacity: 0.5;
+    }
+  }
+}

@@ -1,0 +1,31 @@
+<aside class="inspector-panel" 
+  [class.expanded]="isSidebarExpanded()"
+  [class.resizing]="isResizing()"
+  [style.width.px]="isSidebarExpanded() ? sidebarWidth() : 48">
+  <div class="icon-bar">
+    <app-icon-button 
+      [icon]="editIcon" 
+      [selected]="activeTab() === 'edit'"
+      (click)="selectTab('edit')">
+    </app-icon-button>
+    <app-icon-button 
+      [icon]="layersIcon" 
+      [selected]="activeTab() === 'layers'"
+      (click)="selectTab('layers')">
+    </app-icon-button>
+  </div>
+  <div class="content">
+    @if (isSidebarExpanded()) {
+      @if (activeTab() === 'edit') {
+        <app-properties-panel></app-properties-panel>
+      }
+      @if (activeTab() === 'layers') {
+        <div style="padding: 1rem; color: var(--color-text-secondary);">Layers Panel (Coming Soon)</div>
+      }
+    }
+  </div>
+
+  @if (isSidebarExpanded()) {
+    <div class="resizer" (mousedown)="startResize($event)"></div>
+  }
+</aside>

@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { BaseWidget } from '../../core/base-widget';
 
 @Component({
   selector: 'app-default-widget',
@@ -6,6 +7,6 @@ import { Component, Input } from '@angular/core';
   templateUrl: './default-widget.component.html',
   styleUrl: './default-widget.component.scss'
 })
-export class DefaultWidgetComponent {
+export class DefaultWidgetComponent extends BaseWidget {
   @Input() type: string = 'unknown';
 }

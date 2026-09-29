@@ -23,12 +23,11 @@ import { CdkMenuModule } from '@angular/cdk/menu';
 import { Dialog, DialogModule } from '@angular/cdk/dialog';
 import { WorkflowStateService } from '../services/workflow-state.service';
 import { TabsService } from '../services/tabs.service';
+import { SelectionService } from '../services/selection.service';
 import { FormsModule } from '@angular/forms';
 
-export const WIDGET_REGISTRY: Record<string, Type<any>> = {
-  'button': ButtonWidgetComponent,
-  'form': FormWidgetComponent,
-};
+import { WIDGET_REGISTRY } from '../widgets/registry';
+import { PropertiesPanelComponent } from '../properties-panel/properties-panel';
 
 // ─── Artboard constants (16:9 website viewport reference) ─────────────────────
 // 24 columns × 60px = 1440px wide
@@ -77,6 +76,8 @@ export class Canvas implements AfterViewInit, OnDestroy {
 
   readonly contextMenuState = signal<{ x: number, y: number, item: any } | null>(null);
 
+  selectionService = inject(SelectionService);
+
   @HostListener('document:pointerdown', ['$event'])
   @HostListener('document:contextmenu')
   onDocumentInteraction(e?: MouseEvent) {
@@ -87,8 +88,13 @@ export class Canvas implements AfterViewInit, OnDestroy {
     this.contextMenuState.set(null);
     if (e && e.type === 'pointerdown') {
       const target = e.target as HTMLElement;
+      
+      // If clicking outside the canvas viewport entirely (e.g. in a sidebar), ignore so we don't lose selection
+      const isInsideCanvas = target.closest('.canvas-viewport');
+      if (!isInsideCanvas) return;
+
       // Find closest grid-stack-item
-      const item = target ? target.closest('.grid-stack-item') : null;
+      const item = target.closest('.grid-stack-item');
       
       // Remove selected from all others
       document.querySelectorAll('.grid-stack-item.selected').forEach(el => {
@@ -98,6 +104,10 @@ export class Canvas implements AfterViewInit, OnDestroy {
       // Add selected to current
       if (item) {
         item.classList.add('selected');
+        const id = item.getAttribute('data-gs-id');
+        if (id) this.selectionService.select(id);
+      } else {
+        this.selectionService.clear();
       }
     }
   }
@@ -174,6 +184,12 @@ export class Canvas implements AfterViewInit, OnDestroy {
                  }, undefined, false);
                }
                const node = widgetNode?.gridstackNode;
+               
+               // Instantiate Angular component
+               if (item.id && item.type !== 'container') {
+                 this.instantiateWidget(item.id.toString(), item.type || 'unknown', content, item.props);
+               }
+
                if (item.children && item.children.length > 0 && node && node.subGrid) {
                  loadNodes(item.children, node.subGrid as GridStack);
                }
@@ -195,6 +211,22 @@ export class Canvas implements AfterViewInit, OnDestroy {
         });
       }
     });
+  }
+
+  instantiateWidget(id: string, type: string, contentEl: HTMLElement, props?: Record<string, any>) {
+    const def = WIDGET_REGISTRY[type] || WIDGET_REGISTRY['default'];
+    const compRef = this.vcr.createComponent(def.component);
+    
+    compRef.setInput('id', id);
+    compRef.setInput('props', { ...(def.defaultProps || {}), ...(props || {}) });
+    
+    if (def.type === 'default') {
+      compRef.setInput('type', type);
+    }
+    
+    compRef.changeDetectorRef.detectChanges();
+    contentEl.appendChild(compRef.location.nativeElement);
+    this.widgetRefs.set(id, compRef);
   }
 
   ngAfterViewInit(): void {
@@ -413,17 +445,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
               contentEl.classList.add('container-widget');
             } else {
               contentEl.innerHTML = '';
-              const componentClass = WIDGET_REGISTRY[type] || DefaultWidgetComponent;
-              const compRef = this.vcr.createComponent(componentClass);
-              
-              // Only pass type to the DefaultWidgetComponent so it can render the placeholder name
-              if (componentClass === DefaultWidgetComponent) {
-                compRef.setInput('type', type);
-              }
-              
-              compRef.changeDetectorRef.detectChanges();
-              contentEl.appendChild(compRef.location.nativeElement);
-              this.widgetRefs.set(id, compRef);
+              this.instantiateWidget(id as string, type, contentEl as HTMLElement, {});
               
               // Add right-click listener
               contentEl.addEventListener('contextmenu', (e: Event) => {
@@ -475,6 +497,10 @@ export class Canvas implements AfterViewInit, OnDestroy {
                   const ref = this.widgetRefs.get(oldId)!;
                   this.widgetRefs.delete(oldId);
                   this.widgetRefs.set(newId, ref);
+                  ref.setInput('id', newId);
+                  if (dto.props) {
+                    ref.setInput('props', { ...(WIDGET_REGISTRY[dto.type || 'default']?.defaultProps || {}), ...dto.props });
+                  }
                 }
 
                 // 3. Seed lastKnownState so future move/resize diffs can track this element

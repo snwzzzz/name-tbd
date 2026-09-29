@@ -1,5 +1,5 @@
 <div class="button-wrapper">
   <button class="dynamic-button">
-    {{ label }}
+    {{ props()['label'] || 'Button' }}
   </button>
 </div>

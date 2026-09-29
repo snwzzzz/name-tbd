@@ -29,6 +29,7 @@ export class ComponentList implements AfterViewInit {
    */
   readonly items: PaletteItem[] = [
     { type: 'button', label: 'Button', w: 2, h: 1, minW: 1, minH: 1 },
+    { type: 'label', label: 'Text Label', w: 2, h: 1, minW: 1, minH: 1 },
     { type: 'detail-section', label: 'Detail Section', w: 4, h: 2, resizable: false },
     { type: 'chart', label: 'Chart', w: 6, h: 3, resizable: false },
     { type: 'text', label: 'Text Block', w: 3, h: 2, resizable: false },

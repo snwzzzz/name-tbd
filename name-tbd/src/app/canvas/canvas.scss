@@ -149,7 +149,7 @@ $ah: 50.625rem;
 // ─── Dropped grid items ───────────────────────────────────────────────────────
 :host ::ng-deep .grid-stack-item-content {
   border-radius: 0.1875rem;
-  overflow: hidden;
+  overflow: hidden !important;
 
   .grid-item-content {
     height: 100%;
