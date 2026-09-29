@@ -14,4 +14,5 @@ export { PageControllerService } from "./pageController.service";
 export { UiComponentControllerService } from "./uiComponentController.service";
 export { UserControllerService } from "./userController.service";
 export { VersionControlControllerService } from "./versionControlController.service";
+export { WidgetPropDefinitionControllerService } from "./widgetPropDefinitionController.service";
 export { WorkflowControllerService } from "./workflowController.service";

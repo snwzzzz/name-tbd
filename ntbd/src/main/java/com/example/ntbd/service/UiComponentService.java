@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import com.example.ntbd.domain.UiComponentProperty;
 
 @RequiredArgsConstructor
 @Service
@@ -45,7 +47,6 @@ public class UiComponentService {
         UiComponent component = UiComponent.builder()
                 .page(page)
                 .type(command.type())
-                .props(command.props())
                 .workflow(workflow)
                 .parent(parent)
                 .x(command.x())
@@ -53,6 +54,17 @@ public class UiComponentService {
                 .w(command.w())
                 .h(command.h())
                 .build();
+
+        if (command.props() != null) {
+            List<UiComponentProperty> propsList = command.props().entrySet().stream().map(e -> {
+                UiComponentProperty p = new UiComponentProperty();
+                p.setComponent(component);
+                p.setPropKey(e.getKey());
+                p.setPropValue(e.getValue() != null ? e.getValue().toString() : null);
+                return p;
+            }).collect(Collectors.toList());
+            component.setProperties(propsList);
+        }
 
         return UiComponentMapper.toDto(uiComponentRepository.saveAndFlush(component));
     }
@@ -83,7 +95,15 @@ public class UiComponentService {
                 .orElseThrow(() -> new UiComponentNotFoundException("UI Component not found with id " + id));
 
         if (command.props() != null) {
-            component.setProps(command.props());
+            component.getProperties().clear();
+            List<UiComponentProperty> propsList = command.props().entrySet().stream().map(e -> {
+                UiComponentProperty p = new UiComponentProperty();
+                p.setComponent(component);
+                p.setPropKey(e.getKey());
+                p.setPropValue(e.getValue() != null ? e.getValue().toString() : null);
+                return p;
+            }).collect(Collectors.toList());
+            component.getProperties().addAll(propsList);
         }
         if (command.x() != null) {
             component.setX(command.x());

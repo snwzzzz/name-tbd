@@ -174,6 +174,14 @@ export interface NewApplicationCommand {
     description?: string;
 }
 
+export interface WidgetPropDefinition {
+    id?: number;
+    widgetType?: string;
+    propKey?: string;
+    propType?: string;
+    defaultValue?: string;
+}
+
 /** Request Options for Angular HttpClient requests */
 export interface RequestOptions<TResponseType extends 'arraybuffer' | 'blob' | 'json' | 'text'> {
     headers?: HttpHeaders;

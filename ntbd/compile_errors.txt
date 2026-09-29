@@ -1,0 +1,136 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------------< com.example:ntbd >--------------------------
+[INFO] Building  0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.5.0:clean (default-clean) @ ntbd ---
+[INFO] Deleting C:\Users\snwzi\OneDrive\Dokumente\GitHub\name-tbd\ntbd\target
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ ntbd ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 7 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (compile) @ ntbd ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 107 source files with javac [debug parameters release 21] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewApplicationCommand.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewBranchCommand.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewEdgeCommand.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewNodeCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewPageCommand.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewUiComponentCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewUserCommand.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewVersionControlCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewWorkflowCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/UpdateNodeCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/UpdateUiComponentCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Email.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Email.java:[7,26] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Email.java:[16,12] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Email.java:[18,9] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Email.java:[20,5] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Username.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Username.java:[5,12] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Username.java:[7,9] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Username.java:[9,5] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Version.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Version.java:[7,26] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Version.java:[10,12] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Version.java:[12,9] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Version.java:[14,5] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/ApplicationDto.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/BranchDto.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/EdgeDto.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/NodeDto.java:[6,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/PageDto.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/UiComponentDto.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/UserDto.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/VersionControlDto.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/WorkflowDto.java:[7,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[15,14] unclosed string literal
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[17,10] = expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[18,11] = expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[18,13] illegal start of type
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[18,20] = expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[18,23] <identifier> expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[18,26] illegal start of expression
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[19,11] = expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[20,5] = expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[20,7] unclosed string literal
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[21,68] <identifier> expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/workflow/ExecutionResult.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/workflow/ExecutionResult.java:[12,19] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/workflow/ExecutionResult.java:[14,5] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/workflow/ExecutionResult.java:[16,19] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/workflow/ExecutionResult.java:[18,5] class, interface, or enum expected
+[INFO] 50 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.874 s
+[INFO] Finished at: 2026-09-29T20:15:53+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.15.0:compile (compile) on project ntbd: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewApplicationCommand.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewBranchCommand.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewEdgeCommand.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewNodeCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewPageCommand.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewUiComponentCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewUserCommand.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewVersionControlCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/NewWorkflowCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/UpdateNodeCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/commands/UpdateUiComponentCommand.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Email.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Email.java:[7,26] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Email.java:[16,12] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Email.java:[18,9] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Email.java:[20,5] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Username.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Username.java:[5,12] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Username.java:[7,9] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Username.java:[9,5] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Version.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Version.java:[7,26] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Version.java:[10,12] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Version.java:[12,9] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/domain/Version.java:[14,5] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/ApplicationDto.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/BranchDto.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/EdgeDto.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/NodeDto.java:[6,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/PageDto.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/UiComponentDto.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/UserDto.java:[3,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/VersionControlDto.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/dto/WorkflowDto.java:[7,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[15,14] unclosed string literal
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[17,10] = expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[18,11] = expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[18,13] illegal start of type
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[18,20] = expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[18,23] <identifier> expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[18,26] illegal start of expression
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[19,11] = expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[20,5] = expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[20,7] unclosed string literal
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/persistence/VersionControlRepository.java:[21,68] <identifier> expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/workflow/ExecutionResult.java:[5,8] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/workflow/ExecutionResult.java:[12,19] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/workflow/ExecutionResult.java:[14,5] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/workflow/ExecutionResult.java:[16,19] class, interface, or enum expected
+[ERROR] /C:/Users/snwzi/OneDrive/Dokumente/GitHub/name-tbd/ntbd/src/main/java/com/example/ntbd/workflow/ExecutionResult.java:[18,5] class, interface, or enum expected
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

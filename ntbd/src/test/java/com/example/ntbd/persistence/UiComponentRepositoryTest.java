@@ -52,15 +52,20 @@ public class UiComponentRepositoryTest {
         var component = UiComponent.builder()
                 .type("BUTTON")
                 .page(page)
-                .props(Map.of("label", "Submit", "color", "blue"))
                 .build();
+
+        var prop1 = new com.example.ntbd.domain.UiComponentProperty(null, component, "label", "Submit");
+        var prop2 = new com.example.ntbd.domain.UiComponentProperty(null, component, "color", "blue");
+        
+        component.setProperties(java.util.List.of(prop1, prop2));
 
         uiComponentRepository.save(component);
 
         var components = uiComponentRepository.findByPage_Id(page.getId());
 
         assertThat(components).hasSize(1);
-        assertThat(components.get(0).getType()).isEqualTo("BUTTON");
-        assertThat(components.get(0).getProps()).containsEntry("label", "Submit");
+        assertThat(components.getFirst().getType()).isEqualTo("BUTTON");
+        assertThat(components.getFirst().getProperties()).hasSize(2);
+        assertThat(components.getFirst().getProperties().stream().anyMatch(p -> p.getPropKey().equals("label") && "Submit".equals(p.getPropValue()))).isTrue();
     }
 }

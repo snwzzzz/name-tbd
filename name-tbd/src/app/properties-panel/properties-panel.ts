@@ -4,11 +4,13 @@ import { SelectionService } from '../services/selection.service';
 import { LayoutStateService } from '../services/layout-state.service';
 import { TabsService } from '../services/tabs.service';
 import { WIDGET_REGISTRY } from '../widgets/registry';
+import { WidgetRegistryService } from '../core/widget-registry.service';
+import { DynamicSettingsComponent } from '../widgets/dynamic-settings/dynamic-settings.component';
 
 @Component({
   selector: 'app-properties-panel',
   standalone: true,
-  imports: [NgComponentOutlet],
+  imports: [NgComponentOutlet, DynamicSettingsComponent],
   template: `
     <div class="h-full w-full flex flex-col" style="color: var(--color-text-primary);">
       @if (selectedItem(); as item) {
@@ -18,8 +20,11 @@ import { WIDGET_REGISTRY } from '../widgets/registry';
         </div>
         
         <div class="flex-1 overflow-y-auto">
-          @if (getDef(item.type).settingsComponent; as settingsComp) {
-            <!-- Render the dynamic settings component -->
+          @if (registry.getPropsForWidget(item.type).length > 0) {
+            <!-- Auto-generated standard props from the DB -->
+            <app-dynamic-settings [type]="item.type" [props]="item.props"></app-dynamic-settings>
+          } @else if (getDef(item.type).settingsComponent; as settingsComp) {
+            <!-- Fallback to hardcoded settings component if no DB props are defined -->
             <ng-container *ngComponentOutlet="settingsComp; inputs: { props: item.props }"></ng-container>
           } @else {
             <div class="p-4 text-gray-500 text-sm">
@@ -39,6 +44,7 @@ export class PropertiesPanelComponent {
   selection = inject(SelectionService);
   layoutState = inject(LayoutStateService);
   tabs = inject(TabsService);
+  registry = inject(WidgetRegistryService);
   
   selectedItem = signal<any>(null);
 
