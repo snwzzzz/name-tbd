@@ -20,7 +20,7 @@ import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/workflows")
+@RequestMapping(value = "/api/workflows", produces = "application/json")
 public class WorkflowController {
 
     private final WorkflowService workflowService;

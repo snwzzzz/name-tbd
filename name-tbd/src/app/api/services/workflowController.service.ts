@@ -51,9 +51,9 @@ export class WorkflowControllerService {
         });
     }
 
-    updateNode(workflowId: number, nodeId: number, updateNodeCommand: UpdateNodeCommand, observe?: 'body', options?: RequestOptions<'blob'>): Observable<NodeDto>;
-    updateNode(workflowId: number, nodeId: number, updateNodeCommand: UpdateNodeCommand, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<NodeDto>>;
-    updateNode(workflowId: number, nodeId: number, updateNodeCommand: UpdateNodeCommand, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<NodeDto>>;
+    updateNode(workflowId: number, nodeId: number, updateNodeCommand: UpdateNodeCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<NodeDto>;
+    updateNode(workflowId: number, nodeId: number, updateNodeCommand: UpdateNodeCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<NodeDto>>;
+    updateNode(workflowId: number, nodeId: number, updateNodeCommand: UpdateNodeCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<NodeDto>>;
     updateNode(workflowId: number, nodeId: number, updateNodeCommand: UpdateNodeCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/workflows/${workflowId}/nodes/${nodeId}`;
 
@@ -65,7 +65,7 @@ export class WorkflowControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
         // Set Content-Type for JSON requests if not already set
         if (!headers.has('Content-Type')) {
@@ -76,7 +76,6 @@ export class WorkflowControllerService {
             body: updateNodeCommand,
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
@@ -137,9 +136,9 @@ export class WorkflowControllerService {
         });
     }
 
-    createWorkflow(newWorkflowCommand: NewWorkflowCommand, observe?: 'body', options?: RequestOptions<'blob'>): Observable<WorkflowDto>;
-    createWorkflow(newWorkflowCommand: NewWorkflowCommand, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<WorkflowDto>>;
-    createWorkflow(newWorkflowCommand: NewWorkflowCommand, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<WorkflowDto>>;
+    createWorkflow(newWorkflowCommand: NewWorkflowCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<WorkflowDto>;
+    createWorkflow(newWorkflowCommand: NewWorkflowCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<WorkflowDto>>;
+    createWorkflow(newWorkflowCommand: NewWorkflowCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<WorkflowDto>>;
     createWorkflow(newWorkflowCommand: NewWorkflowCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/workflows`;
 
@@ -151,7 +150,7 @@ export class WorkflowControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
         // Set Content-Type for JSON requests if not already set
         if (!headers.has('Content-Type')) {
@@ -162,7 +161,6 @@ export class WorkflowControllerService {
             body: newWorkflowCommand,
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

@@ -12,7 +12,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/applications")
+@RequestMapping(value = "/api/applications", produces = "application/json")
 public class ApplicationController {
 
     private final ApplicationService applicationService;

@@ -25,9 +25,9 @@ export class UserControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    createUser(newUserCommand: NewUserCommand, observe?: 'body', options?: RequestOptions<'blob'>): Observable<UserDto>;
-    createUser(newUserCommand: NewUserCommand, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<UserDto>>;
-    createUser(newUserCommand: NewUserCommand, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<UserDto>>;
+    createUser(newUserCommand: NewUserCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<UserDto>;
+    createUser(newUserCommand: NewUserCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<UserDto>>;
+    createUser(newUserCommand: NewUserCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<UserDto>>;
     createUser(newUserCommand: NewUserCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/users`;
 
@@ -39,7 +39,7 @@ export class UserControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
         // Set Content-Type for JSON requests if not already set
         if (!headers.has('Content-Type')) {
@@ -50,7 +50,6 @@ export class UserControllerService {
             body: newUserCommand,
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

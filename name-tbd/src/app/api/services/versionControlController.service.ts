@@ -25,9 +25,9 @@ export class VersionControlControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    getVersionsByBranch(branchId: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<Array<VersionControlDto>>;
-    getVersionsByBranch(branchId: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<Array<VersionControlDto>>>;
-    getVersionsByBranch(branchId: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<Array<VersionControlDto>>>;
+    getVersionsByBranch(branchId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<VersionControlDto>>;
+    getVersionsByBranch(branchId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<VersionControlDto>>>;
+    getVersionsByBranch(branchId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<VersionControlDto>>>;
     getVersionsByBranch(branchId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/versions`;
 
@@ -44,23 +44,22 @@ export class VersionControlControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
             params,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
         });
     }
 
-    createVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'body', options?: RequestOptions<'blob'>): Observable<VersionControlDto>;
-    createVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<VersionControlDto>>;
-    createVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<VersionControlDto>>;
+    createVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<VersionControlDto>;
+    createVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<VersionControlDto>>;
+    createVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<VersionControlDto>>;
     createVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/versions`;
 
@@ -72,7 +71,7 @@ export class VersionControlControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
         // Set Content-Type for JSON requests if not already set
         if (!headers.has('Content-Type')) {
@@ -83,16 +82,15 @@ export class VersionControlControllerService {
             body: newVersionControlCommand,
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
         });
     }
 
-    getLatestVersionByBranch(branchId: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<VersionControlDto>;
-    getLatestVersionByBranch(branchId: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<VersionControlDto>>;
-    getLatestVersionByBranch(branchId: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<VersionControlDto>>;
+    getLatestVersionByBranch(branchId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<VersionControlDto>;
+    getLatestVersionByBranch(branchId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<VersionControlDto>>;
+    getLatestVersionByBranch(branchId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<VersionControlDto>>;
     getLatestVersionByBranch(branchId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/versions/latest`;
 
@@ -109,14 +107,13 @@ export class VersionControlControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
             params,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

@@ -12,7 +12,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/versions")
+@RequestMapping(value = "/api/versions", produces = "application/json")
 public class VersionControlController {
 
     private final VersionControlService versionControlService;

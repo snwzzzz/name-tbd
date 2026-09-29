@@ -25,9 +25,9 @@ export class BranchControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    getBranchesByApplication(applicationId: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<Array<BranchDto>>;
-    getBranchesByApplication(applicationId: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<Array<BranchDto>>>;
-    getBranchesByApplication(applicationId: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<Array<BranchDto>>>;
+    getBranchesByApplication(applicationId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<BranchDto>>;
+    getBranchesByApplication(applicationId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<BranchDto>>>;
+    getBranchesByApplication(applicationId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<BranchDto>>>;
     getBranchesByApplication(applicationId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/branches`;
 
@@ -44,23 +44,22 @@ export class BranchControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
             params,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
         });
     }
 
-    createBranch(newBranchCommand: NewBranchCommand, observe?: 'body', options?: RequestOptions<'blob'>): Observable<BranchDto>;
-    createBranch(newBranchCommand: NewBranchCommand, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<BranchDto>>;
-    createBranch(newBranchCommand: NewBranchCommand, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<BranchDto>>;
+    createBranch(newBranchCommand: NewBranchCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<BranchDto>;
+    createBranch(newBranchCommand: NewBranchCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<BranchDto>>;
+    createBranch(newBranchCommand: NewBranchCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<BranchDto>>;
     createBranch(newBranchCommand: NewBranchCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/branches`;
 
@@ -72,7 +71,7 @@ export class BranchControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
         // Set Content-Type for JSON requests if not already set
         if (!headers.has('Content-Type')) {
@@ -83,7 +82,6 @@ export class BranchControllerService {
             body: newBranchCommand,
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

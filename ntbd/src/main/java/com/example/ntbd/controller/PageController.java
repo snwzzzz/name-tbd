@@ -12,7 +12,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/pages")
+@RequestMapping(value = "/api/pages", produces = "application/json")
 public class PageController {
 
     private final PageService pageService;

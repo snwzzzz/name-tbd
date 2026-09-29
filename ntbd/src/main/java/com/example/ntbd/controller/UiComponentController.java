@@ -12,7 +12,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/ui-components")
+@RequestMapping(value = "/api/ui-components", produces = "application/json")
 public class UiComponentController {
 
     private final UiComponentService uiComponentService;

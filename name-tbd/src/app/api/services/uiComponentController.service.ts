@@ -25,9 +25,9 @@ export class UiComponentControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    getComponent(id: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<UiComponentDto>;
-    getComponent(id: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<UiComponentDto>>;
-    getComponent(id: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<UiComponentDto>>;
+    getComponent(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<UiComponentDto>;
+    getComponent(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<UiComponentDto>>;
+    getComponent(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<UiComponentDto>>;
     getComponent(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/ui-components/${id}`;
 
@@ -39,22 +39,21 @@ export class UiComponentControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
         });
     }
 
-    updateComponent(id: number, updateUiComponentCommand: UpdateUiComponentCommand, observe?: 'body', options?: RequestOptions<'blob'>): Observable<UiComponentDto>;
-    updateComponent(id: number, updateUiComponentCommand: UpdateUiComponentCommand, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<UiComponentDto>>;
-    updateComponent(id: number, updateUiComponentCommand: UpdateUiComponentCommand, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<UiComponentDto>>;
+    updateComponent(id: number, updateUiComponentCommand: UpdateUiComponentCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<UiComponentDto>;
+    updateComponent(id: number, updateUiComponentCommand: UpdateUiComponentCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<UiComponentDto>>;
+    updateComponent(id: number, updateUiComponentCommand: UpdateUiComponentCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<UiComponentDto>>;
     updateComponent(id: number, updateUiComponentCommand: UpdateUiComponentCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/ui-components/${id}`;
 
@@ -66,7 +65,7 @@ export class UiComponentControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
         // Set Content-Type for JSON requests if not already set
         if (!headers.has('Content-Type')) {
@@ -77,7 +76,6 @@ export class UiComponentControllerService {
             body: updateUiComponentCommand,
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
@@ -106,9 +104,9 @@ export class UiComponentControllerService {
         });
     }
 
-    getComponents(observe?: 'body', options?: RequestOptions<'blob'>): Observable<Array<UiComponentDto>>;
-    getComponents(observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<Array<UiComponentDto>>>;
-    getComponents(observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<Array<UiComponentDto>>>;
+    getComponents(observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<UiComponentDto>>;
+    getComponents(observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<UiComponentDto>>>;
+    getComponents(observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<UiComponentDto>>>;
     getComponents(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/ui-components`;
 
@@ -120,22 +118,21 @@ export class UiComponentControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
         });
     }
 
-    createComponent(newUiComponentCommand: NewUiComponentCommand, observe?: 'body', options?: RequestOptions<'blob'>): Observable<UiComponentDto>;
-    createComponent(newUiComponentCommand: NewUiComponentCommand, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<UiComponentDto>>;
-    createComponent(newUiComponentCommand: NewUiComponentCommand, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<UiComponentDto>>;
+    createComponent(newUiComponentCommand: NewUiComponentCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<UiComponentDto>;
+    createComponent(newUiComponentCommand: NewUiComponentCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<UiComponentDto>>;
+    createComponent(newUiComponentCommand: NewUiComponentCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<UiComponentDto>>;
     createComponent(newUiComponentCommand: NewUiComponentCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/ui-components`;
 
@@ -147,7 +144,7 @@ export class UiComponentControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
         // Set Content-Type for JSON requests if not already set
         if (!headers.has('Content-Type')) {
@@ -158,7 +155,6 @@ export class UiComponentControllerService {
             body: newUiComponentCommand,
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

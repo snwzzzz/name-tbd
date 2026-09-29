@@ -453,11 +453,36 @@ export class Canvas implements AfterViewInit, OnDestroy {
               parentId: parentId
             }).subscribe(dto => {
               if (dto && dto.id) {
+                const oldId = (node.id || node.el?.getAttribute('data-gs-id')) as string;
                 const newId = dto.id.toString();
-                if (node.el) node.el.setAttribute('data-gs-id', newId);
+
+                // 1. Update DOM attributes to match DB entity
+                if (node.el) {
+                  node.el.setAttribute('data-gs-id', newId);
+                  if (dto.type) node.el.setAttribute('data-type', dto.type);
+                }
                 node.id = newId;
-                
-                // If the user resized/moved the item before the DB save completed, sync it now
+
+                // 2. Migrate widgetRefs from temp ID -> DB ID
+                if (oldId && oldId !== newId && this.widgetRefs.has(oldId)) {
+                  const ref = this.widgetRefs.get(oldId)!;
+                  this.widgetRefs.delete(oldId);
+                  this.widgetRefs.set(newId, ref);
+                }
+
+                // 3. Seed lastKnownState so future move/resize diffs can track this element
+                this.lastKnownState.set(newId, {
+                  x: node.x ?? dto.x ?? 0,
+                  y: node.y ?? dto.y ?? 0,
+                  w: node.w ?? dto.w ?? 100,
+                  h: node.h ?? dto.h ?? 40,
+                  parentId: dto.parentId ?? undefined,
+                });
+
+                // 4. Re-sync layout signal so it picks up the real DB ID
+                syncLayout();
+
+                // 5. If the user resized/moved the item before the DB save completed, sync it now
                 if (node.w !== dto.w || node.h !== dto.h || node.x !== dto.x || node.y !== dto.y) {
                   this.layoutStateService.updateComponent(tabId, {
                     id: dto.id,

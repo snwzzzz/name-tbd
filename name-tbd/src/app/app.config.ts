@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { provideDefaultClient } from './api';
-import { BlobToJsonInterceptor } from './interceptors/blob-to-json.interceptor';
+
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -11,7 +11,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideDefaultClient({
       basePath: 'http://localhost:8080',
-      interceptors: [BlobToJsonInterceptor]
+      interceptors: []
     }),
   ],
 };

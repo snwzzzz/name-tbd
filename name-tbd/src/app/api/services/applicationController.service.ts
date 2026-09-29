@@ -25,9 +25,9 @@ export class ApplicationControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    getApplications(observe?: 'body', options?: RequestOptions<'blob'>): Observable<Array<ApplicationDto>>;
-    getApplications(observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<Array<ApplicationDto>>>;
-    getApplications(observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<Array<ApplicationDto>>>;
+    getApplications(observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<ApplicationDto>>;
+    getApplications(observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<ApplicationDto>>>;
+    getApplications(observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<ApplicationDto>>>;
     getApplications(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/applications`;
 
@@ -39,22 +39,21 @@ export class ApplicationControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
         });
     }
 
-    createApplication(newApplicationCommand: NewApplicationCommand, observe?: 'body', options?: RequestOptions<'blob'>): Observable<ApplicationDto>;
-    createApplication(newApplicationCommand: NewApplicationCommand, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<ApplicationDto>>;
-    createApplication(newApplicationCommand: NewApplicationCommand, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<ApplicationDto>>;
+    createApplication(newApplicationCommand: NewApplicationCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<ApplicationDto>;
+    createApplication(newApplicationCommand: NewApplicationCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<ApplicationDto>>;
+    createApplication(newApplicationCommand: NewApplicationCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<ApplicationDto>>;
     createApplication(newApplicationCommand: NewApplicationCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/applications`;
 
@@ -66,7 +65,7 @@ export class ApplicationControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
         // Set Content-Type for JSON requests if not already set
         if (!headers.has('Content-Type')) {
@@ -77,7 +76,6 @@ export class ApplicationControllerService {
             body: newApplicationCommand,
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

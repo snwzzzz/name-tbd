@@ -51,9 +51,9 @@ export class PageControllerService {
         });
     }
 
-    createPage(newPageCommand: NewPageCommand, observe?: 'body', options?: RequestOptions<'blob'>): Observable<PageDto>;
-    createPage(newPageCommand: NewPageCommand, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<PageDto>>;
-    createPage(newPageCommand: NewPageCommand, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<PageDto>>;
+    createPage(newPageCommand: NewPageCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<PageDto>;
+    createPage(newPageCommand: NewPageCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<PageDto>>;
+    createPage(newPageCommand: NewPageCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<PageDto>>;
     createPage(newPageCommand: NewPageCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/pages`;
 
@@ -65,7 +65,7 @@ export class PageControllerService {
         }
         // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
         // Set Content-Type for JSON requests if not already set
         if (!headers.has('Content-Type')) {
@@ -76,7 +76,6 @@ export class PageControllerService {
             body: newPageCommand,
             observe,
             headers,
-            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
