@@ -61,8 +61,12 @@ export class LayoutStateService {
   }
 
   updateComponent(pageId: string, item: LayoutItem): Observable<any> {
+    console.log('[DEBUG] updateComponent called for ID:', item.id, 'typeof:', typeof item.id, 'item:', item);
     // If it's a temp string ID, we can't update it yet in the DB.
-    if (!item.id || typeof item.id === 'string') return of(null);
+    if (!item.id || typeof item.id === 'string') {
+        console.log('[DEBUG] Aborting updateComponent because it is a string or falsy');
+        return of(null);
+    }
 
     return this.uiService.updateComponent(item.id, {
       x: item.x,

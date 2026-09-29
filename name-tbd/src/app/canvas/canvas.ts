@@ -456,12 +456,19 @@ export class Canvas implements AfterViewInit, OnDestroy {
                 const oldId = (node.id || node.el?.getAttribute('data-gs-id')) as string;
                 const newId = dto.id.toString();
 
-                // 1. Update DOM attributes to match DB entity
-                if (node.el) {
-                  node.el.setAttribute('data-gs-id', newId);
-                  if (dto.type) node.el.setAttribute('data-type', dto.type);
+                // Find the actual node currently in the grid engine, in case GridStack cloned/replaced it after drop
+                let actualNode = node;
+                if (node.grid) {
+                  const found = node.grid.engine.nodes.find(n => n.id === oldId || n.el?.getAttribute('data-gs-id') === oldId);
+                  if (found) actualNode = found;
                 }
-                node.id = newId;
+
+                // 1. Update DOM attributes to match DB entity
+                if (actualNode.el) {
+                  actualNode.el.setAttribute('data-gs-id', newId);
+                  if (dto.type) actualNode.el.setAttribute('data-type', dto.type);
+                }
+                actualNode.id = newId;
 
                 // 2. Migrate widgetRefs from temp ID -> DB ID
                 if (oldId && oldId !== newId && this.widgetRefs.has(oldId)) {
@@ -472,10 +479,10 @@ export class Canvas implements AfterViewInit, OnDestroy {
 
                 // 3. Seed lastKnownState so future move/resize diffs can track this element
                 this.lastKnownState.set(newId, {
-                  x: node.x ?? dto.x ?? 0,
-                  y: node.y ?? dto.y ?? 0,
-                  w: node.w ?? dto.w ?? 100,
-                  h: node.h ?? dto.h ?? 40,
+                  x: actualNode.x ?? dto.x ?? 0,
+                  y: actualNode.y ?? dto.y ?? 0,
+                  w: actualNode.w ?? dto.w ?? 100,
+                  h: actualNode.h ?? dto.h ?? 40,
                   parentId: dto.parentId ?? undefined,
                 });
 
@@ -483,14 +490,14 @@ export class Canvas implements AfterViewInit, OnDestroy {
                 syncLayout();
 
                 // 5. If the user resized/moved the item before the DB save completed, sync it now
-                if (node.w !== dto.w || node.h !== dto.h || node.x !== dto.x || node.y !== dto.y) {
+                if (actualNode.w !== dto.w || actualNode.h !== dto.h || actualNode.x !== dto.x || actualNode.y !== dto.y) {
                   this.layoutStateService.updateComponent(tabId, {
                     id: dto.id,
                     type: dto.type || 'unknown',
-                    x: node.x || 0,
-                    y: node.y || 0,
-                    w: node.w || 100,
-                    h: node.h || 40,
+                    x: actualNode.x || 0,
+                    y: actualNode.y || 0,
+                    w: actualNode.w || 100,
+                    h: actualNode.h || 40,
                     parentId: dto.parentId || undefined
                   } as any).subscribe();
                 }
