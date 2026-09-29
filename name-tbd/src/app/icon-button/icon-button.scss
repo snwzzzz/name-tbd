@@ -1,0 +1,28 @@
+.icon-button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  width: 2rem;
+  aspect-ratio: 1/1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.5rem;
+  corner-shape: squircle;
+  transition: background-color 0.05s ease-in-out;
+  color: var(--color-text-primary);
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+  }
+
+  & svg {
+    stroke-width: 1.5;
+    color: inherit;
+  }
+
+  &.selected {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+  }
+}

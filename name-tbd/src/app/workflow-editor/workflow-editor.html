@@ -1,0 +1,141 @@
+<div class="canvas-layout">
+  <div class="canvas-area">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="add-node-btn" (click)="addNode('Trigger')">New Trigger</button>
+      <button class="add-node-btn" (click)="addNode('Action')">New Action</button>
+      <button class="add-node-btn" (click)="addNode('Condition')">New Condition</button>
+    </div>
+
+    <!-- Foblex flow wrapper -->
+    <f-flow 
+      fDraggable
+      (fLoaded)="onLoaded()"
+      (fCreateConnection)="onConnectionCreated($event)"
+      (fReassignConnection)="onConnectionReassigned($event)"
+      (fDeleteSelected)="onDeleteSelected($event)"
+      class="canvas-viewport"
+      [class.is-panning]="isPanning()"
+      (mousedown)="onViewportMouseDown($event)"
+      (mousemove)="onViewportMouseMove($event)"
+      (mouseup)="onMouseUp($event)">
+      
+      <f-canvas 
+        [position]="panPos()" 
+        [scale]="zoom()" 
+        (fCanvasChange)="onCanvasChange($event)">
+        
+        <f-background>
+          <!-- Using standard SVG dot pattern -->
+          <svg width="100%" height="100%">
+            <defs>
+              <pattern id="dotPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="2" r="1.5" fill="#e2e8f0"></circle>
+              </pattern>
+            </defs>
+            <rect x="0" y="0" width="100%" height="100%" fill="url(#dotPattern)"></rect>
+          </svg>
+        </f-background>
+
+        <!-- Nodes MUST be rendered before connections! -->
+        @for (node of nodes(); track node.id) {
+          <div fNode 
+               fDragHandle
+               [fNodeId]="node.id"
+               [fNodePosition]="node.position"
+               (fNodePositionChange)="onNodePositionChange(node.id, $event)"
+               class="workflow-node"
+               [class.trigger-node]="node.type === 'Trigger'"
+               [class.condition-node]="node.type === 'Condition'"
+               [class.action-node]="node.type === 'Action'">
+            
+            <div class="node-header">
+              <span class="node-icon">
+                @if (node.type === 'Trigger') { ⚡ }
+                @if (node.type === 'Condition') { ❓ }
+                @if (node.type === 'Action') { 🛠️ }
+              </span>
+              <span class="node-title">{{ node.type }}</span>
+              @if (node.type !== 'Trigger') {
+                <button class="delete-node-btn" (click)="deleteNode(node.id); $event.stopPropagation()">✕</button>
+              }
+            </div>
+            
+            <div class="node-body">
+              @if (node.type === 'Trigger') {
+                <div class="meta-row">On: {{ asTrigger(node).eventName }}</div>
+                @if (asTrigger(node).elementId) {
+                  <div class="meta-row">Element: {{ asTrigger(node).elementId }}</div>
+                }
+              }
+
+              @if (node.type === 'Condition') {
+                <div class="condition-editor" (mousedown)="$event.stopPropagation()">
+                  <input class="cond-input" [ngModel]="asCondition(node).condition.field" (ngModelChange)="updateCondition(node.id, $event, asCondition(node).condition.operator, asCondition(node).condition.value)" placeholder="Field">
+                  <select class="cond-select" [ngModel]="asCondition(node).condition.operator" (ngModelChange)="updateCondition(node.id, asCondition(node).condition.field, $event, asCondition(node).condition.value)">
+                    @for (op of operators; track op.id) {
+                      <option [value]="op.id">{{ op.label }}</option>
+                    }
+                  </select>
+                  <input class="cond-input" [ngModel]="asCondition(node).condition.value" (ngModelChange)="updateCondition(node.id, asCondition(node).condition.field, asCondition(node).condition.operator, $event)" placeholder="Value">
+                </div>
+              }
+
+              @if (node.type === 'Action') {
+                <div class="meta-row">Action: {{ asAction(node).actionType }}</div>
+              }
+            </div>
+
+            <!-- Ports -->
+            <div class="node-ports">
+              
+              <!-- Input Port (Not on Trigger) -->
+              @if (node.type !== 'Trigger') {
+                <div fNodeInput [fInputId]="node.id + '-in'" [fInputConnectableSide]="'left'" class="port in-port"></div>
+              }
+
+              <!-- Output Ports -->
+              @if (node.type === 'Condition') {
+                <div class="branch-ports">
+                  <div class="branch-port-row">
+                    <span class="branch-label">True</span>
+                    <div fNodeOutput [fOutputId]="node.id + '-true'" [fOutputConnectableSide]="'right'" class="port out-port true-port"></div>
+                  </div>
+                  <div class="branch-port-row">
+                    <span class="branch-label">False</span>
+                    <div fNodeOutput [fOutputId]="node.id + '-false'" [fOutputConnectableSide]="'right'" class="port out-port false-port"></div>
+                  </div>
+                </div>
+              } @else {
+                <div fNodeOutput [fOutputId]="node.id + '-out'" [fOutputConnectableSide]="'right'" class="port out-port"></div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Connection for creating new lines -->
+        <f-connection-for-create fBehavior="floating" fType="bezier"></f-connection-for-create>
+
+        <!-- Existing Connections -->
+        @for (conn of connections(); track conn.id) {
+          <f-connection 
+            [fConnectionId]="conn.id" 
+            [fOutputId]="conn.fromPort" 
+            [fInputId]="conn.toPort"
+            fBehavior="floating" 
+            fType="bezier">
+          </f-connection>
+        }
+      </f-canvas>
+    </f-flow>
+
+    <!-- Floating Zoom Controls in the Corner -->
+    <div class="zoom-controls floating">
+      <button class="zoom-btn" (click)="zoomOut()" title="Zoom out">−</button>
+      <button class="zoom-btn zoom-pct" (click)="zoomReset()" title="Reset to 100%">{{ zoomPercent() }}%</button>
+      <button class="zoom-btn" (click)="zoomIn()" title="Zoom in">+</button>
+      <div class="zoom-divider"></div>
+      <button class="zoom-btn" (click)="zoomFit()" title="Fit (F)">Fit</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,15 @@
+<div class="editor-container">
+  <app-navbar></app-navbar>
+  <div class="editor-body">
+    <app-recourse-navigation></app-recourse-navigation>
+    <div class="editor-content-area">
+      <div class="editor-top-bar">
+        <app-editor-tabs #tabs class="tabs-area"></app-editor-tabs>
+        <app-mode-dropdown></app-mode-dropdown>
+      </div>
+      <main class="editor-main">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
+  </div>
+</div>

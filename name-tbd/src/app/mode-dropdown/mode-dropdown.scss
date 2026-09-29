@@ -1,0 +1,63 @@
+.mode-dropdown {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  border-left: 1px solid var(--color-border, #d9d9d9);
+  background-color: var(--color-bg, #ffffff);
+  height: 100%;
+
+  .select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .prefix-icon {
+    position: absolute;
+    left: 0.6rem;
+    display: flex;
+    align-items: center;
+    color: var(--color-text-secondary, #666666);
+    pointer-events: none; /* Let clicks pass through to the select */
+    
+    svg {
+      width: 14px;
+      height: 14px;
+      stroke-width: 2.2;
+    }
+  }
+
+  .mode-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    
+    padding: 0.4rem 2rem 0.4rem 2rem; /* Make room for prefix and chevron */
+    font-size: 0.85rem;
+    font-family: inherit;
+    font-weight: 500;
+    color: var(--color-text-primary, #1f1f1f);
+    background-color: var(--color-surface, #f9f9f9);
+    border: 1px solid var(--color-border, #d9d9d9);
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+    
+    /* Custom chevron icon via inline SVG */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    background-size: 14px;
+
+    &:hover {
+      background-color: var(--color-surface-hover, #efefef);
+      border-color: var(--color-border-strong, #b3b3b3);
+    }
+
+    &:focus {
+      border-color: var(--color-primary, #2f89ff);
+      box-shadow: 0 0 0 3px var(--color-primary-light, #dbebff);
+    }
+  }
+}

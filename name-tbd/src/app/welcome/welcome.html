@@ -1,0 +1,38 @@
+<div class="welcome-container">
+  <div class="welcome-header">
+    <h1>Application Builder</h1>
+    <p>Design your UI, connect your workflows, and build faster.</p>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="card create-card" (click)="openCreatePageModal()">
+      <div class="icon"><i class="codicon codicon-layout"></i></div>
+      <h3>New UI Page</h3>
+      <p>Create a new blank page to design your interface.</p>
+    </div>
+
+    <div class="card create-card" (click)="createWorkflow()">
+      <div class="icon"><i class="codicon codicon-git-merge"></i></div>
+      <h3>New Workflow</h3>
+      <p>Build a new logic flow to connect your components.</p>
+    </div>
+
+    <div class="card create-card" (click)="openOpenPageModal()">
+      <div class="icon"><i class="codicon codicon-folder-opened"></i></div>
+      <h3>Open Page...</h3>
+      <p>Browse and open existing pages in this application.</p>
+    </div>
+  </div>
+
+  <div class="recent-section">
+    <h3>Recent Workflows</h3>
+    <div class="list-container">
+      @for (workflow of workflows(); track workflow.id) {
+        <div class="list-item" (click)="openWorkflow(workflow.id!)">
+          <i class="codicon codicon-symbol-event"></i>
+          <span class="item-name">{{ workflow.name }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>

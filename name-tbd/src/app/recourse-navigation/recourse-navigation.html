@@ -1,0 +1,34 @@
+<aside class="recourse-navigation" 
+  [class.expanded]="isSidebarExpanded()"
+  [class.resizing]="isResizing()"
+  [style.width.px]="isSidebarExpanded() ? sidebarWidth() : 48">
+  <div class="icon-bar">
+    <app-icon-button 
+      [icon]="layoutListIcon" 
+      [selected]="activeTab() === 'components'"
+      (click)="selectTab('components')">
+    </app-icon-button>
+    <app-icon-button 
+      [icon]="fileChartColumnIcon" 
+      [selected]="activeTab() === 'layers'"
+      (click)="selectTab('layers')">
+    </app-icon-button>
+  </div>
+  <div class="content">
+    @if (isSidebarExpanded()) {
+      <!-- Show Component List if the components tab is active -->
+      @if (activeTab() === 'components') {
+        <app-component-list></app-component-list>
+      }
+      
+      <!-- Placeholder for layers if they add it later -->
+      @if (activeTab() === 'layers') {
+        <div style="padding: 1rem;">Layers Panel</div>
+      }
+    }
+  </div>
+
+  @if (isSidebarExpanded()) {
+    <div class="resizer" (mousedown)="startResize($event)"></div>
+  }
+</aside>

@@ -1,0 +1,70 @@
+.app-input {
+  width: 100%;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  outline: none;
+  
+  &.input-disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    background-color: rgb(var(--secondary-color));
+  }
+}
+
+/* =========================================
+   SIZES
+   ========================================= */
+.app-input.input-size-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: var(--font-size-xs);
+  border-radius: 0.2rem;
+}
+
+.app-input.input-size-md {
+  padding: 0.5rem 0.75rem;
+  font-size: var(--font-size-base);
+  border-radius: 0.25rem;
+}
+
+.app-input.input-size-lg {
+  padding: 0.75rem 1rem;
+  font-size: var(--font-size-md);
+  border-radius: 0.3rem;
+}
+
+/* =========================================
+   VARIANTS
+   ========================================= */
+.app-input.input-variant-outline {
+  border: 1px solid rgba(var(--primary-color), 0.3);
+  background-color: transparent;
+
+  &:focus:not(.input-disabled) {
+    border-color: rgb(var(--primary-color));
+    box-shadow: 0 0 0 1px rgb(var(--primary-color));
+  }
+}
+
+.app-input.input-variant-filled {
+  border: 1px solid transparent;
+  background-color: rgba(var(--secondary-color), 0.1);
+
+  &:focus:not(.input-disabled) {
+    background-color: transparent;
+    border-color: rgb(var(--primary-color));
+  }
+}
+
+.app-input.input-variant-flushed {
+  border: none;
+  border-bottom: 1px solid rgba(var(--primary-color), 0.3);
+  background-color: transparent;
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+
+  &:focus:not(.input-disabled) {
+    border-bottom-color: rgb(var(--primary-color));
+    box-shadow: 0 1px 0 0 rgb(var(--primary-color));
+  }
+}
