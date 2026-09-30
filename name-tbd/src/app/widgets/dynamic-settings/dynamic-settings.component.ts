@@ -2,84 +2,68 @@ import { Component, inject, input, computed } from '@angular/core';
 import { WidgetRegistryService, WidgetPropDefinition } from '../../core/widget-registry.service';
 import { SelectionService } from '../../services/selection.service';
 import { FormsModule } from '@angular/forms';
+import { SelectOption, UiSelect } from '../../ui-select/ui-select';
 
 @Component({
   selector: 'app-dynamic-settings',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, UiSelect],
   template: `
-    <div class="p-4 flex flex-col gap-6">
+    <div class="ui-fields groups">
       @for (group of groupedDefs(); track group.name) {
-        <div class="flex flex-col gap-3">
+        <div class="ui-fields">
           @if (group.name !== '_default') {
-            <div class="text-xs font-bold uppercase tracking-widest"
-                 style="color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">
-              {{ group.name }}
-            </div>
+            <div class="ui-section-title">{{ group.name }}</div>
           }
 
           @for (def of group.defs; track def.id) {
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold uppercase tracking-wider"
-                     style="color: var(--color-text-secondary);">
-                {{ def.label ?? def.propKey }}
-              </label>
+            <div class="ui-field">
+              @if (def.propType !== 'boolean') {
+                <label class="ui-field-label">{{ def.label ?? def.propKey }}</label>
+              }
 
               @if (def.propType === 'string') {
-                <input type="text"
+                <input type="text" class="ui-input"
                        [ngModel]="safeProps[def.propKey] ?? def.defaultValue"
-                       (ngModelChange)="updateProp(def.propKey, $event)"
-                       class="p-2 border rounded text-sm"
-                       style="background: var(--color-surface); border-color: var(--color-border); color: var(--color-text-primary);" />
+                       (ngModelChange)="updateProp(def.propKey, $event)" />
               } @else if (def.propType === 'textarea') {
-                <textarea rows="3"
+                <textarea rows="3" class="ui-input"
                           [ngModel]="safeProps[def.propKey] ?? def.defaultValue"
-                          (ngModelChange)="updateProp(def.propKey, $event)"
-                          class="p-2 border rounded text-sm resize-y"
-                          style="background: var(--color-surface); border-color: var(--color-border); color: var(--color-text-primary);"></textarea>
+                          (ngModelChange)="updateProp(def.propKey, $event)"></textarea>
               } @else if (def.propType === 'number') {
-                <input type="number"
+                <input type="number" class="ui-input"
                        [ngModel]="safeProps[def.propKey] ?? def.defaultValue"
-                       (ngModelChange)="updateProp(def.propKey, $event)"
-                       class="p-2 border rounded text-sm"
-                       style="background: var(--color-surface); border-color: var(--color-border); color: var(--color-text-primary);" />
+                       (ngModelChange)="updateProp(def.propKey, $event)" />
               } @else if (def.propType === 'color') {
-                <div class="flex items-center gap-2">
+                <div class="ui-color">
                   <input type="color"
                          [ngModel]="safeProps[def.propKey] ?? def.defaultValue"
-                         (ngModelChange)="updateProp(def.propKey, $event)"
-                         class="h-8 w-8 rounded cursor-pointer border-0 p-0" />
-                  <span class="text-sm font-mono" style="color: var(--color-text-secondary);">
-                    {{ safeProps[def.propKey] ?? def.defaultValue }}
-                  </span>
+                         (ngModelChange)="updateProp(def.propKey, $event)" />
+                  <span class="ui-color-value">{{ safeProps[def.propKey] ?? def.defaultValue }}</span>
                 </div>
               } @else if (def.propType === 'boolean') {
-                <label class="flex items-center gap-2 cursor-pointer">
+                <label class="ui-check">
                   <input type="checkbox"
                          [ngModel]="!!(safeProps[def.propKey] ?? (def.defaultValue === 'true'))"
-                         (ngModelChange)="updateProp(def.propKey, $event)"
-                         class="w-4 h-4 rounded"
-                         style="accent-color: var(--color-primary);" />
-                  <span class="text-sm" style="color: var(--color-text-primary);">
-                    {{ (safeProps[def.propKey] ?? (def.defaultValue === 'true')) ? 'Yes' : 'No' }}
-                  </span>
+                         (ngModelChange)="updateProp(def.propKey, $event)" />
+                  {{ def.label ?? def.propKey }}
                 </label>
               } @else if (def.propType === 'select') {
-                <select [ngModel]="safeProps[def.propKey] ?? def.defaultValue"
-                        (ngModelChange)="updateProp(def.propKey, $event)"
-                        class="p-2 border rounded text-sm"
-                        style="background: var(--color-surface); border-color: var(--color-border); color: var(--color-text-primary);">
-                  @for (opt of def.options ?? []; track opt) {
-                    <option [value]="opt">{{ opt }}</option>
-                  }
-                </select>
+                <app-select
+                  [options]="optionsFor(def)"
+                  [ngModel]="safeProps[def.propKey] ?? def.defaultValue"
+                  (ngModelChange)="updateProp(def.propKey, $event)"></app-select>
               }
             </div>
           }
         </div>
       }
     </div>
-  `
+  `,
+  styles: [`
+    :host { display: block; }
+    .groups { gap: 1.25rem; }
+  `]
 })
 export class DynamicSettingsComponent {
   registry = inject(WidgetRegistryService);
@@ -102,6 +86,10 @@ export class DynamicSettingsComponent {
     }
     return Array.from(groups.entries()).map(([name, defs]) => ({ name, defs }));
   });
+
+  optionsFor(def: WidgetPropDefinition): SelectOption[] {
+    return (def.options ?? []).map((o) => ({ value: String(o), label: String(o) }));
+  }
 
   updateProp(key: string, value: any) {
     const newProps = { ...this.safeProps, [key]: value };

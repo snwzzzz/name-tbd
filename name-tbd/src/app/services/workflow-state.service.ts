@@ -127,6 +127,9 @@ export class WorkflowStateService {
   private createConnection(pageId: string, fromNode: string, fromPort: string, toNode: string): Observable<FlowConnection | null> {
     const workflowId = this.graphs()[pageId]?.workflowId;
     if (workflowId == null || fromNode === toNode) return of(null);
+    // A port may have many connections, but the same pair only once
+    const fromPortId = outputPortId(fromNode, fromPort);
+    if (this.getGraphForTab(pageId).connections.some((c) => c.fromPort === fromPortId && c.toNode === toNode)) return of(null);
 
     return this.workflowService.createEdge(workflowId, {
       sourceNodeId: Number(fromNode),
@@ -144,24 +147,28 @@ export class WorkflowStateService {
    */
   addActionForElement(pageId: string, elementId: string, eventType: string = 'element_click'): Observable<string> {
     return this.addTriggerForElement(pageId, elementId, eventType).pipe(
-      switchMap((triggerId) => {
-        const graph = this.getGraphForTab(pageId);
-        const trigger = graph.nodes.find((n) => n.id === triggerId)!;
-        // Place it right of the trigger, below any actions already hanging off it
-        const existing = graph.connections.filter((c) => c.fromNode === triggerId).length;
-        const action = ACTION_TYPES[0];
-        const node: Omit<ActionNode, 'id'> = {
-          type: 'Action',
-          actionType: action.id,
-          config: { ...action.defaultConfig },
-          position: { x: trigger.position.x + 300, y: trigger.position.y + existing * 250 },
-        };
-        return this.addNode(pageId, node).pipe(
-          switchMap((created) =>
-            this.createConnection(pageId, triggerId, 'out', created.id).pipe(map(() => created.id)),
-          ),
-        );
-      }),
+      switchMap((triggerId) => this.addActionAfter(pageId, triggerId)),
+    );
+  }
+
+  /** Add a default action connected to one of a node's output ports. Emits the action's id. */
+  addActionAfter(pageId: string, fromNodeId: string, fromPort: string = 'out'): Observable<string> {
+    const graph = this.getGraphForTab(pageId);
+    const from = graph.nodes.find((n) => n.id === fromNodeId);
+    if (!from) return of('');
+    // Place it right of the node, below any actions already hanging off it
+    const existing = graph.connections.filter((c) => c.fromNode === fromNodeId).length;
+    const action = ACTION_TYPES[0];
+    const node: Omit<ActionNode, 'id'> = {
+      type: 'Action',
+      actionType: action.id,
+      config: { ...action.defaultConfig },
+      position: { x: from.position.x + 300, y: from.position.y + existing * 250 },
+    };
+    return this.addNode(pageId, node).pipe(
+      switchMap((created) =>
+        this.createConnection(pageId, fromNodeId, fromPort, created.id).pipe(map(() => created.id)),
+      ),
     );
   }
 

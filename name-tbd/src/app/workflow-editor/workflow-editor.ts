@@ -1,4 +1,4 @@
-import { Component, computed, signal, ViewChild, HostListener, inject } from '@angular/core';
+import { Component, computed, signal, ViewChild, HostListener, inject, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import {
   FFlowModule,
@@ -13,6 +13,8 @@ import { LayoutItem, LayoutStateService } from '../services/layout-state.service
 import { FlowNode, TriggerNode, ConditionNode, ActionNode, SetTextConfig } from './workflow.types';
 import { ACTION_TYPES, CONDITION_OPERATORS } from './workflow-operators';
 import { FormsModule } from '@angular/forms';
+import { SelectOption, UiSelect } from '../ui-select/ui-select';
+import { LucideCircleCheck, LucideCircleX, LucideGitBranch, LucidePlus, LucideTrash2, LucideUnlink, LucideWrench, LucideX, LucideZap, LucideFileText, LucideMousePointerClick, LucideType } from '@lucide/angular';
 import { forkJoin } from 'rxjs';
 
 /** Port ids are `${nodeId}-${port}`; node ids never contain '-' (they are DB ids). */
@@ -21,15 +23,33 @@ const splitPortId = (portId: string) => {
   return { nodeId: portId.slice(0, i), port: portId.slice(i + 1) };
 };
 
+interface Rect { x: number; y: number; w: number; h: number; }
+
+/** The area nodes live in (world coordinates). Nodes can't be dropped outside it. */
+const WORLD: Rect = { x: -2000, y: -1500, w: 5000, h: 3500 };
+/** Rough node size, used to keep a dropped node fully inside the border. */
+const NODE_W = 240;
+const NODE_H = 160;
+/** How much of the border area (in screen px) always stays in view while panning. */
+const KEEP_VISIBLE = 120;
+/** Same limits as the page canvas. */
+const MIN_ZOOM = 0.05;
+const MAX_ZOOM = 4;
+
+type ContextMenu =
+  | { kind: 'node'; x: number; y: number; node: FlowNode }
+  | { kind: 'connection'; x: number; y: number; connectionId: string };
+
 @Component({
   selector: 'app-workflow-editor',
   standalone: true,
-  imports: [FFlowModule, FormsModule],
+  imports: [FFlowModule, FormsModule, UiSelect, LucideZap, LucideGitBranch, LucideWrench, LucideX, LucidePlus, LucideCircleCheck, LucideCircleX, LucideTrash2, LucideUnlink],
   templateUrl: './workflow-editor.html',
   styleUrl: './workflow-editor.scss'
 })
-export class WorkflowEditor {
+export class WorkflowEditor implements AfterViewInit, OnDestroy {
   @ViewChild(FCanvasComponent) fCanvas!: FCanvasComponent;
+  @ViewChild('flowEl', { read: ElementRef }) flowEl!: ElementRef<HTMLElement>;
 
   private route = inject(ActivatedRoute);
   private workflowState = inject(WorkflowStateService);
@@ -40,8 +60,6 @@ export class WorkflowEditor {
   // ─── State (owned by WorkflowStateService, which persists every change) ──
   nodes = computed(() => this.workflowState.getGraphForTab(this.tabId()).nodes);
   connections = computed(() => this.workflowState.getGraphForTab(this.tabId()).connections);
-  operators = CONDITION_OPERATORS;
-  actionTypes = ACTION_TYPES;
 
   /** Widgets of the page, flattened, so nodes can point at them. */
   private pageItems = computed(() => {
@@ -57,34 +75,93 @@ export class WorkflowEditor {
     .filter((i) => i.type === 'label' && typeof i.id === 'number')
     .map((i) => ({ id: i.id!.toString(), name: `${this.propOf(i, 'text') ?? 'New Label'} (#${i.id})` })));
 
-  // ─── Zoom & Pan ──────────────────────────────────────────────────────────
+  // ─── Dropdown options ────────────────────────────────────────────────────
+  triggerOptions = computed<SelectOption[]>(() => [
+    { value: '', label: 'the page loads', icon: LucideFileText },
+    ...this.buttons().map((b) => ({ value: b.id, label: `button ${b.name} is clicked`, icon: LucideMousePointerClick })),
+  ]);
+  labelOptions = computed<SelectOption[]>(() =>
+    this.labels().map((l) => ({ value: l.id, label: l.name, icon: LucideType })));
+  readonly actionTypeOptions: SelectOption[] = ACTION_TYPES.map((a) => ({ value: a.id, label: a.label }));
+  readonly operatorOptions: SelectOption[] = CONDITION_OPERATORS.map((o) => ({ value: o.id, label: o.label }));
+
+  // ─── Zoom & Pan (screen = pan + world * zoom) ─────────────────────────────
   readonly zoom = signal(1);
   readonly panPos = signal({ x: 0, y: 0 });
   readonly isPanning = signal(false);
   readonly zoomPercent = computed(() => Math.round(this.zoom() * 100));
+
+  /** The border: the world area, grown to include any node that already sits outside it. */
+  readonly bounds = computed<Rect>(() => {
+    let { x: minX, y: minY } = WORLD;
+    let maxX = WORLD.x + WORLD.w, maxY = WORLD.y + WORLD.h;
+    for (const n of this.nodes()) {
+      minX = Math.min(minX, n.position.x);
+      minY = Math.min(minY, n.position.y);
+      maxX = Math.max(maxX, n.position.x + NODE_W);
+      maxY = Math.max(maxY, n.position.y + NODE_H);
+    }
+    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  });
+
+  /** The border drawn on screen. */
+  readonly boundsStyle = computed(() => {
+    const b = this.bounds(), z = this.zoom(), p = this.panPos();
+    return {
+      left: `${p.x + b.x * z}px`,
+      top: `${p.y + b.y * z}px`,
+      width: `${b.w * z}px`,
+      height: `${b.h * z}px`,
+    };
+  });
+
+  readonly contextMenu = signal<ContextMenu | null>(null);
 
   private spaceHeld = false;
   private middleMouseDown = false;
   private activelyPanning = false;
   private lastMouseX = 0;
   private lastMouseY = 0;
+  private fittedOnLoad = false;
+  private readonly onWheel = (e: WheelEvent) => this.handleWheel(e);
+
+  /** Panning is ours (Space/middle drag, like the page canvas), so Foblex never drags the canvas. */
+  readonly canvasMoveTrigger = () => false;
+  /** Holding Space means "pan", so it must not pick up a node. */
+  readonly nodeMoveTrigger = () => !this.spaceHeld;
 
   constructor() {
     this.route.paramMap.subscribe(params => {
       const id = params.get('tabId');
       if (id) {
         this.tabId.set(id);
+        this.fittedOnLoad = false;
         // Load the workflow and the page's widgets (they feed the button/label pickers)
         forkJoin([this.workflowState.ensureGraph(id), this.layoutState.loadLayoutForTab(id)]).subscribe({
+          next: () => requestAnimationFrame(() => {
+            if (this.fittedOnLoad) return;
+            this.fittedOnLoad = true;
+            this.zoomFit();
+          }),
           error: (err) => console.error('Failed to load the page workflow', err),
         });
       }
     });
   }
 
+  ngAfterViewInit(): void {
+    // Non-passive so the browser doesn't scroll/zoom the page itself
+    this.flowEl.nativeElement.addEventListener('wheel', this.onWheel, { passive: false });
+  }
+
+  ngOnDestroy(): void {
+    this.flowEl?.nativeElement.removeEventListener('wheel', this.onWheel);
+  }
+
   // ─── Event Listeners ─────────────────────────────────────────────────────
   @HostListener('window:keydown', ['$event'])
   onKeyDown(e: KeyboardEvent): void {
+    if (e.key === 'Escape') this.closeContextMenu();
     if (e.repeat) return;
     if (e.code === 'Space') {
       const tag = (document.activeElement as HTMLElement)?.tagName ?? '';
@@ -92,6 +169,13 @@ export class WorkflowEditor {
       e.preventDefault();
       this.spaceHeld = true;
       this.isPanning.set(true);
+    }
+    // Ctrl+0 = reset zoom, Ctrl++/= = zoom in, Ctrl+- = zoom out, Ctrl+F = fit
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === '0') { e.preventDefault(); this.zoomReset(); }
+      if (e.key === '=' || e.key === '+') { e.preventDefault(); this.zoomIn(); }
+      if (e.key === '-') { e.preventDefault(); this.zoomOut(); }
+      if (e.key === 'f' || e.key === 'F') { e.preventDefault(); this.zoomFit(); }
     }
   }
 
@@ -104,11 +188,18 @@ export class WorkflowEditor {
     }
   }
 
-  @HostListener('window:mouseup', ['$event'])
-  onMouseUp(e: MouseEvent): void {
+  @HostListener('window:mouseup')
+  onMouseUp(): void {
     this.activelyPanning = false;
     this.middleMouseDown = false;
     if (!this.spaceHeld) this.isPanning.set(false);
+  }
+
+  /** Any press outside the context menu closes it. */
+  @HostListener('document:pointerdown', ['$event'])
+  onDocumentPointerDown(e: PointerEvent): void {
+    if ((e.target as HTMLElement | null)?.closest?.('.flow-context-menu')) return;
+    this.closeContextMenu();
   }
 
   onViewportMouseDown(e: MouseEvent): void {
@@ -129,26 +220,37 @@ export class WorkflowEditor {
 
   onViewportMouseMove(e: MouseEvent): void {
     if (!this.activelyPanning) return;
-
-    // Calculate unzoomed delta
-    const currentZoom = this.zoom();
-    const dx = (e.clientX - this.lastMouseX) / currentZoom;
-    const dy = (e.clientY - this.lastMouseY) / currentZoom;
-
-    this.panPos.update(p => ({ x: p.x + dx, y: p.y + dy }));
-
+    const p = this.panPos();
+    this.setView({ x: p.x + e.clientX - this.lastMouseX, y: p.y + e.clientY - this.lastMouseY }, this.zoom());
     this.lastMouseX = e.clientX;
     this.lastMouseY = e.clientY;
   }
 
+  private handleWheel(e: WheelEvent): void {
+    e.preventDefault();
+    this.closeContextMenu();
+    const p = this.panPos();
+
+    if (e.ctrlKey || e.metaKey) {
+      // Ctrl+Scroll → zoom toward cursor
+      const rect = this.flowEl.nativeElement.getBoundingClientRect();
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      this.zoomAround({ x: e.clientX - rect.left, y: e.clientY - rect.top }, this.zoom() * factor);
+    } else if (e.shiftKey) {
+      // Shift+Scroll → horizontal pan
+      this.setView({ x: p.x - e.deltaY, y: p.y }, this.zoom());
+    } else {
+      // Plain scroll → vertical / trackpad pan
+      this.setView({ x: p.x - e.deltaX, y: p.y - e.deltaY }, this.zoom());
+    }
+  }
+
   // ─── Actions ─────────────────────────────────────────────────────────────
   addNode(type: string): void {
-    const currentPan = this.panPos();
-    const currentZoom = this.zoom();
-    const position = {
-      x: (-currentPan.x) + (400 / currentZoom),
-      y: (-currentPan.y) + (300 / currentZoom),
-    };
+    // Drop it in the middle of what's currently visible
+    const { w, h } = this.viewportSize();
+    const center = this.toWorld({ x: w / 2, y: h / 2 });
+    const position = this.clampNodePosition({ x: center.x - NODE_W / 2, y: center.y - NODE_H / 2 });
 
     let newNode: Omit<FlowNode, 'id'>;
     if (type === 'Trigger') {
@@ -192,6 +294,36 @@ export class WorkflowEditor {
     this.workflowState.updateNode(this.tabId(), { ...node, config: { ...node.config, ...patch } });
   }
 
+  // ─── Context menu ────────────────────────────────────────────────────────
+  openNodeMenu(e: MouseEvent, node: FlowNode): void {
+    e.preventDefault();
+    e.stopPropagation();
+    this.contextMenu.set({ kind: 'node', x: e.clientX, y: e.clientY, node });
+  }
+
+  openConnectionMenu(e: MouseEvent, connectionId: string): void {
+    e.preventDefault();
+    e.stopPropagation();
+    this.contextMenu.set({ kind: 'connection', x: e.clientX, y: e.clientY, connectionId });
+  }
+
+  closeContextMenu(): void {
+    if (this.contextMenu()) this.contextMenu.set(null);
+  }
+
+  /** New action wired to one of the node's outputs. */
+  addActionAfter(nodeId: string, port: string = 'out'): void {
+    this.closeContextMenu();
+    this.workflowState.addActionAfter(this.tabId(), nodeId, port).subscribe({
+      error: (err) => console.error('Failed to add an action', err),
+    });
+  }
+
+  deleteConnection(connectionId: string): void {
+    this.closeContextMenu();
+    this.workflowState.disconnect(this.tabId(), connectionId);
+  }
+
   // ─── Helpers for the template ────────────────────────────────────────────
   asTrigger(node: FlowNode): TriggerNode { return node as TriggerNode; }
   asCondition(node: FlowNode): ConditionNode { return node as ConditionNode; }
@@ -222,18 +354,16 @@ export class WorkflowEditor {
   }
 
   // ─── Foblex Handlers ─────────────────────────────────────────────────────
-  onLoaded(): void {
-    console.log('[WORKFLOW EDITOR] Flow loaded.');
-  }
-
   onCanvasChange(event: FCanvasChangeEvent): void {
-    this.zoom.set(event.scale);
-    this.panPos.set(event.position);
+    const p = this.panPos();
+    if (event.scale === this.zoom() && event.position.x === p.x && event.position.y === p.y) return;
+    this.setView(event.position, event.scale);
   }
 
   onNodePositionChange(nodeId: string, position: { x: number, y: number }): void {
     const node = this.nodes().find(n => n.id === nodeId);
-    if (node) this.workflowState.updateNode(this.tabId(), { ...node, position });
+    // Dropped past the border → snap back inside
+    if (node) this.workflowState.updateNode(this.tabId(), { ...node, position: this.clampNodePosition(position) });
   }
 
   onConnectionCreated(event: FCreateConnectionEvent): void {
@@ -254,6 +384,7 @@ export class WorkflowEditor {
   }
 
   deleteNode(nodeId: string): void {
+    this.closeContextMenu();
     if (!this.nodes().some(n => n.id === nodeId)) return;
     this.workflowState.deleteNode(this.tabId(), nodeId);
   }
@@ -267,45 +398,85 @@ export class WorkflowEditor {
   }
 
   // ─── Zoom Controls ───────────────────────────────────────────────────────
-  zoomIn(): void {
-    this._clampZoom(this.zoom() * 1.25);
-  }
+  zoomIn(): void { this.zoomAround(this.viewportCenter(), this.zoom() * 1.25); }
+  zoomOut(): void { this.zoomAround(this.viewportCenter(), this.zoom() / 1.25); }
+  zoomReset(): void { this.zoomAround(this.viewportCenter(), 1); }
 
-  zoomOut(): void {
-    this._clampZoom(this.zoom() * 0.8);
-  }
-
-  zoomReset(): void {
-    this.zoom.set(1);
-    this.panPos.set({ x: 0, y: 0 });
-  }
-
+  /** Fit all nodes into view (never magnified past 100%). */
   zoomFit(): void {
-    if (this.nodes().length === 0) return;
+    const { w, h } = this.viewportSize();
+    if (!w || !h) return;
 
-    const xs = this.nodes().map(n => n.position.x);
-    const ys = this.nodes().map(n => n.position.y);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
+    const els = Array.from(this.flowEl.nativeElement.querySelectorAll<HTMLElement>('.workflow-node[data-node-id]'));
+    const boxes = this.nodes().map((n) => {
+      const el = els.find((e) => e.dataset['nodeId'] === n.id);
+      return { x: n.position.x, y: n.position.y, w: el?.offsetWidth || NODE_W, h: el?.offsetHeight || NODE_H };
+    });
+    if (boxes.length === 0) {
+      this.setView({ x: w / 2, y: h / 2 }, 1);
+      return;
+    }
 
-    const boundsW = (maxX - minX) + 200;
-    const boundsH = (maxY - minY) + 100;
+    const minX = Math.min(...boxes.map((b) => b.x));
+    const minY = Math.min(...boxes.map((b) => b.y));
+    const maxX = Math.max(...boxes.map((b) => b.x + b.w));
+    const maxY = Math.max(...boxes.map((b) => b.y + b.h));
+    const padding = 56;
+    const z = this.clampZoom(Math.min(
+      (w - padding * 2) / Math.max(maxX - minX, 1),
+      (h - padding * 2) / Math.max(maxY - minY, 1),
+      1,
+    ));
+    this.setView({
+      x: (w - (maxX - minX) * z) / 2 - minX * z,
+      y: (h - (maxY - minY) * z) / 2 - minY * z,
+    }, z);
+  }
 
-    const scaleX = window.innerWidth / Math.max(boundsW, 1);
-    const scaleY = window.innerHeight / Math.max(boundsH, 1);
-    const fitScale = Math.min(scaleX, scaleY) * 0.8;
+  /** Change the zoom while keeping the world point under `anchor` (screen px) in place. */
+  private zoomAround(anchor: { x: number; y: number }, zoom: number): void {
+    const newZoom = this.clampZoom(zoom);
+    const ratio = newZoom / this.zoom();
+    const p = this.panPos();
+    this.setView({ x: anchor.x - (anchor.x - p.x) * ratio, y: anchor.y - (anchor.y - p.y) * ratio }, newZoom);
+  }
 
-    this._clampZoom(fitScale);
-
+  /** Apply a view, keeping part of the border area on screen so the nodes can't get lost. */
+  private setView(pan: { x: number; y: number }, zoom: number): void {
+    const { w, h } = this.viewportSize();
+    const b = this.bounds();
+    const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+    const keepX = Math.min(KEEP_VISIBLE, w / 2), keepY = Math.min(KEEP_VISIBLE, h / 2);
+    this.zoom.set(zoom);
     this.panPos.set({
-      x: -minX + (window.innerWidth / fitScale - boundsW) / 2,
-      y: -minY + (window.innerHeight / fitScale - boundsH) / 2
+      x: clamp(pan.x, keepX - (b.x + b.w) * zoom, w - keepX - b.x * zoom),
+      y: clamp(pan.y, keepY - (b.y + b.h) * zoom, h - keepY - b.y * zoom),
     });
   }
 
-  private _clampZoom(z: number): void {
-    this.zoom.set(Math.max(0.1, Math.min(z, 5)));
+  private clampNodePosition(p: { x: number; y: number }): { x: number; y: number } {
+    return {
+      x: Math.min(Math.max(p.x, WORLD.x), WORLD.x + WORLD.w - NODE_W),
+      y: Math.min(Math.max(p.y, WORLD.y), WORLD.y + WORLD.h - NODE_H),
+    };
+  }
+
+  private toWorld(screen: { x: number; y: number }): { x: number; y: number } {
+    const p = this.panPos(), z = this.zoom();
+    return { x: (screen.x - p.x) / z, y: (screen.y - p.y) / z };
+  }
+
+  private viewportSize(): { w: number; h: number } {
+    const el = this.flowEl?.nativeElement;
+    return { w: el?.clientWidth ?? 0, h: el?.clientHeight ?? 0 };
+  }
+
+  private viewportCenter(): { x: number; y: number } {
+    const { w, h } = this.viewportSize();
+    return { x: w / 2, y: h / 2 };
+  }
+
+  private clampZoom(z: number): number {
+    return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
   }
 }

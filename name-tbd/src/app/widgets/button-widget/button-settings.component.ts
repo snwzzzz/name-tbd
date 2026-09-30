@@ -8,15 +8,14 @@ import { SelectionService } from '../../services/selection.service';
   standalone: true,
   imports: [FormsModule],
   template: `
-    <div class="flex flex-col gap-3 p-4 text-sm" style="color: var(--color-text-primary);">
-      <div class="flex flex-col gap-1">
-        <label class="font-semibold" style="color: var(--color-text-secondary);">Button Label</label>
-        <input 
-          type="text" 
-          [ngModel]="props()['label']" 
-          (ngModelChange)="updateProp('label', $event)" 
-          class="rounded px-2 py-1 focus:outline-none"
-          style="background-color: var(--color-bg); border: 1px solid var(--color-border); color: var(--color-text-primary);"
+    <div class="ui-fields">
+      <div class="ui-field">
+        <label class="ui-field-label">Button label</label>
+        <input
+          type="text"
+          class="ui-input"
+          [ngModel]="props()['label']"
+          (ngModelChange)="updateProp('label', $event)"
         />
       </div>
       <!-- Add more settings here in the future -->

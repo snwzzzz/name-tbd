@@ -6,55 +6,24 @@ import { TabsService } from '../services/tabs.service';
 import { WIDGET_REGISTRY } from '../widgets/registry';
 import { WidgetRegistryService } from '../core/widget-registry.service';
 import { DynamicSettingsComponent } from '../widgets/dynamic-settings/dynamic-settings.component';
+import {
+  LucideCheck, LucideCircleAlert, LucideComponent, LucideIcon, LucideLoaderCircle,
+  LucideMousePointerClick, LucideSave, LucideTextCursorInput, LucideType,
+} from '@lucide/angular';
+
+/** Lucide icon per widget type (the registry's icon names are for an icon font that isn't loaded). */
+const TYPE_ICONS: Record<string, LucideIcon> = {
+  button: LucideMousePointerClick,
+  label: LucideType,
+  form: LucideTextCursorInput,
+};
 
 @Component({
   selector: 'app-properties-panel',
   standalone: true,
-  imports: [NgComponentOutlet, DynamicSettingsComponent],
-  template: `
-    <div class="h-full w-full flex flex-col" style="color: var(--color-text-primary);">
-      @if (selectedItem(); as item) {
-        <div class="p-4 flex items-center gap-2" style="border-bottom: 1px solid var(--color-border);">
-          <i [class]="getDef(item.type).icon" class="text-xl" style="color: var(--color-primary);"></i>
-          <h3 class="font-semibold">{{ getDef(item.type).name }} Settings</h3>
-        </div>
-
-        <div class="flex-1 overflow-y-auto">
-          @if (registry.getPropsForWidget(item.type).length > 0) {
-            <!-- Auto-generated standard props from the DB -->
-            <app-dynamic-settings [type]="item.type" [props]="item.props"></app-dynamic-settings>
-          } @else if (getDef(item.type).settingsComponent; as settingsComp) {
-            <!-- Fallback to hardcoded settings component if no DB props are defined -->
-            <ng-container *ngComponentOutlet="settingsComp; inputs: { props: item.props }"></ng-container>
-          } @else {
-            <div class="p-4 text-gray-500 text-sm">
-              No settings available for this widget.
-            </div>
-          }
-        </div>
-
-        <!-- Save button -->
-        <div class="p-3" style="border-top: 1px solid var(--color-border); flex-shrink: 0;">
-          <button
-            (click)="save()"
-            [disabled]="saveState() === 'saving'"
-            class="w-full py-2 px-4 rounded text-sm font-semibold transition-all"
-            [style]="saveButtonStyle()">
-            @switch (saveState()) {
-              @case ('saving') { Saving… }
-              @case ('saved')  { ✓ Saved }
-              @case ('error')  { ✗ Error — Retry }
-              @default         { Save }
-            }
-          </button>
-        </div>
-      } @else {
-        <div class="p-4 text-gray-500 text-sm flex h-full items-center justify-center text-center">
-          Select an element on the canvas to edit its properties.
-        </div>
-      }
-    </div>
-  `
+  imports: [NgComponentOutlet, DynamicSettingsComponent, LucideSave, LucideCheck, LucideCircleAlert, LucideLoaderCircle, LucideMousePointerClick],
+  templateUrl: './properties-panel.html',
+  styleUrl: './properties-panel.scss',
 })
 export class PropertiesPanelComponent {
   selection = inject(SelectionService);
@@ -96,13 +65,8 @@ export class PropertiesPanelComponent {
     });
   }
 
-  saveButtonStyle(): string {
-    switch (this.saveState()) {
-      case 'saving': return 'background: var(--color-primary); color: #fff; opacity: 0.6; cursor: not-allowed;';
-      case 'saved':  return 'background: #16a34a; color: #fff; cursor: default;';
-      case 'error':  return 'background: #dc2626; color: #fff;';
-      default:       return 'background: var(--color-primary); color: #fff; cursor: pointer;';
-    }
+  iconFor(type: string): LucideIcon {
+    return TYPE_ICONS[type] ?? LucideComponent;
   }
 
   getDef(type: string) {

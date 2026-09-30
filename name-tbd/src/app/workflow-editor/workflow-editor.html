@@ -7,184 +7,194 @@
       <button class="add-node-btn" (click)="addNode('Condition')">New Condition</button>
     </div>
 
-    <!-- Foblex flow wrapper -->
-    <f-flow 
-      fDraggable
-      (fLoaded)="onLoaded()"
-      (fCreateConnection)="onConnectionCreated($event)"
-      (fReassignConnection)="onConnectionReassigned($event)"
-      (fDeleteSelected)="onDeleteSelected($event)"
-      class="canvas-viewport"
-      [class.is-panning]="isPanning()"
-      (mousedown)="onViewportMouseDown($event)"
-      (mousemove)="onViewportMouseMove($event)"
-      (mouseup)="onMouseUp($event)">
-      
-      <f-canvas 
-        [position]="panPos()" 
-        [scale]="zoom()" 
-        (fCanvasChange)="onCanvasChange($event)">
-        
-        <f-background>
-          <!-- Using standard SVG dot pattern -->
-          <svg width="100%" height="100%">
-            <defs>
-              <pattern id="dotPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1.5" fill="#e2e8f0"></circle>
-              </pattern>
-            </defs>
-            <rect x="0" y="0" width="100%" height="100%" fill="url(#dotPattern)"></rect>
-          </svg>
-        </f-background>
+    <div class="flow-wrap">
+      <!-- The border: nodes stay inside it and panning always keeps part of it in view -->
+      <div class="world-border" [style]="boundsStyle()"></div>
 
-        <!-- Nodes MUST be rendered before connections! -->
-        @for (node of nodes(); track node.id) {
-          <div fNode 
-               fDragHandle
-               [fNodeId]="node.id"
-               [fNodePosition]="node.position"
-               (fNodePositionChange)="onNodePositionChange(node.id, $event)"
-               class="workflow-node"
-               [class.trigger-node]="node.type === 'Trigger'"
-               [class.condition-node]="node.type === 'Condition'"
-               [class.action-node]="node.type === 'Action'">
-            
-            <div class="node-header">
-              <span class="node-icon">
-                @if (node.type === 'Trigger') { ⚡ }
-                @if (node.type === 'Condition') { ❓ }
-                @if (node.type === 'Action') { 🛠️ }
-              </span>
-              <span class="node-title">
-                @switch (node.type) {
-                  @case ('Trigger') { {{ asTrigger(node).eventName === 'element_click' ? 'On click' : 'Trigger' }} }
-                  @case ('Action') { Action }
-                  @default { {{ node.type }} }
+      <!-- Foblex flow wrapper -->
+      <f-flow
+        #flowEl
+        fDraggable
+        [fCanvasMoveTrigger]="canvasMoveTrigger"
+        [fNodeMoveTrigger]="nodeMoveTrigger"
+        (fCreateConnection)="onConnectionCreated($event)"
+        (fReassignConnection)="onConnectionReassigned($event)"
+        (fDeleteSelected)="onDeleteSelected($event)"
+        class="canvas-viewport"
+        [class.is-panning]="isPanning()"
+        (mousedown)="onViewportMouseDown($event)"
+        (mousemove)="onViewportMouseMove($event)"
+        (contextmenu)="$event.preventDefault(); closeContextMenu()">
+
+        <f-canvas
+          [position]="panPos()"
+          [scale]="zoom()"
+          (fCanvasChange)="onCanvasChange($event)">
+
+          <f-background>
+            <f-circle-pattern></f-circle-pattern>
+          </f-background>
+
+          <!-- Nodes MUST be rendered before connections! -->
+          @for (node of nodes(); track node.id) {
+            <div fNode
+                 fDragHandle
+                 [fNodeId]="node.id"
+                 [fNodePosition]="node.position"
+                 [attr.data-node-id]="node.id"
+                 (fNodePositionChange)="onNodePositionChange(node.id, $event)"
+                 (contextmenu)="openNodeMenu($event, node)"
+                 class="workflow-node"
+                 [class.trigger-node]="node.type === 'Trigger'"
+                 [class.condition-node]="node.type === 'Condition'"
+                 [class.action-node]="node.type === 'Action'">
+
+              <div class="node-header">
+                <span class="node-icon">
+                  @switch (node.type) {
+                    @case ('Trigger') { <svg lucideZap></svg> }
+                    @case ('Condition') { <svg lucideGitBranch></svg> }
+                    @default { <svg lucideWrench></svg> }
+                  }
+                </span>
+                <span class="node-title">
+                  @switch (node.type) {
+                    @case ('Trigger') { {{ asTrigger(node).eventName === 'element_click' ? 'On click' : 'Trigger' }} }
+                    @case ('Action') { Action }
+                    @default { {{ node.type }} }
+                  }
+                </span>
+                <button class="delete-node-btn" title="Delete" (click)="deleteNode(node.id); $event.stopPropagation()"><svg lucideX></svg></button>
+              </div>
+
+              <div class="node-body">
+                @if (node.type === 'Trigger') {
+                  <div class="action-editor" (mousedown)="$event.stopPropagation()">
+                    <label class="field-label">When</label>
+                    <app-select size="sm" [options]="triggerOptions()" [ngModel]="asTrigger(node).elementId ?? ''" (ngModelChange)="setTriggerElement(node, $event)"></app-select>
+
+                    @if (triggerButton(asTrigger(node).elementId); as button) {
+                      <!-- The button this flow starts from, drawn like it looks on the page -->
+                      <div class="trigger-button" [style.background]="button.color" [title]="'Button #' + asTrigger(node).elementId">
+                        {{ button.label }}
+                      </div>
+                    } @else if (asTrigger(node).elementId) {
+                      <div class="meta-row element-name">{{ elementName(asTrigger(node).elementId) }}</div>
+                    }
+                  </div>
                 }
-              </span>
-              <button class="delete-node-btn" (click)="deleteNode(node.id); $event.stopPropagation()">✕</button>
-            </div>
-            
-            <div class="node-body">
-              @if (node.type === 'Trigger') {
-                <div class="action-editor" (mousedown)="$event.stopPropagation()">
-                  <label class="field-label">When</label>
-                  <select class="cond-select" [ngModel]="asTrigger(node).elementId ?? ''" (ngModelChange)="setTriggerElement(node, $event)">
-                    <option value="">the page loads</option>
-                    @for (button of buttons(); track button.id) {
-                      <option [value]="button.id">button {{ button.name }} is clicked</option>
-                    }
-                  </select>
 
-                  @if (triggerButton(asTrigger(node).elementId); as button) {
-                    <!-- The button this flow starts from, drawn like it looks on the page -->
-                    <div class="trigger-button" [style.background]="button.color" [title]="'Button #' + asTrigger(node).elementId">
-                      {{ button.label }}
-                    </div>
-                  } @else if (asTrigger(node).elementId) {
-                    <div class="meta-row element-name">{{ elementName(asTrigger(node).elementId) }}</div>
-                  }
-                </div>
-              }
-
-              @if (node.type === 'Condition') {
-                <div class="condition-editor" (mousedown)="$event.stopPropagation()">
-                  <input class="cond-input" [ngModel]="asCondition(node).condition.field" (ngModelChange)="updateCondition(node.id, $event, asCondition(node).condition.operator, asCondition(node).condition.value)" placeholder="Field">
-                  <select class="cond-select" [ngModel]="asCondition(node).condition.operator" (ngModelChange)="updateCondition(node.id, asCondition(node).condition.field, $event, asCondition(node).condition.value)">
-                    @for (op of operators; track op.id) {
-                      <option [value]="op.id">{{ op.label }}</option>
-                    }
-                  </select>
-                  <input class="cond-input" [ngModel]="asCondition(node).condition.value" (ngModelChange)="updateCondition(node.id, asCondition(node).condition.field, asCondition(node).condition.operator, $event)" placeholder="Value">
-                </div>
-              }
-
-              @if (node.type === 'Action') {
-                <div class="action-editor" (mousedown)="$event.stopPropagation()">
-                  <select class="cond-select" [ngModel]="asAction(node).actionType" (ngModelChange)="setActionType(node, $event)">
-                    @for (action of actionTypes; track action.id) {
-                      <option [value]="action.id">{{ action.label }}</option>
-                    }
-                  </select>
-
-                  @if (asAction(node).actionType === 'set_text') {
-                    <label class="field-label">Label</label>
-                    <select class="cond-select" [ngModel]="setTextConfig(node).targetId" (ngModelChange)="updateConfig(node, { targetId: $event })">
-                      <option value="">Select a label…</option>
-                      @for (label of labels(); track label.id) {
-                        <option [value]="label.id">{{ label.name }}</option>
-                      }
-                    </select>
-
-                    <label class="field-label">New text</label>
-                    <input class="cond-input" [ngModel]="setTextConfig(node).text" (ngModelChange)="updateConfig(node, { text: $event })" placeholder="Text to show">
-
-                    <div class="reset-row">
-                      <label class="check-label">
-                        <input type="checkbox" [ngModel]="setTextConfig(node).resetEnabled" (ngModelChange)="updateConfig(node, { resetEnabled: $event })">
-                        Reset after
-                      </label>
-                      <input class="cond-input seconds-input" type="number" min="1"
-                             [disabled]="!setTextConfig(node).resetEnabled"
-                             [ngModel]="setTextConfig(node).resetAfterSeconds"
-                             (ngModelChange)="updateConfig(node, { resetAfterSeconds: $event })">
-                      <span>s</span>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-
-            <!-- Ports -->
-            <div class="node-ports">
-              
-              <!-- Input Port (Not on Trigger) -->
-              @if (node.type !== 'Trigger') {
-                <div fNodeInput [fInputId]="node.id + '-in'" [fInputConnectableSide]="'left'" class="port in-port"></div>
-              }
-
-              <!-- Output Ports -->
-              @if (node.type === 'Condition') {
-                <div class="branch-ports">
-                  <div class="branch-port-row">
-                    <span class="branch-label">True</span>
-                    <div fNodeOutput [fOutputId]="node.id + '-true'" [fOutputConnectableSide]="'right'" class="port out-port true-port"></div>
+                @if (node.type === 'Condition') {
+                  <div class="condition-editor" (mousedown)="$event.stopPropagation()">
+                    <input class="cond-input" [ngModel]="asCondition(node).condition.field" (ngModelChange)="updateCondition(node.id, $event, asCondition(node).condition.operator, asCondition(node).condition.value)" placeholder="Field">
+                    <app-select size="sm" [options]="operatorOptions" [ngModel]="asCondition(node).condition.operator" (ngModelChange)="updateCondition(node.id, asCondition(node).condition.field, $event, asCondition(node).condition.value)"></app-select>
+                    <input class="cond-input" [ngModel]="asCondition(node).condition.value" (ngModelChange)="updateCondition(node.id, asCondition(node).condition.field, asCondition(node).condition.operator, $event)" placeholder="Value">
                   </div>
-                  <div class="branch-port-row">
-                    <span class="branch-label">False</span>
-                    <div fNodeOutput [fOutputId]="node.id + '-false'" [fOutputConnectableSide]="'right'" class="port out-port false-port"></div>
+                }
+
+                @if (node.type === 'Action') {
+                  <div class="action-editor" (mousedown)="$event.stopPropagation()">
+                    <app-select size="sm" [options]="actionTypeOptions" [ngModel]="asAction(node).actionType" (ngModelChange)="setActionType(node, $event)"></app-select>
+
+                    @if (asAction(node).actionType === 'set_text') {
+                      <label class="field-label">Label</label>
+                      <app-select size="sm" placeholder="Select a label…" [options]="labelOptions()" [ngModel]="setTextConfig(node).targetId" (ngModelChange)="updateConfig(node, { targetId: $event })"></app-select>
+
+                      <label class="field-label">New text</label>
+                      <input class="cond-input" [ngModel]="setTextConfig(node).text" (ngModelChange)="updateConfig(node, { text: $event })" placeholder="Text to show">
+
+                      <div class="reset-row">
+                        <label class="check-label">
+                          <input type="checkbox" [ngModel]="setTextConfig(node).resetEnabled" (ngModelChange)="updateConfig(node, { resetEnabled: $event })">
+                          Reset after
+                        </label>
+                        <input class="cond-input seconds-input" type="number" min="1"
+                               [disabled]="!setTextConfig(node).resetEnabled"
+                               [ngModel]="setTextConfig(node).resetAfterSeconds"
+                               (ngModelChange)="updateConfig(node, { resetAfterSeconds: $event })">
+                        <span>s</span>
+                      </div>
+                    }
                   </div>
-                </div>
-              } @else {
-                <div fNodeOutput [fOutputId]="node.id + '-out'" [fOutputConnectableSide]="'right'" class="port out-port"></div>
-              }
+                }
+              </div>
+
+              <!-- Ports -->
+              <div class="node-ports">
+
+                <!-- Input Port (Not on Trigger) -->
+                @if (node.type !== 'Trigger') {
+                  <div fNodeInput [fInputId]="node.id + '-in'" [fInputMultiple]="true" [fInputConnectableSide]="'left'" class="port in-port"></div>
+                }
+
+                <!-- Output Ports (each can feed several nodes) -->
+                @if (node.type === 'Condition') {
+                  <div class="branch-ports">
+                    <div class="branch-port-row">
+                      <span class="branch-label">True</span>
+                      <div fNodeOutput [fOutputId]="node.id + '-true'" [fOutputMultiple]="true" [fOutputConnectableSide]="'right'" class="port out-port true-port"></div>
+                    </div>
+                    <div class="branch-port-row">
+                      <span class="branch-label">False</span>
+                      <div fNodeOutput [fOutputId]="node.id + '-false'" [fOutputMultiple]="true" [fOutputConnectableSide]="'right'" class="port out-port false-port"></div>
+                    </div>
+                  </div>
+                } @else {
+                  <div fNodeOutput [fOutputId]="node.id + '-out'" [fOutputMultiple]="true" [fOutputConnectableSide]="'right'" class="port out-port"></div>
+                }
+              </div>
             </div>
-          </div>
-        }
+          }
 
-        <!-- Connection for creating new lines -->
-        <f-connection-for-create fBehavior="floating" fType="bezier"></f-connection-for-create>
+          <!-- Connection for creating new lines -->
+          <f-connection-for-create fBehavior="floating" fType="bezier"></f-connection-for-create>
 
-        <!-- Existing Connections -->
-        @for (conn of connections(); track conn.id) {
-          <f-connection 
-            [fConnectionId]="conn.id" 
-            [fOutputId]="conn.fromPort" 
-            [fInputId]="conn.toPort"
-            fBehavior="floating" 
-            fType="bezier">
-          </f-connection>
-        }
-      </f-canvas>
-    </f-flow>
+          <!-- Existing Connections -->
+          @for (conn of connections(); track conn.id) {
+            <f-connection
+              [fConnectionId]="conn.id"
+              [fOutputId]="conn.fromPort"
+              [fInputId]="conn.toPort"
+              (contextmenu)="openConnectionMenu($event, conn.id)"
+              fBehavior="floating"
+              fType="bezier">
+            </f-connection>
+          }
+        </f-canvas>
+      </f-flow>
 
-    <!-- Floating Zoom Controls in the Corner -->
-    <div class="zoom-controls floating">
-      <button class="zoom-btn" (click)="zoomOut()" title="Zoom out">−</button>
-      <button class="zoom-btn zoom-pct" (click)="zoomReset()" title="Reset to 100%">{{ zoomPercent() }}%</button>
-      <button class="zoom-btn" (click)="zoomIn()" title="Zoom in">+</button>
-      <div class="zoom-divider"></div>
-      <button class="zoom-btn" (click)="zoomFit()" title="Fit (F)">Fit</button>
+      <!-- Floating Zoom Controls in the Corner -->
+      <div class="zoom-controls floating">
+        <button class="zoom-btn" (click)="zoomOut()" title="Zoom out (Ctrl -)">−</button>
+        <button class="zoom-btn zoom-pct" (click)="zoomReset()" title="Reset to 100% (Ctrl 0)">{{ zoomPercent() }}%</button>
+        <button class="zoom-btn" (click)="zoomIn()" title="Zoom in (Ctrl +)">+</button>
+        <div class="zoom-divider"></div>
+        <button class="zoom-btn" (click)="zoomFit()" title="Fit (Ctrl F)">Fit</button>
+      </div>
     </div>
   </div>
+
+  <!-- Right-click menu for nodes and connections -->
+  @if (contextMenu(); as menu) {
+    <div class="flow-context-menu" [style.left.px]="menu.x" [style.top.px]="menu.y" (contextmenu)="$event.preventDefault()">
+      @if (menu.kind === 'node') {
+        @switch (menu.node.type) {
+          @case ('Trigger') {
+            <button class="menu-item" (click)="addActionAfter(menu.node.id)"><svg lucidePlus></svg> Add action</button>
+          }
+          @case ('Action') {
+            <button class="menu-item" (click)="addActionAfter(menu.node.id)"><svg lucidePlus></svg> Add action after</button>
+          }
+          @case ('Condition') {
+            <button class="menu-item" (click)="addActionAfter(menu.node.id, 'true')"><svg lucideCircleCheck></svg> Add action if true</button>
+            <button class="menu-item" (click)="addActionAfter(menu.node.id, 'false')"><svg lucideCircleX></svg> Add action if false</button>
+          }
+        }
+        <div class="menu-divider"></div>
+        <button class="menu-item danger" (click)="deleteNode(menu.node.id)"><svg lucideTrash2></svg> Delete {{ menu.node.type.toLowerCase() }}</button>
+      } @else {
+        <button class="menu-item danger" (click)="deleteConnection(menu.connectionId)"><svg lucideUnlink></svg> Delete connection</button>
+      }
+    </div>
+  }
 </div>

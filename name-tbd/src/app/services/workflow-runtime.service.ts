@@ -12,9 +12,12 @@ export class WorkflowRuntimeService {
   private workflowState = inject(WorkflowStateService);
   private layoutState = inject(LayoutStateService);
 
-  // Pending "reset after N s" timers and the widgets currently showing preview props, per page
-  private resetTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  // Widgets currently showing preview props, per page
   private previewed = new Map<string, Set<string>>();
+  // Changes to one widget take turns: each waits until the one before it has finished (`${pageId}:${widgetId}`)
+  private widgetQueues = new Map<string, Promise<void>>();
+  // Bumped by reset(), so waiting steps of an old preview session never apply
+  private generations = new Map<string, number>();
 
   /** Run every flow that starts with a trigger for this element and event. */
   handleEvent(pageId: string, elementId: string, eventName = 'element_click'): void {
@@ -22,17 +25,15 @@ export class WorkflowRuntimeService {
       graph.nodes
         .filter((n): n is TriggerNode =>
           n.type === 'Trigger' && n.elementId === elementId && n.eventName === eventName)
-        .forEach((trigger) => this.runFrom(pageId, graph, trigger));
+        .forEach((trigger) => this.runNext(pageId, graph, trigger, new Set(), this.generation(pageId)));
     });
   }
 
   /** Undo all temporary changes on the page (called when leaving preview). */
   reset(pageId: string): void {
-    for (const [key, timer] of this.resetTimers) {
-      if (key.startsWith(`${pageId}:`)) {
-        clearTimeout(timer);
-        this.resetTimers.delete(key);
-      }
+    this.generations.set(pageId, this.generation(pageId) + 1);
+    for (const key of [...this.widgetQueues.keys()]) {
+      if (key.startsWith(`${pageId}:`)) this.widgetQueues.delete(key);
     }
     for (const id of this.previewed.get(pageId) ?? []) {
       this.layoutState.previewItemProps(pageId, id, null);
@@ -40,21 +41,23 @@ export class WorkflowRuntimeService {
     this.previewed.delete(pageId);
   }
 
-  /** Walk the graph from the trigger along its connections, executing each action once. */
-  private runFrom(pageId: string, graph: PageWorkflow, trigger: TriggerNode): void {
-    const visited = new Set<string>();
-    const queue = this.next(graph, trigger, 'out');
+  /**
+   * Start everything connected to the node's output. Branches run side by side, but
+   * actions on the same widget run one after another, top to bottom as laid out.
+   * A connected action starts once the one before it has finished (its reset included).
+   */
+  private runNext(pageId: string, graph: PageWorkflow, node: FlowNode, visited: Set<string>, gen: number): void {
+    const next = this.next(graph, node, 'out').sort((a, b) => a.position.y - b.position.y);
+    for (const child of next) {
+      if (visited.has(child.id)) continue;
+      visited.add(child.id);
 
-    while (queue.length > 0) {
-      const node = queue.shift()!;
-      if (visited.has(node.id)) continue;
-      visited.add(node.id);
-
-      if (node.type === 'Action') {
-        this.execute(pageId, node);
-        queue.push(...this.next(graph, node, 'out'));
+      if (child.type === 'Action') {
+        this.execute(pageId, child, gen).then(() => {
+          if (this.generation(pageId) === gen) this.runNext(pageId, graph, child, visited, gen);
+        });
       } else {
-        console.warn(`[workflow] ${node.type} nodes are not supported in preview yet; stopping this branch.`);
+        console.warn(`[workflow] ${child.type} nodes are not supported in preview yet; stopping this branch.`);
       }
     }
   }
@@ -67,31 +70,41 @@ export class WorkflowRuntimeService {
       .filter((n): n is FlowNode => !!n);
   }
 
-  private execute(pageId: string, node: ActionNode): void {
+  /** Queue the action on its widget; resolves once it has finished (after its reset, if any). */
+  private execute(pageId: string, node: ActionNode, gen: number): Promise<void> {
     if (node.actionType !== 'set_text') {
       console.warn(`[workflow] Unknown action "${node.actionType}"`);
-      return;
+      return Promise.resolve();
     }
 
     const config = node.config as SetTextConfig;
-    if (!config.targetId) return;
+    if (!config.targetId) return Promise.resolve();
 
     const key = `${pageId}:${config.targetId}`;
-    clearTimeout(this.resetTimers.get(key));
-    this.resetTimers.delete(key);
+    const run = (this.widgetQueues.get(key) ?? Promise.resolve()).then(async () => {
+      if (this.generation(pageId) !== gen) return;
 
-    this.layoutState.previewItemProps(pageId, config.targetId, { text: config.text ?? '' });
-    if (!this.previewed.has(pageId)) this.previewed.set(pageId, new Set());
-    this.previewed.get(pageId)!.add(config.targetId);
+      this.layoutState.previewItemProps(pageId, config.targetId, { text: config.text ?? '' });
+      if (!this.previewed.has(pageId)) this.previewed.set(pageId, new Set());
+      this.previewed.get(pageId)!.add(config.targetId);
 
-    if (config.resetEnabled) {
+      if (!config.resetEnabled) return;
       const seconds = Math.max(0, Number(config.resetAfterSeconds) || 0);
-      this.resetTimers.set(key, setTimeout(() => {
-        this.resetTimers.delete(key);
-        this.previewed.get(pageId)?.delete(config.targetId);
-        // Back to the label's own text prop
-        this.layoutState.previewItemProps(pageId, config.targetId, null);
-      }, seconds * 1000));
-    }
+      await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+      if (this.generation(pageId) !== gen) return;
+
+      this.previewed.get(pageId)?.delete(config.targetId);
+      // Back to the label's own text prop
+      this.layoutState.previewItemProps(pageId, config.targetId, null);
+    });
+
+    this.widgetQueues.set(key, run);
+    // Forget the queue once it has drained, so it doesn't grow forever
+    run.then(() => { if (this.widgetQueues.get(key) === run) this.widgetQueues.delete(key); });
+    return run;
+  }
+
+  private generation(pageId: string): number {
+    return this.generations.get(pageId) ?? 0;
   }
 }

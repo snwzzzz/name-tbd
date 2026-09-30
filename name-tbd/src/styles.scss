@@ -197,6 +197,128 @@ body {
 }
 
 // =====================================================
+// FORM FIELDS (inspector, settings) — same card look as the component list
+// =====================================================
+
+.ui-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ui-section-title {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+}
+
+.ui-field-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.ui-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 2rem;
+  padding: 0.3125rem 0.75rem;
+  background: var(--color-surface-secondary);
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+
+  &::placeholder {
+    color: var(--color-text-disabled);
+  }
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+  }
+}
+
+textarea.ui-input {
+  resize: vertical;
+  line-height: 1.45;
+}
+
+// Color swatch + hex value in one card
+.ui-color {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+  background: var(--color-surface-secondary);
+  border-radius: 0.375rem;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+
+  input[type='color'] {
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+    background: none;
+    cursor: pointer;
+
+    &::-webkit-color-swatch-wrapper { padding: 0; }
+    &::-webkit-color-swatch { border: none; border-radius: 0.1875rem; }
+    &::-moz-color-swatch { border: none; border-radius: 0.1875rem; }
+  }
+
+  .ui-color-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+  }
+}
+
+// Checkbox as a card row
+.ui-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3125rem 0.75rem;
+  background: var(--color-surface-secondary);
+  border-radius: 0.375rem;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+
+  input[type='checkbox'] {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+  }
+}
+
+// =====================================================
 // CDK OVERLAY & MODAL STYLES
 // =====================================================
 @import '@angular/cdk/overlay-prebuilt.css';

@@ -17,6 +17,7 @@ import {
 } from '@angular/core';
 import { JsonPipe } from '@angular/common';
 import { GridStack, GridStackNode } from 'gridstack';
+import { LucideZap } from '@lucide/angular';
 import { ButtonWidgetComponent } from '../widgets/button-widget/button-widget.component';
 import { FormWidgetComponent } from '../widgets/form-widget/form-widget.component';
 import { DefaultWidgetComponent } from '../widgets/default-widget/default-widget.component';
@@ -50,7 +51,7 @@ const CELL_H = AH / ROWS;   // 45px per row
 @Component({
   selector: 'app-canvas',
   standalone: true,
-  imports: [CdkMenuModule, DialogModule, FormsModule],
+  imports: [CdkMenuModule, DialogModule, FormsModule, LucideZap],
   templateUrl: './canvas.html',
   styleUrl: './canvas.scss',
 })
