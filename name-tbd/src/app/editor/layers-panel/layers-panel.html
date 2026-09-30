@@ -1,0 +1,53 @@
+<div class="layers-panel">
+  <div class="list-header">
+    <span class="list-title">Layers</span>
+    @if (count()) {
+      <span class="count">{{ count() }}</span>
+    }
+  </div>
+
+  @if (!hasPage()) {
+    <p class="empty-state">Open a page to see its layers.</p>
+  } @else if (layers().length === 0) {
+    <p class="empty-state">No widgets on this page yet. Drag some in from Components.</p>
+  } @else {
+    <ul class="layer-list" role="tree">
+      <ng-container *ngTemplateOutlet="layerItems; context: { $implicit: layers(), depth: 0 }" />
+    </ul>
+  }
+</div>
+
+<ng-template #layerItems let-items let-depth="depth">
+  @for (item of items; track key(item)) {
+    <li role="treeitem" [attr.aria-selected]="selectedId() === key(item)">
+      <button
+        type="button"
+        class="layer"
+        [class.selected]="selectedId() === key(item)"
+        [style.padding-left.rem]="0.5 + depth * 1"
+        title="Double-click to edit its properties"
+        (click)="select(item)"
+        (dblclick)="openProperties(item)">
+        @if (item.children?.length) {
+          <span class="toggle" [attr.aria-label]="isCollapsed(item) ? 'Expand' : 'Collapse'" (click)="toggle(item, $event)">
+            @if (isCollapsed(item)) { <svg lucideChevronRight></svg> } @else { <svg lucideChevronDown></svg> }
+          </span>
+        } @else {
+          <span class="toggle-spacer"></span>
+        }
+        <span class="layer-icon"><ng-container *ngComponentOutlet="icon(item)" /></span>
+        <span class="layer-name">{{ typeName(item) }}</span>
+        @if (detail(item); as detail) {
+          <span class="layer-detail">{{ detail }}</span>
+        }
+        <span class="layer-id">#{{ item.id }}</span>
+      </button>
+
+      @if (item.children?.length && !isCollapsed(item)) {
+        <ul role="group">
+          <ng-container *ngTemplateOutlet="layerItems; context: { $implicit: item.children, depth: depth + 1 }" />
+        </ul>
+      }
+    </li>
+  }
+</ng-template>

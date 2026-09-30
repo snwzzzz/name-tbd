@@ -1,7 +1,7 @@
 <div class="editor-container">
   <app-navbar />
   <div class="editor-body">
-    <app-resource-navigation />
+    <app-sidebar side="left" />
     <div class="editor-content-area">
       <div class="editor-top-bar">
         <app-editor-tabs class="tabs-area" />
@@ -11,6 +11,6 @@
         <router-outlet />
       </main>
     </div>
-    <app-inspector-panel />
+    <app-sidebar side="right" />
   </div>
 </div>

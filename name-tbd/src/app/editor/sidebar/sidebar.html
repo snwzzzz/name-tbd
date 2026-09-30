@@ -1,0 +1,35 @@
+<aside
+  class="sidebar"
+  [class.expanded]="expanded()"
+  [class.resizing]="resizing()"
+  [style.width.px]="renderedWidth()">
+  <div
+    class="icon-bar"
+    cdkDropList
+    [id]="listId"
+    [cdkDropListConnectedTo]="[otherListId]"
+    [cdkDropListData]="side"
+    (cdkDropListDropped)="drop($event)">
+    @for (tab of tabs(); track tab.id) {
+      <app-icon-button
+        cdkDrag
+        [cdkDragData]="tab.id"
+        [icon]="tab.icon"
+        [selected]="activeTab() === tab.id"
+        [attr.title]="tab.label + ' (drag to move)'"
+        (cdkDragStarted)="onDragStarted()"
+        (cdkDragEnded)="onDragEnded()"
+        (click)="select(tab.id)" />
+    }
+  </div>
+
+  <div class="content">
+    @if (activeDefinition(); as tab) {
+      <ng-container *ngComponentOutlet="tab.component" />
+    }
+  </div>
+
+  @if (expanded()) {
+    <div class="resizer" appResizeHandle [side]="side" [min]="minWidth" [max]="maxWidth" [(width)]="width" [(resizing)]="resizing"></div>
+  }
+</aside>

@@ -105,6 +105,15 @@ export class Canvas implements AfterViewInit {
       });
     });
 
+    // Mark the selected widget, also when it's selected elsewhere (e.g. in the layers panel)
+    effect(() => {
+      const id = this.selection.selectedId();
+      document.querySelectorAll('.grid-stack-item.selected').forEach((el) => {
+        if (el.getAttribute('data-gs-id') !== id) el.classList.remove('selected');
+      });
+      if (id) document.querySelector(`.grid-stack-item[data-gs-id="${CSS.escape(id)}"]`)?.classList.add('selected');
+    });
+
     this.destroyRef.onDestroy(() => {
       this.stopPreview();
       propPatches.unsubscribe();
