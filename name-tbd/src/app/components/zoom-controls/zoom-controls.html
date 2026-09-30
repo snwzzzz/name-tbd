@@ -1,0 +1,8 @@
+<button app-zoom-button title="Zoom out (Ctrl -)" (click)="zoomOut.emit()">−</button>
+<button app-zoom-button class="zoom-pct" title="Reset to 100% (Ctrl 0)" (click)="zoomReset.emit()">{{ zoomPercent() }}%</button>
+<button app-zoom-button title="Zoom in (Ctrl +)" (click)="zoomIn.emit()">+</button>
+<div class="divider"></div>
+<button app-zoom-button title="Fit (Ctrl F)" (click)="fit.emit()">Fit</button>
+<!-- Hidden when nothing is projected (it is the last child then) -->
+<div class="divider extras-divider"></div>
+<ng-content />

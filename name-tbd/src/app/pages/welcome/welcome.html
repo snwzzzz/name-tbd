@@ -1,0 +1,38 @@
+<div class="welcome-container">
+  <div class="welcome-header">
+    <h1>Application Builder</h1>
+    <p>Design your UI, connect your workflows, and build faster.</p>
+  </div>
+
+  <div class="dashboard-grid">
+    <button type="button" class="card create-card" (click)="openCreatePageModal()">
+      <span class="card-icon"><svg lucideLayoutTemplate></svg></span>
+      <h3>New UI Page</h3>
+      <p>Create a new blank page to design your interface.</p>
+    </button>
+
+    <button type="button" class="card create-card" (click)="createWorkflow()">
+      <span class="card-icon"><svg lucideGitMerge></svg></span>
+      <h3>New Workflow</h3>
+      <p>Build a new logic flow to connect your components.</p>
+    </button>
+
+    <button type="button" class="card create-card" (click)="openOpenPageModal()">
+      <span class="card-icon"><svg lucideFolderOpen></svg></span>
+      <h3>Open Page...</h3>
+      <p>Browse and open existing pages in this application.</p>
+    </button>
+  </div>
+
+  <div class="recent-section">
+    <h3>Recent Workflows</h3>
+    <div class="list-container">
+      @for (workflow of workflows(); track workflow.id) {
+        <button type="button" class="list-item" (click)="openWorkflow(workflow.id!)">
+          <svg lucideWorkflow class="list-icon"></svg>
+          <span class="item-name">{{ workflow.name }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</div>

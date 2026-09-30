@@ -1,0 +1,9 @@
+<div class="mode-dropdown">
+  <app-select
+    class="mode-select"
+    placeholder="Choose a mode"
+    [icon]="defaultIcon"
+    [options]="modes"
+    [ngModel]="activeMode()"
+    (ngModelChange)="onModeChange($event)" />
+</div>

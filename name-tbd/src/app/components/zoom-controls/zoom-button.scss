@@ -1,0 +1,28 @@
+:host {
+  height: 1.625rem;
+  min-width: 1.75rem;
+  padding: 0 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &:active {
+    background: var(--color-border);
+  }
+}
+
+:host(.active) {
+  background: var(--color-success);
+  color: #fff;
+}

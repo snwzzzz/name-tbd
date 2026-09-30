@@ -1,0 +1,33 @@
+<div class="component-list">
+  <div class="list-header">
+    <span class="list-title">Components</span>
+  </div>
+
+  <ul class="item-list">
+    @for (item of items; track item.type) {
+      <!--
+        .gs-drag-item is what the canvas grid accepts on drop; data-type tells it which widget
+        to create, the gs-* attributes the size it's dropped at. Deliberately no .grid-stack-item:
+        GridStack's own CSS for it would break the palette layout. .grid-stack-item-content gives
+        the dropped widget its size inside the grid cell.
+      -->
+      <li>
+        <div
+          class="gs-drag-item palette-item"
+          [attr.data-type]="item.type"
+          [attr.gs-w]="item.w"
+          [attr.gs-h]="item.h"
+          [attr.gs-min-w]="item.minW || (item.resizable === false ? item.w : null)"
+          [attr.gs-min-h]="item.minH || (item.resizable === false ? item.h : null)"
+          [attr.gs-size-to-content]="item.type === 'form' ? 'true' : null"
+          [attr.gs-no-resize]="item.resizable === false ? 'true' : null">
+          <div class="grid-stack-item-content palette-card">
+            <span class="item-icon"><svg lucideComponent></svg></span>
+            <span class="item-label">{{ item.label }}</span>
+            <span class="grab-handle-icon"><svg lucideGripVertical></svg></span>
+          </div>
+        </div>
+      </li>
+    }
+  </ul>
+</div>

@@ -1,0 +1,23 @@
+<div class="open-page-modal">
+  <div class="modal-header">
+    <h3 class="modal-title">Open Page</h3>
+  </div>
+
+  <div class="page-list">
+    @for (page of data.pages; track page.id) {
+      <button type="button" class="page-list-item" (click)="onSelect(page.id!)">
+        <svg lucideFile class="page-icon"></svg>
+        <div class="page-info">
+          <span class="page-name">{{ page.name }}</span>
+          <span class="page-path">{{ page.path }}</span>
+        </div>
+      </button>
+    } @empty {
+      <div class="empty-state">No pages found in this branch.</div>
+    }
+  </div>
+
+  <div class="modal-actions">
+    <app-button color="neutral" variant="ghost" (click)="onClose()">Close</app-button>
+  </div>
+</div>

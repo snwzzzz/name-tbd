@@ -1,0 +1,7 @@
+<div class="applications-container">
+  <div class="applications-grid">
+    @for (application of applications; track application.id) {
+      <app-application-card [application]="application" />
+    }
+  </div>
+</div>

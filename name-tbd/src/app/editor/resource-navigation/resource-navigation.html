@@ -1,0 +1,21 @@
+<aside
+  class="resource-navigation"
+  [class.expanded]="expanded()"
+  [class.resizing]="resizing()"
+  [style.width.px]="renderedWidth()">
+  <div class="icon-bar">
+    <app-icon-button [icon]="componentsIcon" [selected]="activeTab() === 'components'" (click)="selectTab('components')" />
+    <app-icon-button [icon]="layersIcon" [selected]="activeTab() === 'layers'" (click)="selectTab('layers')" />
+  </div>
+
+  <div class="content">
+    @switch (activeTab()) {
+      @case ('components') { <app-component-list /> }
+      @case ('layers') { <div class="placeholder-panel">Layers Panel</div> }
+    }
+  </div>
+
+  @if (expanded()) {
+    <div class="resizer" appResizeHandle side="left" [min]="minWidth" [(width)]="width" [(resizing)]="resizing"></div>
+  }
+</aside>

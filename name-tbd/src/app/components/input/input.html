@@ -1,10 +1,9 @@
 <input
+  class="app-input"
+  [class]="classes()"
   [type]="type()"
   [placeholder]="placeholder()"
   [value]="value()"
-  (input)="onInput($event)"
-  class="app-input"
-  [class.input-disabled]="disabled()"
   [disabled]="disabled()"
-  [class]="'input-size-' + size() + ' input-variant-' + variant()"
+  (input)="onInput($event)"
 />

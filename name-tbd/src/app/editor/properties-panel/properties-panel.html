@@ -1,0 +1,48 @@
+<div class="properties-panel">
+  @if (selectedItem(); as item) {
+    <div class="panel-header">
+      <span class="panel-title">Properties</span>
+    </div>
+
+    <!-- The selected element, drawn like a component-list card -->
+    <div class="selected-card">
+      <span class="item-icon"><ng-container *ngComponentOutlet="definition().icon" /></span>
+      <span class="item-label">{{ definition().name }}</span>
+      @if (item.id != null) {
+        <span class="item-id">#{{ item.id }}</span>
+      }
+    </div>
+
+    <div class="panel-body">
+      @if (hasDynamicSettings()) {
+        <!-- Generated from the prop definitions in the backend -->
+        <app-dynamic-settings [type]="item.type ?? ''" [props]="item.props" />
+      } @else if (definition().settingsComponent; as settings) {
+        <!-- Hand-written settings, used when the backend defines no props -->
+        <ng-container *ngComponentOutlet="settings; inputs: { props: item.props ?? {} }" />
+      } @else {
+        <p class="panel-hint">No settings available for this widget.</p>
+      }
+    </div>
+
+    <div class="panel-footer">
+      <button
+        type="button"
+        [class]="'save-btn state-' + saveState()"
+        [disabled]="saveState() === 'saving'"
+        (click)="save()">
+        @switch (saveState()) {
+          @case ('saving') { <svg lucideLoaderCircle class="spin"></svg> Saving… }
+          @case ('saved') { <svg lucideCheck></svg> Saved }
+          @case ('error') { <svg lucideCircleAlert></svg> Error — Retry }
+          @default { <svg lucideSave></svg> Save }
+        }
+      </button>
+    </div>
+  } @else {
+    <div class="panel-empty">
+      <span class="empty-icon"><svg lucideMousePointerClick></svg></span>
+      <p>Select an element on the canvas to edit its properties.</p>
+    </div>
+  }
+</div>

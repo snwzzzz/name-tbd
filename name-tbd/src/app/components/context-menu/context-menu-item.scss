@@ -1,0 +1,40 @@
+:host {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+
+  &.danger {
+    color: var(--color-danger);
+
+    &:hover {
+      background: var(--color-danger-light);
+    }
+  }
+}
+
+.icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+
+  :host(.danger) & {
+    color: currentColor;
+  }
+
+  ::ng-deep svg {
+    width: 15px;
+    height: 15px;
+  }
+}

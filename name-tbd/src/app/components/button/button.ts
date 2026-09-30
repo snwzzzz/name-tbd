@@ -1,20 +1,20 @@
-import { Component, input, booleanAttribute } from '@angular/core';
-import { NgClass } from '@angular/common';
-
-export type ButtonColor = 'primary' | 'secondary' | 'warning' | 'error' | 'success' | 'neutral';
-export type ButtonVariant = 'solid' | 'outline' | 'ghost';
-export type ButtonSize = 'sm' | 'md' | 'lg';
+import { Component, booleanAttribute, computed, input } from '@angular/core';
+import { ButtonColor, ButtonSize, ButtonVariant } from '../../_types/button.types';
 
 @Component({
   selector: 'app-button',
-  standalone: true,
-  imports: [NgClass],
   templateUrl: './button.html',
   styleUrl: './button.scss',
 })
 export class Button {
-  color = input<ButtonColor>('primary');
-  variant = input<ButtonVariant>('solid');
-  size = input<ButtonSize>('md');
-  disabled = input<boolean, unknown>(false, { transform: booleanAttribute });
+  readonly color = input<ButtonColor>('primary');
+  readonly variant = input<ButtonVariant>('solid');
+  readonly size = input<ButtonSize>('md');
+  readonly disabled = input(false, { transform: booleanAttribute });
+
+  readonly classes = computed(() => [
+    this.disabled() ? 'btn-disabled' : `btn-${this.color()}`,
+    `btn-size-${this.size()}`,
+    `btn-variant-${this.variant()}`,
+  ]);
 }
