@@ -1,0 +1,35 @@
+<div class="data-source-list">
+  <div class="list-header">
+    <span class="list-title">Data</span>
+    <label class="import-button" [class.disabled]="loading()" [attr.title]="'Import ' + formatLabels + ' file'">
+      <svg lucideUpload></svg>
+      <span>Import</span>
+      <input type="file" [accept]="accept" [disabled]="loading()" (change)="onFileChosen($event)" />
+    </label>
+  </div>
+
+  @if (error(); as error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  <ul class="item-list">
+    @for (source of sources(); track source.id) {
+      <li class="source-item">
+        <button type="button" class="select-button" (click)="opened.emit(source.id!)">
+          <svg lucideSheet class="item-icon"></svg>
+          <span class="item-info">
+            <span class="item-name">{{ source.name }}</span>
+            <span class="item-meta">{{ source.columns?.length ?? 0 }} columns · {{ source.rowCount }} rows</span>
+          </span>
+        </button>
+        <button type="button" class="delete-button" title="Delete" [attr.aria-label]="'Delete ' + source.name" (click)="requestDelete(source, $event)">
+          <svg lucideTrash2></svg>
+        </button>
+      </li>
+    } @empty {
+      @if (!loading()) {
+        <li class="empty-state">No data yet. Import a {{ formatLabels }} file to use it in the project.</li>
+      }
+    }
+  </ul>
+</div>

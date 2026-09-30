@@ -162,6 +162,22 @@ export interface PageDto {
     branchId?: number;
 }
 
+export interface NewDataSourceCommand {
+    branchId?: number;
+    name?: string;
+    format?: string;
+    content?: string;
+}
+
+export interface DataSourceDto {
+    id?: number;
+    name?: string;
+    format?: string;
+    branchId?: number;
+    columns?: Array<string>;
+    rows?: Array<Array<string>>;
+}
+
 export interface NewBranchCommand {
     applicationId?: number;
     createdById?: number;
@@ -180,6 +196,15 @@ export interface WidgetPropDefinition {
     propKey?: string;
     propType?: string;
     defaultValue?: string;
+}
+
+export interface DataSourceSummaryDto {
+    id?: number;
+    name?: string;
+    format?: string;
+    branchId?: number;
+    columns?: Array<string>;
+    rowCount?: number;
 }
 
 /** Request Options for Angular HttpClient requests */

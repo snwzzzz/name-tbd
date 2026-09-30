@@ -4,18 +4,18 @@
   [class.resizing]="resizing()"
   [style.width.px]="renderedWidth()">
   <div class="icon-bar">
-    <app-icon-button [icon]="componentsIcon" [selected]="activeTab() === 'components'" (click)="selectTab('components')" />
-    <app-icon-button [icon]="layersIcon" [selected]="activeTab() === 'layers'" (click)="selectTab('layers')" />
+    @for (tab of tabs; track tab.id) {
+      <app-icon-button [icon]="tab.icon" [selected]="activeTab() === tab.id" [attr.title]="tab.label" (click)="selectTab(tab.id)" />
+    }
   </div>
 
   <div class="content">
-    @switch (activeTab()) {
-      @case ('components') { <app-component-list /> }
-      @case ('layers') { <div class="placeholder-panel">Layers Panel</div> }
+    @if (activeDefinition(); as tab) {
+      <ng-container *ngComponentOutlet="tab.component" />
     }
   </div>
 
   @if (expanded()) {
-    <div class="resizer" appResizeHandle side="left" [min]="minWidth" [(width)]="width" [(resizing)]="resizing"></div>
+    <div class="resizer" appResizeHandle side="left" [min]="minWidth" [max]="maxWidth" [(width)]="width" [(resizing)]="resizing"></div>
   }
 </aside>

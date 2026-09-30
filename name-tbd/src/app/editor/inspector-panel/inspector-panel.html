@@ -16,6 +16,6 @@
   </div>
 
   @if (expanded()) {
-    <div class="resizer" appResizeHandle side="right" [min]="minWidth" [(width)]="width" [(resizing)]="resizing"></div>
+    <div class="resizer" appResizeHandle side="right" [min]="minWidth" [max]="maxWidth" [(width)]="width" [(resizing)]="resizing"></div>
   }
 </aside>

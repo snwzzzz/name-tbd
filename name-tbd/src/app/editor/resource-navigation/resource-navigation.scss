@@ -32,11 +32,6 @@
     overflow: hidden; /* Ensure content doesn't break flex layout during resize */
   }
 
-  .placeholder-panel {
-    padding: 1rem;
-    color: var(--color-text-secondary);
-  }
-
   .resizer {
     width: 4px;
     height: 100%;

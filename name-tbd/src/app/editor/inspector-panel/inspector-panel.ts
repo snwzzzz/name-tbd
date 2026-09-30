@@ -4,10 +4,13 @@ import { IconButton } from '../../components/icon-button/icon-button';
 import { PropertiesPanel } from '../properties-panel/properties-panel';
 import { ResizeHandle } from '../../_directives/resize-handle.directive';
 import { InspectorTab } from '../../_types/canvas.types';
+import { isOneOfOrNull, isWidthBetween, persistedSignal } from '../../_utils/storage.utils';
 
 const COLLAPSED_WIDTH = 48;
 const DEFAULT_WIDTH = 320;
 const MIN_WIDTH = 240;
+const MAX_WIDTH = 800;
+const TABS: InspectorTab[] = ['edit', 'layers'];
 
 /** Right sidebar: the selected widget's properties (and, later, layers). */
 @Component({
@@ -21,8 +24,11 @@ export class InspectorPanel {
   readonly layersIcon = LucideLayers;
   readonly minWidth = MIN_WIDTH;
 
-  readonly activeTab = signal<InspectorTab | null>('edit');
-  readonly width = signal(DEFAULT_WIDTH);
+  readonly maxWidth = MAX_WIDTH;
+
+  // The open tab (null: collapsed) and the width are kept across reloads
+  readonly activeTab = persistedSignal<InspectorTab | null>('sidebar-right-tab', 'edit', isOneOfOrNull(TABS));
+  readonly width = persistedSignal('sidebar-right-width', DEFAULT_WIDTH, isWidthBetween(MIN_WIDTH, MAX_WIDTH));
   readonly resizing = signal(false);
 
   readonly expanded = computed(() => this.activeTab() !== null);

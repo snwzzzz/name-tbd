@@ -7,6 +7,7 @@ export interface CanvasContextMenu {
   item: { id: ComponentId; type: string };
 }
 
-export type SidebarTab = 'components' | 'layers';
+/** The id of one of the SIDEBAR_TABS. */
+export type SidebarTab = string;
 export type InspectorTab = 'edit' | 'layers';
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error';

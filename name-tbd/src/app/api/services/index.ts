@@ -9,6 +9,7 @@
 */
 export { ApplicationControllerService } from "./applicationController.service";
 export { BranchControllerService } from "./branchController.service";
+export { DataSourceControllerService } from "./dataSourceController.service";
 export { ExportControllerService } from "./exportController.service";
 export { PageControllerService } from "./pageController.service";
 export { UiComponentControllerService } from "./uiComponentController.service";

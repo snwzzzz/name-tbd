@@ -1,0 +1,63 @@
+<div class="data-source-detail">
+  <div class="detail-header">
+    <button type="button" class="icon-action" title="Back to data" aria-label="Back to data" (click)="back.emit()">
+      <svg lucideArrowLeft></svg>
+    </button>
+    <span class="title">{{ source()?.name ?? 'Data source' }}</span>
+    @if (source()) {
+      <button type="button" class="icon-action danger" title="Delete" aria-label="Delete data source" (click)="requestDelete()">
+        <svg lucideTrash2></svg>
+      </button>
+    }
+  </div>
+
+  @if (source(); as source) {
+    <div class="stats">
+      <div class="stat"><span class="stat-value">{{ columns().length }}</span><span class="stat-label">Columns</span></div>
+      <div class="stat"><span class="stat-value">{{ rows().length }}</span><span class="stat-label">Rows</span></div>
+      <div class="stat"><span class="stat-value">{{ filledPercent() }}%</span><span class="stat-label">Filled</span></div>
+      <div class="stat"><span class="stat-value">{{ source.format?.toUpperCase() }}</span><span class="stat-label">Format</span></div>
+    </div>
+
+    <h4 class="section-title">Columns</h4>
+    <ul class="column-list">
+      @for (column of columnInfo(); track column.index) {
+        <li class="column">
+          <span class="column-name">{{ column.name }}</span>
+          <span class="type-badge" [attr.data-type]="column.type">{{ column.type }}</span>
+        </li>
+      }
+    </ul>
+
+    <h4 class="section-title">Preview</h4>
+    <div class="preview">
+      <div class="preview-scroll">
+        <table>
+          <thead>
+            <tr>
+              @for (column of columns(); track $index) {
+                <th>{{ column }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of previewRows(); track $index) {
+              <tr>
+                @for (value of row; track $index) {
+                  <td>{{ value }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (hiddenRowCount() > 0) {
+        <div class="preview-footer">+ {{ hiddenRowCount() }} more rows</div>
+      }
+    </div>
+  } @else if (error(); as error) {
+    <div class="error-message">{{ error }}</div>
+  } @else {
+    <div class="message">Loading…</div>
+  }
+</div>
