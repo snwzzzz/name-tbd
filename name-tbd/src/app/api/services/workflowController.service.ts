@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestOptions, NodeDto, UpdateNodeCommand, WorkflowDto, NewWorkflowCommand, NewNodeCommand, NewEdgeCommand, EdgeDto } from "../models";
+import { RequestOptions, NodeDto, UpdateNodeCommand, WorkflowDto, NewWorkflowCommand, NewNodeCommand, EdgeDto, NewEdgeCommand } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class WorkflowControllerService {
@@ -216,6 +216,32 @@ export class WorkflowControllerService {
 
         return this.httpClient.request('post', url, {
             body: newNodeCommand,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    getEdges(workflowId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<EdgeDto>>;
+    getEdges(workflowId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<EdgeDto>>>;
+    getEdges(workflowId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<EdgeDto>>>;
+    getEdges(workflowId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/workflows/${workflowId}/edges`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
             observe,
             headers,
             reportProgress: options?.reportProgress,

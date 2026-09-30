@@ -3,10 +3,12 @@ package com.example.ntbd.service;
 import com.example.ntbd.Exception.NodeNotFoundException;
 import com.example.ntbd.Exception.WorkflowNotFoundException;
 import com.example.ntbd.commands.NewNodeCommand;
+import com.example.ntbd.domain.Edge;
 import com.example.ntbd.domain.Node;
 import com.example.ntbd.domain.Workflow;
 import com.example.ntbd.domain.WorkflowStatus;
 import com.example.ntbd.dto.NodeDto;
+import com.example.ntbd.persistence.EdgeRepository;
 import com.example.ntbd.persistence.NodeRepository;
 import com.example.ntbd.persistence.WorkflowRepository;
 import com.example.ntbd.workflow.validation.NodeConfigValidator;
@@ -41,11 +43,14 @@ public class NodeServiceTest {
     @Mock
     private NodeConfigValidator nodeConfigValidator;
 
+    @Mock
+    private EdgeRepository edgeRepository;
+
     private NodeService nodeService;
 
     @BeforeEach
     void setUp() {
-        nodeService = new NodeService(nodeRepository, workflowRepository, nodeConfigValidator);
+        nodeService = new NodeService(nodeRepository, workflowRepository, nodeConfigValidator, edgeRepository);
     }
 
     // ---- createNode ----
@@ -181,6 +186,19 @@ public class NodeServiceTest {
         nodeService.deleteNode(5L);
 
         verify(nodeRepository).deleteById(new Node.NodeId(5L));
+    }
+
+    @Test
+    void deleteNode_removes_connected_edges_first() {
+        var edge = Edge.builder().id(new Edge.EdgeId(7L)).sourcePort("out").build();
+        when(nodeRepository.existsById(new Node.NodeId(5L))).thenReturn(true);
+        when(edgeRepository.findBySourceNode_IdOrTargetNode_Id(new Node.NodeId(5L), new Node.NodeId(5L))).thenReturn(List.of(edge));
+
+        nodeService.deleteNode(5L);
+
+        var order = inOrder(edgeRepository, nodeRepository);
+        order.verify(edgeRepository).deleteAll(List.of(edge));
+        order.verify(nodeRepository).deleteById(new Node.NodeId(5L));
     }
 
     @Test

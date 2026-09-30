@@ -368,3 +368,19 @@ $ah: 50.625rem;
 ::ng-deep .grid-stack-item.selected > .grid-stack-item-content {
   outline: 3px solid #ffa200; /* Tailwind amber-500 */
 }
+
+// ─── Preview mode ────────────────────────────────────────────────────────────
+.preview-btn.active {
+  background: hsl(150 60% 40%);
+  color: #fff;
+}
+
+.is-preview {
+  ::ng-deep .widget-remove-btn {
+    display: none;
+  }
+
+  ::ng-deep .grid-stack-item[data-type='button'] > .grid-stack-item-content {
+    cursor: pointer;
+  }
+}

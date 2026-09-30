@@ -7,6 +7,7 @@ import com.example.ntbd.domain.Node;
 import com.example.ntbd.domain.Workflow;
 import com.example.ntbd.dto.NodeDto;
 import com.example.ntbd.mapper.NodeMapper;
+import com.example.ntbd.persistence.EdgeRepository;
 import com.example.ntbd.persistence.NodeRepository;
 import com.example.ntbd.persistence.WorkflowRepository;
 import com.example.ntbd.workflow.validation.NodeConfigValidator;
@@ -23,6 +24,7 @@ public class NodeService {
     private final NodeRepository nodeRepository;
     private final WorkflowRepository workflowRepository;
     private final NodeConfigValidator nodeConfigValidator;
+    private final EdgeRepository edgeRepository;
 
     @Transactional
     public NodeDto createNode(NewNodeCommand command) {
@@ -81,6 +83,8 @@ public class NodeService {
         if (!nodeRepository.existsById(new Node.NodeId(id))) {
             throw new NodeNotFoundException(id);
         }
+        // Edges reference the node on both ends, so they have to go first
+        edgeRepository.deleteAll(edgeRepository.findBySourceNode_IdOrTargetNode_Id(new Node.NodeId(id), new Node.NodeId(id)));
         nodeRepository.deleteById(new Node.NodeId(id));
     }
 }

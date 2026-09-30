@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/widget-props")
+@RequestMapping(value = "/api/widget-props", produces = "application/json")
 @RequiredArgsConstructor
 public class WidgetPropDefinitionController {
 

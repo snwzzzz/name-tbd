@@ -182,6 +182,17 @@ export class LayoutStateService {
   }
 
   /**
+   * Show temporary props on the live widget only (workflow preview). Layout
+   * state and the database are untouched; `null` restores the item's own props.
+   */
+  previewItemProps(pageId: string, id: string | number, patch: Record<string, any> | null): void {
+    const item = this.findById(pageId, id);
+    if (!item) return;
+    const props = { ...(item.props as Record<string, any> | undefined) };
+    this.propPatch$.next({ id: id.toString(), props: patch ? { ...props, ...patch } : props });
+  }
+
+  /**
    * Apply prop edits locally (layout state + live widget) only.
    * They reach the database when the user presses Save in the properties panel.
    */

@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestOptions, PageDto, NewPageCommand, UiComponentDto } from "../models";
+import { RequestOptions, PageDto, NewPageCommand, WorkflowDto, UiComponentDto } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class PageControllerService {
@@ -87,6 +87,32 @@ export class PageControllerService {
     getPage(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<PageDto>>;
     getPage(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/pages/${id}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    getPageWorkflow(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<WorkflowDto>;
+    getPageWorkflow(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<WorkflowDto>>;
+    getPageWorkflow(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<WorkflowDto>>;
+    getPageWorkflow(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/pages/${id}/workflow`;
 
         let headers: HttpHeaders;
         if (options?.headers instanceof HttpHeaders) {

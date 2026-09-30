@@ -1,127 +1,259 @@
 import { Injectable, signal, inject } from '@angular/core';
-import { FlowNode, FlowConnection, TriggerNode } from '../workflow-editor/workflow.types';
+import { Observable, forkJoin, from, of } from 'rxjs';
+import { concatMap, finalize, map, shareReplay, switchMap, tap, toArray } from 'rxjs/operators';
+import { ActionNode, FlowNode, FlowConnection, TriggerNode } from '../workflow-editor/workflow.types';
+import { ACTION_TYPES } from '../workflow-editor/workflow-operators';
 import { WorkflowControllerService } from '../api/services/workflowController.service';
+import { PageControllerService } from '../api/services/pageController.service';
+import { EdgeDto, NodeDto } from '../api/models';
 
 export interface WorkflowState {
   nodes: FlowNode[];
   connections: FlowConnection[];
 }
 
+/** The workflow that belongs to a page, with its graph. */
+export interface PageWorkflow extends WorkflowState {
+  workflowId: number;
+}
+
+const EMPTY_STATE: WorkflowState = { nodes: [], connections: [] };
+
+/** Output port ids are `${nodeId}-${port}`, input port ids `${nodeId}-in`. */
+export const outputPortId = (nodeId: string, port: string) => `${nodeId}-${port}`;
+export const inputPortId = (nodeId: string) => `${nodeId}-in`;
+
 @Injectable({
   providedIn: 'root'
 })
 export class WorkflowStateService {
   private workflowService = inject(WorkflowControllerService);
-  
-  // Store workflow graphs by workflowId
-  private graphs = signal<Record<string, WorkflowState>>({});
+  private pageService = inject(PageControllerService);
 
-  loadGraphForTab(workflowId: string) {
-    if (this.graphs()[workflowId]) return; // already loaded
+  // Workflow graphs by page id (= editor tab id)
+  private graphs = signal<Record<string, PageWorkflow>>({});
+  private pendingLoads = new Map<string, Observable<PageWorkflow>>();
+  private pendingTriggers = new Map<string, Observable<string>>();
+  private saveTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
-    this.workflowService.getNodes(Number(workflowId)).subscribe(data => {
-      const nodesDto = Array.isArray(data) ? data : [];
-      // Convert DTOs to FlowNodes
-      const nodes: FlowNode[] = nodesDto.map(dto => {
-        const base = {
-          id: dto.id!.toString(),
-          position: { x: dto.x || 100, y: dto.y || 100 }
-        };
-        if (dto.type === 'Trigger') return { ...base, type: 'Trigger', ...dto.props } as any;
-        if (dto.type === 'Condition') return { ...base, type: 'Condition', ...dto.props } as any;
-        return { ...base, type: 'Action', ...dto.props } as any;
-      });
-      
-      this.graphs.update(g => ({
-        ...g,
-        [workflowId]: { nodes, connections: [] } // Edges loading can be added later
-      }));
-    });
-  }
+  /** Load the page's workflow (nodes + edges) once; later calls get the cached graph. */
+  ensureGraph(pageId: string): Observable<PageWorkflow> {
+    const cached = this.graphs()[pageId];
+    if (cached) return of(cached);
 
-  getGraphForTab(workflowId: string): WorkflowState {
-    const currentGraphs = this.graphs();
-    if (!currentGraphs[workflowId]) {
-      return { nodes: [], connections: [] };
+    let pending = this.pendingLoads.get(pageId);
+    if (!pending) {
+      pending = this.pageService.getPageWorkflow(Number(pageId)).pipe(
+        switchMap((workflow) =>
+          forkJoin({
+            nodes: this.workflowService.getNodes(workflow.id!),
+            edges: this.workflowService.getEdges(workflow.id!),
+          }).pipe(
+            map(({ nodes, edges }): PageWorkflow => ({
+              workflowId: workflow.id!,
+              nodes: (nodes ?? []).map(toFlowNode),
+              connections: (edges ?? []).map(toConnection),
+            })),
+          ),
+        ),
+        tap((graph) => this.graphs.update((g) => ({ ...g, [pageId]: graph }))),
+        finalize(() => this.pendingLoads.delete(pageId)),
+        shareReplay(1),
+      );
+      this.pendingLoads.set(pageId, pending);
     }
-    return currentGraphs[workflowId];
+    return pending;
   }
 
-  updateGraphForTab(workflowId: string, state: WorkflowState) {
-    this.graphs.update(g => ({ ...g, [workflowId]: state }));
-    // Ideally we should diff and call API to update nodes
-    // For simplicity, if we know which node moved, we should just update it
+  getGraphForTab(pageId: string): WorkflowState {
+    return this.graphs()[pageId] ?? EMPTY_STATE;
   }
 
-  // Adding node to API
-  addNodeToAPI(workflowId: string, node: FlowNode) {
-    const props = Object.keys(node).reduce((acc: any, key) => {
-      if (!['id', 'type', 'position'].includes(key)) acc[key] = (node as any)[key];
-      return acc;
-    }, {});
-
-    this.workflowService.createNode(Number(workflowId), {
-      workflowId: Number(workflowId),
-      type: node.type,
-      props,
-      x: node.position.x,
-      y: node.position.y
-    }).subscribe(dto => {
-      if (dto && dto.id) {
-        const newId = dto.id.toString();
-        this.graphs.update(g => {
-          const graph = g[workflowId];
-          if (!graph) return g;
-          const nodes = graph.nodes.map(n => n.id === node.id ? { ...n, id: newId } : n);
-          return { ...g, [workflowId]: { ...graph, nodes } };
-        });
-      }
-    });
-  }
-
-  updateNodeInAPI(workflowId: string, node: FlowNode) {
-    if (node.id.startsWith('trigger-') || node.id.startsWith('node-')) return; // ignore local-only temporary IDs if any
-    
-    const props = Object.keys(node).reduce((acc: any, key) => {
-      if (!['id', 'type', 'position'].includes(key)) acc[key] = (node as any)[key];
-      return acc;
-    }, {});
-
-    this.workflowService.updateNode(Number(workflowId), Number(node.id), {
-      props,
-      x: node.position.x,
-      y: node.position.y
-    }).subscribe();
-  }
-
-  addTriggerForElement(workflowId: string, elementId: string, eventType: string = 'element_click'): string {
-    const graph = this.getGraphForTab(workflowId);
-    
-    const existingTrigger = graph.nodes.find(n => 
-      n.type === 'Trigger' && 
-      (n as TriggerNode).elementId === elementId &&
-      (n as TriggerNode).eventName === eventType
+  /** Create a node in the backend and add it to the graph with its real id. */
+  addNode(pageId: string, node: Omit<FlowNode, 'id'>): Observable<FlowNode> {
+    return this.ensureGraph(pageId).pipe(
+      switchMap((graph) =>
+        this.workflowService.createNode(graph.workflowId, {
+          workflowId: graph.workflowId,
+          type: node.type,
+          props: nodeProps(node),
+          x: node.position.x,
+          y: node.position.y,
+        } as any),
+      ),
+      map((dto) => ({ ...node, id: dto.id!.toString() }) as FlowNode),
+      tap((created) => this.patchGraph(pageId, (g) => ({ ...g, nodes: [...g.nodes, created] }))),
     );
-
-    if (existingTrigger) {
-      return existingTrigger.id;
-    }
-
-    const newNode: TriggerNode = {
-      id: `trigger-${Date.now()}`,
-      type: 'Trigger',
-      triggerType: 'element_click',
-      elementId,
-      eventName: eventType,
-      position: { x: 100, y: 100 }
-    };
-
-    const newState = { ...graph, nodes: [...graph.nodes, newNode] };
-    this.updateGraphForTab(workflowId, newState);
-    
-    // Attempt to persist
-    this.addNodeToAPI(workflowId, newNode);
-
-    return newNode.id;
   }
+
+  /** Replace a node locally right away and persist it (debounced, so typing doesn't flood the API). */
+  updateNode(pageId: string, node: FlowNode): void {
+    this.patchGraph(pageId, (g) => ({ ...g, nodes: g.nodes.map((n) => (n.id === node.id ? node : n)) }));
+
+    const workflowId = this.graphs()[pageId]?.workflowId;
+    if (workflowId == null) return;
+
+    clearTimeout(this.saveTimeouts.get(node.id));
+    this.saveTimeouts.set(node.id, setTimeout(() => {
+      this.saveTimeouts.delete(node.id);
+      this.workflowService.updateNode(workflowId, Number(node.id), {
+        props: nodeProps(node),
+        x: node.position.x,
+        y: node.position.y,
+      } as any).subscribe({ error: (err) => console.error(`Failed to save workflow node ${node.id}`, err) });
+    }, 300));
+  }
+
+  /** Remove a node and its connections (the backend drops the edges with it). */
+  deleteNode(pageId: string, nodeId: string): void {
+    const workflowId = this.graphs()[pageId]?.workflowId;
+    clearTimeout(this.saveTimeouts.get(nodeId));
+    this.patchGraph(pageId, (g) => ({
+      nodes: g.nodes.filter((n) => n.id !== nodeId),
+      connections: g.connections.filter((c) => c.fromNode !== nodeId && c.toNode !== nodeId),
+    }));
+    if (workflowId != null) {
+      this.workflowService.deleteNode(workflowId, Number(nodeId))
+        .subscribe({ error: (err) => console.error(`Failed to delete workflow node ${nodeId}`, err) });
+    }
+  }
+
+  /** Connect an output port of one node to the input of another. */
+  connect(pageId: string, fromNode: string, fromPort: string, toNode: string): void {
+    this.createConnection(pageId, fromNode, fromPort, toNode)
+      .subscribe({ error: (err) => console.error('Failed to save workflow connection', err) });
+  }
+
+  private createConnection(pageId: string, fromNode: string, fromPort: string, toNode: string): Observable<FlowConnection | null> {
+    const workflowId = this.graphs()[pageId]?.workflowId;
+    if (workflowId == null || fromNode === toNode) return of(null);
+
+    return this.workflowService.createEdge(workflowId, {
+      sourceNodeId: Number(fromNode),
+      targetNodeId: Number(toNode),
+      sourcePort: fromPort,
+    }).pipe(
+      map(toConnection),
+      tap((conn) => this.patchGraph(pageId, (g) => ({ ...g, connections: [...g.connections, conn] }))),
+    );
+  }
+
+  /**
+   * Add a new action to an element's click flow: creates the click trigger if the
+   * element has none yet, then a default action connected to it. Emits the action's id.
+   */
+  addActionForElement(pageId: string, elementId: string, eventType: string = 'element_click'): Observable<string> {
+    return this.addTriggerForElement(pageId, elementId, eventType).pipe(
+      switchMap((triggerId) => {
+        const graph = this.getGraphForTab(pageId);
+        const trigger = graph.nodes.find((n) => n.id === triggerId)!;
+        // Place it right of the trigger, below any actions already hanging off it
+        const existing = graph.connections.filter((c) => c.fromNode === triggerId).length;
+        const action = ACTION_TYPES[0];
+        const node: Omit<ActionNode, 'id'> = {
+          type: 'Action',
+          actionType: action.id,
+          config: { ...action.defaultConfig },
+          position: { x: trigger.position.x + 300, y: trigger.position.y + existing * 250 },
+        };
+        return this.addNode(pageId, node).pipe(
+          switchMap((created) =>
+            this.createConnection(pageId, triggerId, 'out', created.id).pipe(map(() => created.id)),
+          ),
+        );
+      }),
+    );
+  }
+
+  disconnect(pageId: string, connectionId: string): void {
+    const workflowId = this.graphs()[pageId]?.workflowId;
+    this.patchGraph(pageId, (g) => ({ ...g, connections: g.connections.filter((c) => c.id !== connectionId) }));
+    if (workflowId != null) {
+      this.workflowService.deleteEdge(workflowId, Number(connectionId))
+        .subscribe({ error: (err) => console.error(`Failed to delete workflow connection ${connectionId}`, err) });
+    }
+  }
+
+  /** Make sure each of these elements has a click trigger (one at a time, so none is created twice). */
+  ensureTriggersForElements(pageId: string, elementIds: string[]): Observable<string[]> {
+    if (elementIds.length === 0) return of([]);
+    return from(elementIds).pipe(
+      concatMap((id) => this.addTriggerForElement(pageId, id)),
+      toArray(),
+    );
+  }
+
+  /** Return the click trigger of an element, creating it if the element has none yet. */
+  addTriggerForElement(pageId: string, elementId: string, eventType: string = 'element_click'): Observable<string> {
+    // Concurrent callers (the context menu and the workflow section opening) share one creation
+    const key = `${pageId}:${elementId}:${eventType}`;
+    let pending = this.pendingTriggers.get(key);
+    if (!pending) {
+      pending = this.findOrCreateTrigger(pageId, elementId, eventType).pipe(
+        finalize(() => this.pendingTriggers.delete(key)),
+        shareReplay(1),
+      );
+      this.pendingTriggers.set(key, pending);
+    }
+    return pending;
+  }
+
+  private findOrCreateTrigger(pageId: string, elementId: string, eventType: string): Observable<string> {
+    return this.ensureGraph(pageId).pipe(
+      switchMap((graph) => {
+        const existing = graph.nodes.find((n) =>
+          n.type === 'Trigger' &&
+          (n as TriggerNode).elementId === elementId &&
+          (n as TriggerNode).eventName === eventType,
+        );
+        if (existing) return of(existing.id);
+
+        // Stack triggers vertically so each button's flow starts on its own row
+        const triggerCount = graph.nodes.filter((n) => n.type === 'Trigger').length;
+        const trigger: Omit<TriggerNode, 'id'> = {
+          type: 'Trigger',
+          triggerType: 'element_click',
+          elementId,
+          eventName: eventType,
+          position: { x: 100, y: 100 + triggerCount * 220 },
+        };
+        return this.addNode(pageId, trigger).pipe(map((node) => node.id));
+      }),
+    );
+  }
+
+  private patchGraph(pageId: string, fn: (graph: PageWorkflow) => WorkflowState): void {
+    this.graphs.update((g) => {
+      const graph = g[pageId];
+      return graph ? { ...g, [pageId]: { ...graph, ...fn(graph) } } : g;
+    });
+  }
+}
+
+/** Everything except id/type/position is stored in the node's `props`. */
+function nodeProps(node: Omit<FlowNode, 'id'>): Record<string, unknown> {
+  const { type, position, ...props } = node as any;
+  delete props.id;
+  return props;
+}
+
+function toFlowNode(dto: NodeDto): FlowNode {
+  return {
+    ...(dto.props as any),
+    id: dto.id!.toString(),
+    type: dto.type === 'Trigger' || dto.type === 'Condition' ? dto.type : 'Action',
+    position: { x: dto.x ?? 100, y: dto.y ?? 100 },
+  } as FlowNode;
+}
+
+function toConnection(dto: EdgeDto): FlowConnection {
+  const fromNode = dto.sourceNodeId!.toString();
+  const toNode = dto.targetNodeId!.toString();
+  return {
+    id: dto.id!.toString(),
+    fromNode,
+    toNode,
+    fromPort: outputPortId(fromNode, dto.sourcePort ?? 'out'),
+    toPort: inputPortId(toNode),
+  };
 }

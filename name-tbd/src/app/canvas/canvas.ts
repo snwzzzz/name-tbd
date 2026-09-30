@@ -16,6 +16,7 @@ import {
   HostListener
 } from '@angular/core';
 import { JsonPipe } from '@angular/common';
+import { Observable } from 'rxjs';
 import { GridStack, GridStackNode } from 'gridstack';
 import { ButtonWidgetComponent } from '../widgets/button-widget/button-widget.component';
 import { FormWidgetComponent } from '../widgets/form-widget/form-widget.component';
@@ -29,6 +30,7 @@ import { FormsModule } from '@angular/forms';
 
 import { WIDGET_REGISTRY } from '../widgets/registry';
 import { WidgetRegistryService } from '../core/widget-registry.service';
+import { WorkflowRuntimeService } from '../services/workflow-runtime.service';
 import { PropertiesPanelComponent } from '../properties-panel/properties-panel';
 
 // ─── Artboard constants (16:9 website viewport reference) ─────────────────────
@@ -79,6 +81,11 @@ export class Canvas implements AfterViewInit, OnDestroy {
 
   readonly contextMenuState = signal<{ x: number, y: number, item: any } | null>(null);
 
+  // ─── Preview: widgets are locked and clicks run the page's workflows ──────
+  readonly previewMode = signal(false);
+  private previewPageId: string | null = null;
+  private workflowRuntime = inject(WorkflowRuntimeService);
+
   selectionService = inject(SelectionService);
 
   @HostListener('document:pointerdown', ['$event'])
@@ -89,6 +96,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
       return;
     }
     this.contextMenuState.set(null);
+    if (this.previewMode()) return; // no selection while previewing
     if (e && e.type === 'pointerdown') {
       const target = e.target as HTMLElement;
       
@@ -155,6 +163,8 @@ export class Canvas implements AfterViewInit, OnDestroy {
       const tabId = this.tabsService.activeTabId();
       const ready = this.gridReady();
       if (tabId && ready && this.grid) {
+        // Switching tabs ends a running preview of the previous page
+        untracked(() => this.stopPreview());
         // untracked: loadLayoutForTab reads the layout signal, and tracking it here would tear down
         // and rebuild the whole grid on every layout or prop change instead of only on tab switches.
         untracked(() => this.layoutStateService.loadLayoutForTab(tabId)).subscribe((savedLayout: LayoutItem[]) => {
@@ -479,9 +489,12 @@ export class Canvas implements AfterViewInit, OnDestroy {
                 const me = e as MouseEvent;
                 me.preventDefault();
                 me.stopPropagation();
-                
-                const currentItem = this.layout().find(i => i.id?.toString() === id.toString()) || { id, type };
-                this.contextMenuState.set({ x: me.clientX, y: me.clientY, item: currentItem });
+                // Actions can only be attached to buttons for now, and not while previewing
+                if (type !== 'button' || this.previewMode()) return;
+
+                // Read the id now: it changes from the temporary one once the backend has saved the widget
+                const currentId = (contentEl as HTMLElement).closest('.grid-stack-item')?.getAttribute('data-gs-id') ?? id;
+                this.contextMenuState.set({ x: me.clientX, y: me.clientY, item: { id: currentId, type } });
               });
             }
           }
@@ -667,6 +680,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopPreview();
     this.propPatchSub?.unsubscribe();
     document.removeEventListener('keydown', this._onKeyDown);
     document.removeEventListener('keyup',   this._onKeyUp);
@@ -776,12 +790,68 @@ export class Canvas implements AfterViewInit, OnDestroy {
     div.appendChild(btn);
   }
 
+  /** "Add action": new action on the button's click flow (trigger created if missing), then open the workflow section. */
+  addActionToItem(item: LayoutItem): void {
+    this.openWorkflowFor(item, (pageId, elementId) =>
+      this.workflowState.addActionForElement(pageId, elementId, 'element_click'));
+  }
+
+  /** "Open workflow": make sure the button has a click trigger, then open the workflow section. */
   addLogicToItem(item: LayoutItem): void {
-    const tabId = this.tabsService.activeTabId();
-    if (tabId) {
-      this.workflowState.addTriggerForElement(tabId, item.id?.toString() || '', 'element_click');
-      this.tabsService.setMode('workflow');
-    }
+    this.openWorkflowFor(item, (pageId, elementId) =>
+      this.workflowState.addTriggerForElement(pageId, elementId, 'element_click'));
+  }
+
+  private openWorkflowFor(item: LayoutItem, prepare: (pageId: string, elementId: string) => Observable<string>): void {
     this.contextMenuState.set(null);
+    const tabId = this.tabsService.activeTabId();
+    if (!tabId) return;
+
+    // Switch right away; the new nodes show up in the workflow section as soon as they're saved
+    this.tabsService.setMode('workflow');
+
+    const elementId = item.id?.toString();
+    // Widgets that haven't been saved yet still have a temporary id the trigger couldn't point to
+    if (!elementId || isNaN(Number(elementId))) {
+      console.warn('This button is not saved yet, so no trigger could be created for it.');
+      return;
+    }
+    prepare(tabId, elementId).subscribe({
+      error: (err) => console.error('Failed to update the page workflow', err),
+    });
+  }
+
+  // ─── Preview ───────────────────────────────────────────────────────────────
+
+  togglePreview(): void {
+    if (this.previewMode()) {
+      this.stopPreview();
+      return;
+    }
+    const tabId = this.tabsService.activeTabId();
+    if (!tabId || !this.grid) return;
+
+    this.selectionService.clear();
+    document.querySelectorAll('.grid-stack-item.selected').forEach(el => el.classList.remove('selected'));
+    this.grid.setStatic(true);
+    this.previewPageId = tabId;
+    this.previewMode.set(true);
+  }
+
+  private stopPreview(): void {
+    if (!this.previewMode()) return;
+    this.grid?.setStatic(false);
+    if (this.previewPageId) this.workflowRuntime.reset(this.previewPageId);
+    this.previewPageId = null;
+    this.previewMode.set(false);
+  }
+
+  /** In preview, clicking a button runs the workflows triggered by it. */
+  onViewportClick(e: MouseEvent): void {
+    if (!this.previewMode() || !this.previewPageId) return;
+    const item = (e.target as HTMLElement).closest('.grid-stack-item');
+    if (item?.getAttribute('data-type') !== 'button') return;
+    const id = item.getAttribute('data-gs-id');
+    if (id) this.workflowRuntime.handleEvent(this.previewPageId, id, 'element_click');
   }
 }

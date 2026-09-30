@@ -1,17 +1,26 @@
-import { Component, computed, signal, ViewChild, AfterViewInit, HostListener, effect, inject } from '@angular/core';
-import { JsonPipe } from '@angular/common';
+import { Component, computed, signal, ViewChild, HostListener, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { 
-  FFlowModule, 
-  FCanvasComponent, 
-  FCreateConnectionEvent, 
+import {
+  FFlowModule,
+  FCanvasComponent,
+  FCreateConnectionEvent,
   FReassignConnectionEvent,
-  FCanvasChangeEvent
+  FCanvasChangeEvent,
+  FDeleteSelectedEvent
 } from '@foblex/flow';
 import { WorkflowStateService } from '../services/workflow-state.service';
-import { FlowNode, FlowConnection, TriggerNode, ConditionNode, ActionNode } from './workflow.types';
-import { CONDITION_OPERATORS } from './workflow-operators';
+import { LayoutItem, LayoutStateService } from '../services/layout-state.service';
+import { FlowNode, TriggerNode, ConditionNode, ActionNode, SetTextConfig } from './workflow.types';
+import { ACTION_TYPES, CONDITION_OPERATORS } from './workflow-operators';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+
+/** Port ids are `${nodeId}-${port}`; node ids never contain '-' (they are DB ids). */
+const splitPortId = (portId: string) => {
+  const i = portId.lastIndexOf('-');
+  return { nodeId: portId.slice(0, i), port: portId.slice(i + 1) };
+};
 
 @Component({
   selector: 'app-workflow-editor',
@@ -20,18 +29,34 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './workflow-editor.html',
   styleUrl: './workflow-editor.scss'
 })
-export class WorkflowEditor implements AfterViewInit {
+export class WorkflowEditor {
   @ViewChild(FCanvasComponent) fCanvas!: FCanvasComponent;
 
   private route = inject(ActivatedRoute);
   private workflowState = inject(WorkflowStateService);
-  
+  private layoutState = inject(LayoutStateService);
+
   tabId = signal<string>('');
 
-  // ─── State ───────────────────────────────────────────────────────────────
-  nodes = signal<FlowNode[]>([]);
-  connections = signal<FlowConnection[]>([]);
+  // ─── State (owned by WorkflowStateService, which persists every change) ──
+  nodes = computed(() => this.workflowState.getGraphForTab(this.tabId()).nodes);
+  connections = computed(() => this.workflowState.getGraphForTab(this.tabId()).connections);
   operators = CONDITION_OPERATORS;
+  actionTypes = ACTION_TYPES;
+
+  /** Widgets of the page, flattened, so nodes can point at them. */
+  private pageItems = computed(() => {
+    const flat: LayoutItem[] = [];
+    const walk = (items: LayoutItem[]) => items.forEach((i) => { flat.push(i); if (i.children) walk(i.children); });
+    walk(this.layoutState.getLayout(this.tabId()));
+    return flat;
+  });
+  buttons = computed(() => this.pageItems()
+    .filter((i) => i.type === 'button' && typeof i.id === 'number')
+    .map((i) => ({ id: i.id!.toString(), name: `“${this.propOf(i, 'label') ?? 'Click Me'}” (#${i.id})` })));
+  labels = computed(() => this.pageItems()
+    .filter((i) => i.type === 'label' && typeof i.id === 'number')
+    .map((i) => ({ id: i.id!.toString(), name: `${this.propOf(i, 'text') ?? 'New Label'} (#${i.id})` })));
 
   // ─── Zoom & Pan ──────────────────────────────────────────────────────────
   readonly zoom = signal(1);
@@ -46,36 +71,19 @@ export class WorkflowEditor implements AfterViewInit {
   private lastMouseY = 0;
 
   constructor() {
-    effect(() => {
-      const id = this.tabId();
-      if (id) {
-        const state = this.workflowState.getGraphForTab(id);
-        // Only set if they differ to avoid loops, or just set
-        if (state.nodes !== this.nodes()) this.nodes.set(state.nodes);
-        if (state.connections !== this.connections()) this.connections.set(state.connections);
-      }
-    }, { allowSignalWrites: true });
-
     this.route.paramMap.subscribe(params => {
       const id = params.get('tabId');
       if (id) {
         this.tabId.set(id);
-        this.workflowState.loadGraphForTab(id);
+        // Load the workflow and the page's widgets (they feed the button/label pickers), then
+        // give every saved button that has no click trigger yet one, so it's there to build on
+        forkJoin([this.workflowState.ensureGraph(id), this.layoutState.loadLayoutForTab(id)]).pipe(
+          switchMap(() => this.workflowState.ensureTriggersForElements(id, this.buttons().map((b) => b.id))),
+        ).subscribe({
+          error: (err) => console.error('Failed to load the page workflow', err),
+        });
       }
     });
-  }
-
-  private saveStateToService() {
-    const currentTab = this.tabId();
-    if (currentTab) {
-      this.workflowState.updateGraphForTab(currentTab, {
-        nodes: this.nodes(),
-        connections: this.connections()
-      });
-    }
-  }
-
-  ngAfterViewInit(): void {
   }
 
   // ─── Event Listeners ─────────────────────────────────────────────────────
@@ -125,14 +133,14 @@ export class WorkflowEditor implements AfterViewInit {
 
   onViewportMouseMove(e: MouseEvent): void {
     if (!this.activelyPanning) return;
-    
+
     // Calculate unzoomed delta
     const currentZoom = this.zoom();
     const dx = (e.clientX - this.lastMouseX) / currentZoom;
     const dy = (e.clientY - this.lastMouseY) / currentZoom;
-    
+
     this.panPos.update(p => ({ x: p.x + dx, y: p.y + dy }));
-    
+
     this.lastMouseX = e.clientX;
     this.lastMouseY = e.clientY;
   }
@@ -141,48 +149,81 @@ export class WorkflowEditor implements AfterViewInit {
   addNode(type: string): void {
     const currentPan = this.panPos();
     const currentZoom = this.zoom();
-    const centerX = (-currentPan.x) + (400 / currentZoom);
-    const centerY = (-currentPan.y) + (300 / currentZoom);
-
-    const base = {
-      id: `node-${Date.now()}`,
-      position: { x: centerX, y: centerY },
+    const position = {
+      x: (-currentPan.x) + (400 / currentZoom),
+      y: (-currentPan.y) + (300 / currentZoom),
     };
 
-    let newNode: FlowNode;
-    
+    let newNode: Omit<FlowNode, 'id'>;
     if (type === 'Trigger') {
-      newNode = { ...base, type: 'Trigger', triggerType: 'page_load' } as TriggerNode;
+      newNode = { position, type: 'Trigger', triggerType: 'page_load' } as Omit<TriggerNode, 'id'>;
     } else if (type === 'Condition') {
-      newNode = { ...base, type: 'Condition', condition: { field: '', operator: 'equals', value: '' } } as ConditionNode;
+      newNode = { position, type: 'Condition', condition: { field: '', operator: 'equals', value: '' } } as Omit<ConditionNode, 'id'>;
     } else {
-      newNode = { ...base, type: 'Action', actionType: 'show_message', config: {} } as ActionNode;
+      const action = ACTION_TYPES[0];
+      newNode = { position, type: 'Action', actionType: action.id, config: { ...action.defaultConfig } } as Omit<ActionNode, 'id'>;
     }
 
-    this.nodes.update(ns => [...ns, newNode]);
-    this.saveStateToService();
-    this.workflowState.addNodeToAPI(this.tabId(), newNode);
+    this.workflowState.addNode(this.tabId(), newNode).subscribe({
+      error: (err) => console.error('Failed to create workflow node', err),
+    });
   }
 
   updateCondition(nodeId: string, field: string, operator: string, value: any) {
-    let updatedNode: FlowNode | undefined;
-    this.nodes.update(ns => ns.map(n => {
-      if (n.id === nodeId && n.type === 'Condition') {
-        updatedNode = { ...n, condition: { field, operator, value } } as ConditionNode;
-        return updatedNode;
-      }
-      return n;
-    }));
-    this.saveStateToService();
-    if (updatedNode) {
-      this.workflowState.updateNodeInAPI(this.tabId(), updatedNode);
+    const node = this.nodes().find(n => n.id === nodeId);
+    if (node?.type === 'Condition') {
+      this.workflowState.updateNode(this.tabId(), { ...node, condition: { field, operator, value } });
     }
   }
 
-  // ─── Helpers to cast ─────────────────────────────────────────────────────
+  setActionType(node: FlowNode, actionType: string): void {
+    const action = ACTION_TYPES.find((a) => a.id === actionType);
+    if (node.type !== 'Action' || !action) return;
+    this.workflowState.updateNode(this.tabId(), { ...node, actionType, config: { ...action.defaultConfig } });
+  }
+
+  /** Point a trigger at a button's click, or back to page load when no button is chosen. */
+  setTriggerElement(node: FlowNode, elementId: string): void {
+    if (node.type !== 'Trigger') return;
+    const updated: TriggerNode = elementId
+      ? { ...node, triggerType: 'element_click', eventName: 'element_click', elementId }
+      : { ...node, triggerType: 'page_load', eventName: undefined, elementId: undefined };
+    this.workflowState.updateNode(this.tabId(), updated);
+  }
+
+  updateConfig(node: FlowNode, patch: Partial<SetTextConfig>): void {
+    if (node.type !== 'Action') return;
+    this.workflowState.updateNode(this.tabId(), { ...node, config: { ...node.config, ...patch } });
+  }
+
+  // ─── Helpers for the template ────────────────────────────────────────────
   asTrigger(node: FlowNode): TriggerNode { return node as TriggerNode; }
   asCondition(node: FlowNode): ConditionNode { return node as ConditionNode; }
   asAction(node: FlowNode): ActionNode { return node as ActionNode; }
+  setTextConfig(node: FlowNode): SetTextConfig { return (node as ActionNode).config as SetTextConfig; }
+
+  /** Label and color of the button a trigger belongs to (null if the element isn't a button). */
+  triggerButton(elementId?: string): { label: string; color: string } | null {
+    const item = this.pageItems().find((i) => i.id?.toString() === elementId);
+    if (item?.type !== 'button') return null;
+    return {
+      label: this.propOf(item, 'label') ?? 'Click Me',
+      color: this.propOf(item, 'color') ?? '#3b82f6',
+    };
+  }
+
+  /** "Button “Save”" for a click trigger's element. */
+  elementName(elementId?: string): string {
+    const item = this.pageItems().find((i) => i.id?.toString() === elementId);
+    if (!item) return `Element #${elementId}`;
+    const text = item.type === 'button' ? this.propOf(item, 'label') ?? 'Click Me' : this.propOf(item, 'text');
+    const type = (item.type ?? 'element').replace(/^./, (c) => c.toUpperCase());
+    return text ? `${type} “${text}”` : `${type} #${item.id}`;
+  }
+
+  private propOf(item: LayoutItem, key: string): string | undefined {
+    return (item.props as Record<string, any> | undefined)?.[key] ?? undefined;
+  }
 
   // ─── Foblex Handlers ─────────────────────────────────────────────────────
   onLoaded(): void {
@@ -195,87 +236,43 @@ export class WorkflowEditor implements AfterViewInit {
   }
 
   onNodePositionChange(nodeId: string, position: { x: number, y: number }): void {
-    let updatedNode: FlowNode | undefined;
-    this.nodes.update(nodes => 
-      nodes.map(n => {
-        if (n.id === nodeId) {
-          updatedNode = { ...n, position };
-          return updatedNode;
-        }
-        return n;
-      })
-    );
-    this.saveStateToService();
-    
-    if (updatedNode) {
-      this.workflowState.updateNodeInAPI(this.tabId(), updatedNode);
-    }
+    const node = this.nodes().find(n => n.id === nodeId);
+    if (node) this.workflowState.updateNode(this.tabId(), { ...node, position });
   }
 
   onConnectionCreated(event: FCreateConnectionEvent): void {
     if (!event.targetId) return;
-    
-    const newConnection: FlowConnection = {
-      id: `conn-${Date.now()}`,
-      fromNode: event.sourceId.replace(/-out|-true|-false/, ''),
-      toNode: event.targetId.replace('-in', ''),
-      fromPort: event.sourceId,
-      toPort: event.targetId
-    };
-    
-    this.connections.update(conns => [...conns, newConnection]);
-    this.saveStateToService();
-    
+    const from = splitPortId(event.sourceId);
+    const to = splitPortId(event.targetId);
+    this.workflowState.connect(this.tabId(), from.nodeId, from.port, to.nodeId);
   }
 
   onConnectionReassigned(event: FReassignConnectionEvent): void {
     if (!event.nextTargetId) return;
-    
-    this.connections.update(conns => 
-      conns.map(c => 
-        c.id === event.connectionId 
-          ? { 
-              ...c, 
-              toNode: event.nextTargetId!.replace('-in', ''), 
-              toPort: event.nextTargetId! 
-            } 
-          : c
-      )
-    );
-    
+    const conn = this.connections().find(c => c.id === event.connectionId);
+    if (!conn) return;
+    // Edges are immutable in the backend: replace the old one
+    this.workflowState.disconnect(this.tabId(), conn.id);
+    const from = splitPortId(conn.fromPort);
+    this.workflowState.connect(this.tabId(), from.nodeId, from.port, splitPortId(event.nextTargetId).nodeId);
   }
 
   deleteNode(nodeId: string): void {
     const node = this.nodes().find(n => n.id === nodeId);
     if (!node || node.type === 'Trigger') return;
-    
-    this.nodes.update(ns => ns.filter(n => n.id !== nodeId));
-    this.connections.update(cs => cs.filter(c => c.fromNode !== nodeId && c.toNode !== nodeId));
-    this.saveStateToService();
+    this.workflowState.deleteNode(this.tabId(), nodeId);
   }
 
-  onDeleteSelected(event: any): void {
-    const connIds = event.connectionIds || [];
-    let nodeIds: string[] = event.nodeIds || [];
-    
-    // Prevent Trigger nodes from being deleted
-    nodeIds = nodeIds.filter(id => {
+  onDeleteSelected(event: FDeleteSelectedEvent): void {
+    const connIds = event.connectionIds ?? [];
+    // Trigger nodes belong to their element and can't be deleted here
+    const nodeIds = (event.nodeIds ?? []).filter((id) => {
       const node = this.nodes().find(n => n.id === id);
       return node && node.type !== 'Trigger';
     });
-    
-    if (connIds.length > 0) {
-      this.connections.update(conns => conns.filter(c => !connIds.includes(c.id)));
-    }
-    
-    if (nodeIds.length > 0) {
-      this.nodes.update(nodes => nodes.filter(n => !nodeIds.includes(n.id)));
-      this.connections.update(conns => conns.filter(c => !nodeIds.includes(c.fromNode) && !nodeIds.includes(c.toNode)));
-    }
-    
-    if (connIds.length > 0 || nodeIds.length > 0) {
-      this.saveStateToService();
-    }
+
+    connIds.forEach((id) => this.workflowState.disconnect(this.tabId(), id));
+    nodeIds.forEach((id) => this.workflowState.deleteNode(this.tabId(), id));
   }
 
   // ─── Zoom Controls ───────────────────────────────────────────────────────
@@ -294,7 +291,7 @@ export class WorkflowEditor implements AfterViewInit {
 
   zoomFit(): void {
     if (this.nodes().length === 0) return;
-    
+
     const xs = this.nodes().map(n => n.position.x);
     const ys = this.nodes().map(n => n.position.y);
     const minX = Math.min(...xs);
@@ -302,12 +299,12 @@ export class WorkflowEditor implements AfterViewInit {
     const minY = Math.min(...ys);
     const maxY = Math.max(...ys);
 
-    const boundsW = (maxX - minX) + 200; 
+    const boundsW = (maxX - minX) + 200;
     const boundsH = (maxY - minY) + 100;
-    
+
     const scaleX = window.innerWidth / Math.max(boundsW, 1);
     const scaleY = window.innerHeight / Math.max(boundsH, 1);
-    const fitScale = Math.min(scaleX, scaleY) * 0.8; 
+    const fitScale = Math.min(scaleX, scaleY) * 0.8;
 
     this._clampZoom(fitScale);
 

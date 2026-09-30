@@ -37,6 +37,7 @@ export class WidgetPropDefinitionControllerService {
         } else {
             headers = new HttpHeaders(options?.headers);
         }
+        // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
             headers = headers.set('Accept', 'application/json');
         }
@@ -44,7 +45,6 @@ export class WidgetPropDefinitionControllerService {
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'json',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
@@ -55,7 +55,7 @@ export class WidgetPropDefinitionControllerService {
     getDefinitionsByType(type: string, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<WidgetPropDefinition>>>;
     getDefinitionsByType(type: string, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<WidgetPropDefinition>>>;
     getDefinitionsByType(type: string, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
-        const url = `${this.basePath}/api/widget-props/${encodeURIComponent(type)}`;
+        const url = `${this.basePath}/api/widget-props/${type}`;
 
         let headers: HttpHeaders;
         if (options?.headers instanceof HttpHeaders) {
@@ -63,6 +63,7 @@ export class WidgetPropDefinitionControllerService {
         } else {
             headers = new HttpHeaders(options?.headers);
         }
+        // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
             headers = headers.set('Accept', 'application/json');
         }
@@ -70,7 +71,6 @@ export class WidgetPropDefinitionControllerService {
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'json',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

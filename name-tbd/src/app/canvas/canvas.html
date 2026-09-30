@@ -6,8 +6,10 @@
       class="canvas-viewport"
       #viewport
       [class.is-panning]="isPanning()"
+      [class.is-preview]="previewMode()"
       (mousedown)="onViewportMouseDown($event)"
       (mousemove)="onViewportMouseMove($event)"
+      (click)="onViewportClick($event)"
     >
       <!-- Floating Zoom Controls in the Corner -->
       <div class="zoom-controls floating">
@@ -18,6 +20,15 @@
         <button class="zoom-btn" (click)="zoomIn()" title="Zoom in">+</button>
         <div class="zoom-divider"></div>
         <button class="zoom-btn" (click)="zoomFit()" title="Fit (F)">Fit</button>
+        <div class="zoom-divider"></div>
+        <button
+          class="zoom-btn preview-btn"
+          [class.active]="previewMode()"
+          (click)="togglePreview()"
+          [title]="previewMode() ? 'Back to editing' : 'Try the page: clicking buttons runs their actions'"
+        >
+          {{ previewMode() ? '■ Stop preview' : '▶ Preview' }}
+        </button>
       </div>
 
       <!-- The artboard: native zoom scaling to keep Drag and Drop working natively -->
@@ -54,7 +65,8 @@
       [style.top.px]="ctx.y"
       (click)="$event.stopPropagation()"
     >
-      <div class="menu-item" (click)="addLogicToItem(ctx.item)">⚡ Add Logic / Edit Action</div>
+      <div class="menu-item" (click)="addActionToItem(ctx.item)">⚡ Add action</div>
+      <div class="menu-item" (click)="addLogicToItem(ctx.item)">🔀 Open workflow</div>
     </div>
   }
 </div>

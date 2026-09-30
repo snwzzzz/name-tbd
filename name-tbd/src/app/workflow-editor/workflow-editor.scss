@@ -79,6 +79,7 @@
   
   // Specific node styles
   &.trigger-node {
+    width: 240px;
     border-color: hsl(150 60% 60%);
     .node-header { background: hsl(150 60% 95%); }
   }
@@ -89,6 +90,7 @@
   }
 
   &.action-node {
+    width: 240px;
     border-color: hsl(220 60% 60%);
     .node-header { background: hsl(220 60% 95%); }
   }
@@ -113,8 +115,26 @@
     .meta-row {
       margin-bottom: 4px;
     }
-    
-    .condition-editor {
+
+    // Same look as the button widget on the canvas
+    .trigger-button {
+      padding: 8px 12px;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .element-name {
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .condition-editor, .action-editor {
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -128,6 +148,32 @@
         
         &:focus {
           border-color: hsl(220 60% 60%);
+        }
+      }
+
+      .field-label {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-top: 2px;
+      }
+
+      .reset-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 2px;
+
+        .check-label {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          cursor: pointer;
+        }
+
+        .seconds-input {
+          width: 48px;
         }
       }
     }
@@ -331,4 +377,6 @@
   white-space: pre;
   font-family: 'JetBrains Mono', monospace;
 }
-\n.delete-node-btn { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px; padding: 0 4px; margin-left: auto; border-radius: 4px; }\n.delete-node-btn:hover { background: #fee2e2; color: #ef4444; }
+
+.delete-node-btn { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px; padding: 0 4px; margin-left: auto; border-radius: 4px; }
+.delete-node-btn:hover { background: #fee2e2; color: #ef4444; }

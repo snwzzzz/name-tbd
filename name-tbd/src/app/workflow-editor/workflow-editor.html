@@ -55,7 +55,13 @@
                 @if (node.type === 'Condition') { ❓ }
                 @if (node.type === 'Action') { 🛠️ }
               </span>
-              <span class="node-title">{{ node.type }}</span>
+              <span class="node-title">
+                @switch (node.type) {
+                  @case ('Trigger') { {{ asTrigger(node).eventName === 'element_click' ? 'On click' : 'Trigger' }} }
+                  @case ('Action') { Action }
+                  @default { {{ node.type }} }
+                }
+              </span>
               @if (node.type !== 'Trigger') {
                 <button class="delete-node-btn" (click)="deleteNode(node.id); $event.stopPropagation()">✕</button>
               }
@@ -63,10 +69,24 @@
             
             <div class="node-body">
               @if (node.type === 'Trigger') {
-                <div class="meta-row">On: {{ asTrigger(node).eventName }}</div>
-                @if (asTrigger(node).elementId) {
-                  <div class="meta-row">Element: {{ asTrigger(node).elementId }}</div>
-                }
+                <div class="action-editor" (mousedown)="$event.stopPropagation()">
+                  <label class="field-label">When</label>
+                  <select class="cond-select" [ngModel]="asTrigger(node).elementId ?? ''" (ngModelChange)="setTriggerElement(node, $event)">
+                    <option value="">the page loads</option>
+                    @for (button of buttons(); track button.id) {
+                      <option [value]="button.id">button {{ button.name }} is clicked</option>
+                    }
+                  </select>
+
+                  @if (triggerButton(asTrigger(node).elementId); as button) {
+                    <!-- The button this flow starts from, drawn like it looks on the page -->
+                    <div class="trigger-button" [style.background]="button.color" [title]="'Button #' + asTrigger(node).elementId">
+                      {{ button.label }}
+                    </div>
+                  } @else if (asTrigger(node).elementId) {
+                    <div class="meta-row element-name">{{ elementName(asTrigger(node).elementId) }}</div>
+                  }
+                </div>
               }
 
               @if (node.type === 'Condition') {
@@ -82,7 +102,38 @@
               }
 
               @if (node.type === 'Action') {
-                <div class="meta-row">Action: {{ asAction(node).actionType }}</div>
+                <div class="action-editor" (mousedown)="$event.stopPropagation()">
+                  <select class="cond-select" [ngModel]="asAction(node).actionType" (ngModelChange)="setActionType(node, $event)">
+                    @for (action of actionTypes; track action.id) {
+                      <option [value]="action.id">{{ action.label }}</option>
+                    }
+                  </select>
+
+                  @if (asAction(node).actionType === 'set_text') {
+                    <label class="field-label">Label</label>
+                    <select class="cond-select" [ngModel]="setTextConfig(node).targetId" (ngModelChange)="updateConfig(node, { targetId: $event })">
+                      <option value="">Select a label…</option>
+                      @for (label of labels(); track label.id) {
+                        <option [value]="label.id">{{ label.name }}</option>
+                      }
+                    </select>
+
+                    <label class="field-label">New text</label>
+                    <input class="cond-input" [ngModel]="setTextConfig(node).text" (ngModelChange)="updateConfig(node, { text: $event })" placeholder="Text to show">
+
+                    <div class="reset-row">
+                      <label class="check-label">
+                        <input type="checkbox" [ngModel]="setTextConfig(node).resetEnabled" (ngModelChange)="updateConfig(node, { resetEnabled: $event })">
+                        Reset after
+                      </label>
+                      <input class="cond-input seconds-input" type="number" min="1"
+                             [disabled]="!setTextConfig(node).resetEnabled"
+                             [ngModel]="setTextConfig(node).resetAfterSeconds"
+                             (ngModelChange)="updateConfig(node, { resetAfterSeconds: $event })">
+                      <span>s</span>
+                    </div>
+                  }
+                </div>
               }
             </div>
 

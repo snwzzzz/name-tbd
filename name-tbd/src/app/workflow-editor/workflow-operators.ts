@@ -20,8 +20,11 @@ export interface ActionRegistryItem {
   defaultConfig: Record<string, any>;
 }
 
+// Only actions the preview runtime (workflow-runtime.service.ts) can execute are listed here.
 export const ACTION_TYPES: ActionRegistryItem[] = [
-  { id: 'show_message', label: 'Show Message', defaultConfig: { message: '' } },
-  { id: 'navigate', label: 'Navigate to Page', defaultConfig: { url: '' } },
-  { id: 'hide_element', label: 'Hide Element', defaultConfig: { elementId: '' } },
+  {
+    id: 'set_text',
+    label: 'Change text',
+    defaultConfig: { targetId: '', text: '', resetEnabled: false, resetAfterSeconds: 5 },
+  },
 ];

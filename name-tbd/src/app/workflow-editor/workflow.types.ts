@@ -28,6 +28,14 @@ export interface ActionNode extends FlowNodeBase {
   config: Record<string, any>;
 }
 
+/** Config of a `set_text` action: temporarily replaces a label's text. */
+export interface SetTextConfig {
+  targetId: string;          // id of the label on the page
+  text: string;
+  resetEnabled: boolean;     // restore the label's own text afterwards
+  resetAfterSeconds: number;
+}
+
 export type FlowNode = TriggerNode | ConditionNode | ActionNode;
 
 export interface FlowConnection {
