@@ -1,0 +1,9 @@
+<div class="grid-item-content form-widget" data-type="form">
+  <div class="form-title">Dynamic Form</div>
+  <div class="inputs">
+    @for (n of inputs(); track n) {
+      <input type="text" class="form-input" [placeholder]="'Input ' + n" />
+    }
+  </div>
+  <button type="button" class="add-input" (click)="addInput()">Add Input</button>
+</div>

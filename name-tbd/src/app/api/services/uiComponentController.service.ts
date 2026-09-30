@@ -160,4 +160,30 @@ export class UiComponentControllerService {
             context: this.createContextWithClientId(options?.context)
         });
     }
+
+    getComponentProps(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Record<string, any>>;
+    getComponentProps(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Record<string, any>>>;
+    getComponentProps(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Record<string, any>>>;
+    getComponentProps(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/ui-components/${id}/props`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
 }

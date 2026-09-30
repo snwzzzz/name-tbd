@@ -1,12 +1,3 @@
-<button
-  class="btn"
-  [ngClass]="[
-    !disabled() ? 'btn-' + color() : '',
-    'btn-size-' + size(),
-    'btn-variant-' + variant(),
-  ]"
-  [disabled]="disabled()"
-  [class.btn-disabled]="disabled()"
->
+<button class="btn" [class]="classes()" [disabled]="disabled()">
   <ng-content />
 </button>

@@ -1,0 +1,38 @@
+<div class="canvas-area">
+  <div
+    #viewport
+    class="canvas-viewport"
+    appViewportControls
+    [class.is-preview]="previewMode()"
+    (panBy)="onPanBy($event)"
+    (zoomAt)="onZoomAt($event)"
+    (command)="onCommand($event)"
+    (click)="onViewportClick($event)">
+
+    <app-zoom-controls
+      [zoomPercent]="zoomPercent()"
+      (zoomIn)="zoomIn()"
+      (zoomOut)="zoomOut()"
+      (zoomReset)="zoomReset()"
+      (fit)="zoomFit()">
+      <button
+        app-zoom-button
+        [active]="previewMode()"
+        [title]="previewMode() ? 'Back to editing' : 'Try the page: clicking buttons runs their actions'"
+        (click)="togglePreview()">
+        {{ previewMode() ? '■ Stop preview' : '▶ Preview' }}
+      </button>
+    </app-zoom-controls>
+
+    <!-- The artboard (1440 × 810, 16:9). CSS zoom keeps GridStack's drag and drop working. -->
+    <div class="artboard" [style.zoom]="zoom()" [style.transform]="artboardTransform()">
+      <div class="grid-stack" #gridContainer></div>
+    </div>
+  </div>
+</div>
+
+@if (contextMenu(); as menu) {
+  <app-context-menu [x]="menu.x" [y]="menu.y" (closed)="closeContextMenu()">
+    <button app-context-menu-item [icon]="addActionIcon" (click)="addActionToItem(menu.item.id)">Add action</button>
+  </app-context-menu>
+}

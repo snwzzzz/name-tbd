@@ -5,9 +5,12 @@ import com.example.ntbd.Exception.UiComponentNotFoundException;
 import com.example.ntbd.commands.NewUiComponentCommand;
 import com.example.ntbd.domain.Page;
 import com.example.ntbd.domain.UiComponent;
+import com.example.ntbd.domain.UiComponentProperty;
+import com.example.ntbd.domain.WidgetPropDefinition;
 import com.example.ntbd.dto.UiComponentDto;
 import com.example.ntbd.persistence.PageRepository;
 import com.example.ntbd.persistence.UiComponentRepository;
+import com.example.ntbd.persistence.WidgetPropDefinitionRepository;
 import com.example.ntbd.persistence.WorkflowRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +36,9 @@ class UiComponentServiceTest {
 
     @Mock
     private WorkflowRepository workflowRepository;
+
+    @Mock
+    private WidgetPropDefinitionRepository widgetPropDefinitionRepository;
 
     @InjectMocks
     private UiComponentService uiComponentService;
@@ -92,5 +98,26 @@ class UiComponentServiceTest {
         java.util.List<UiComponentDto> results = uiComponentService.findByPageId(1L);
         assertEquals(1, results.size());
         assertEquals("Button", results.get(0).type());
+    }
+
+    @Test
+    void findPropsById_overlaysStoredValuesOnDefaults() {
+        UiComponent component = UiComponent.builder().type("button").id(new UiComponent.UiComponentId(1L)).build();
+        component.getProperties().add(new UiComponentProperty(1L, component, "label", "Save"));
+
+        when(uiComponentRepository.findById(new UiComponent.UiComponentId(1L))).thenReturn(Optional.of(component));
+        when(widgetPropDefinitionRepository.findByWidgetType("button")).thenReturn(java.util.List.of(
+                new WidgetPropDefinition(1L, "button", "label", "string", "Click Me"),
+                new WidgetPropDefinition(2L, "button", "color", "color", "#3b82f6")));
+
+        Map<String, String> props = uiComponentService.findPropsById(1L);
+
+        assertEquals(Map.of("label", "Save", "color", "#3b82f6"), props);
+    }
+
+    @Test
+    void findPropsById_NotFound() {
+        when(uiComponentRepository.findById(new UiComponent.UiComponentId(1L))).thenReturn(Optional.empty());
+        assertThrows(UiComponentNotFoundException.class, () -> uiComponentService.findPropsById(1L));
     }
 }

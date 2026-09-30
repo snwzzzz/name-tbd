@@ -103,6 +103,11 @@ public class WorkflowController {
         return ResponseEntity.status(HttpStatus.CREATED).body(edgeService.createEdge(command));
     }
 
+    @GetMapping(value = "/{workflowId}/edges", produces = "application/json")
+    public ResponseEntity<List<EdgeDto>> getEdges(@PathVariable Long workflowId) {
+        return ResponseEntity.ok(edgeService.findByWorkflowId(workflowId));
+    }
+
     @GetMapping(value = "/{workflowId}/edges/{edgeId}", produces = "application/json")
     public ResponseEntity<EdgeDto> getEdge(@PathVariable Long workflowId, @PathVariable Long edgeId) {
         return ResponseEntity.ok(edgeService.findById(edgeId));

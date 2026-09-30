@@ -3,14 +3,14 @@ package com.example.ntbd.domain;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
 @Entity
 @Table(name = "\"ui_component\"")
 public class UiComponent extends AuditableEntity {
@@ -25,9 +25,9 @@ public class UiComponent extends AuditableEntity {
     @Column(nullable = false)
     private String type;
 
-    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "jsonb")
-    private Map<String, Object> props;
+    @OneToMany(mappedBy = "component", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<UiComponentProperty> properties = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workflow_id")
@@ -39,7 +39,7 @@ public class UiComponent extends AuditableEntity {
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private java.util.List<UiComponent> children = new java.util.ArrayList<>();
+    private List<UiComponent> children = new ArrayList<>();
 
     @Column(name = "pos_x")
     private Double x;

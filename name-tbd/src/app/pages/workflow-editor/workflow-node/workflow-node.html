@@ -1,0 +1,96 @@
+<div class="node-header">
+  <span class="node-icon">
+    @switch (node().type) {
+      @case ('Trigger') { <svg lucideZap></svg> }
+      @case ('Condition') { <svg lucideGitBranch></svg> }
+      @default { <svg lucideWrench></svg> }
+    }
+  </span>
+  <span class="node-title">{{ title() }}</span>
+  <button type="button" class="delete-node-btn" title="Delete" (click)="deleted.emit(); $event.stopPropagation()">
+    <svg lucideX></svg>
+  </button>
+</div>
+
+<div class="node-body">
+  @if (trigger(); as trigger) {
+    <!-- Stop mousedown so editing a field doesn't start dragging the node -->
+    <div class="node-fields" (mousedown)="$event.stopPropagation()">
+      <label class="field-label">When</label>
+      <app-select size="sm" [options]="triggerOptions()" [ngModel]="trigger.elementId ?? ''" (ngModelChange)="setTriggerElement($event)" />
+
+      @if (triggerButton(); as button) {
+        <!-- The button this flow starts from, drawn like it looks on the page -->
+        <div class="trigger-button" [style.background]="button.color" [title]="'Button #' + trigger.elementId">
+          {{ button.label }}
+        </div>
+      } @else if (triggerElementName(); as name) {
+        <div class="element-name">{{ name }}</div>
+      }
+    </div>
+  }
+
+  @if (condition(); as condition) {
+    <div class="node-fields" (mousedown)="$event.stopPropagation()">
+      <input class="node-input" placeholder="Field" [ngModel]="condition.field" (ngModelChange)="updateCondition({ field: $event })" />
+      <app-select size="sm" [options]="operatorOptions" [ngModel]="condition.operator" (ngModelChange)="updateCondition({ operator: $event })" />
+      <input class="node-input" placeholder="Value" [ngModel]="condition.value" (ngModelChange)="updateCondition({ value: $event })" />
+    </div>
+  }
+
+  @if (action(); as action) {
+    <div class="node-fields" (mousedown)="$event.stopPropagation()">
+      <app-select size="sm" [options]="actionTypeOptions" [ngModel]="action.actionType" (ngModelChange)="setActionType($event)" />
+
+      @if (setText(); as config) {
+        <label class="field-label">Label</label>
+        <app-select
+          size="sm"
+          placeholder="Select a label…"
+          [options]="labelOptions()"
+          [ngModel]="config.targetId"
+          (ngModelChange)="updateSetText({ targetId: $event })" />
+
+        <label class="field-label">New text</label>
+        <input class="node-input" placeholder="Text to show" [ngModel]="config.text" (ngModelChange)="updateSetText({ text: $event })" />
+
+        <div class="reset-row">
+          <label class="check-label">
+            <input type="checkbox" [ngModel]="config.resetEnabled" (ngModelChange)="updateSetText({ resetEnabled: $event })" />
+            Reset after
+          </label>
+          <input
+            class="node-input seconds-input"
+            type="number"
+            min="1"
+            [disabled]="!config.resetEnabled"
+            [ngModel]="config.resetAfterSeconds"
+            (ngModelChange)="updateSetText({ resetAfterSeconds: $event })" />
+          <span>s</span>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Ports: every output can feed several nodes, every input take several connections -->
+<div class="node-ports">
+  @if (node().type !== 'Trigger') {
+    <div fNodeInput class="port in-port" [fInputId]="inputPort()" [fInputMultiple]="true" fInputConnectableSide="left"></div>
+  }
+
+  @if (node().type === 'Condition') {
+    <div class="branch-ports">
+      <div class="branch-port-row">
+        <span class="branch-label">True</span>
+        <div fNodeOutput class="port out-port true-port" [fOutputId]="outputPort('true')" [fOutputMultiple]="true" fOutputConnectableSide="right"></div>
+      </div>
+      <div class="branch-port-row">
+        <span class="branch-label">False</span>
+        <div fNodeOutput class="port out-port false-port" [fOutputId]="outputPort('false')" [fOutputMultiple]="true" fOutputConnectableSide="right"></div>
+      </div>
+    </div>
+  } @else {
+    <div fNodeOutput class="port out-port" [fOutputId]="outputPort('out')" [fOutputMultiple]="true" fOutputConnectableSide="right"></div>
+  }
+</div>

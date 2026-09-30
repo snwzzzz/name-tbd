@@ -123,6 +123,26 @@ public class EdgeServiceTest {
         verifyNoInteractions(edgeRepository);
     }
 
+    // ---- findByWorkflowId ----
+
+    @Test
+    void findByWorkflowId_returns_edges_of_workflow() {
+        var edge = Edge.builder()
+                .id(new Edge.EdgeId(5L))
+                .sourceNode(sourceNode)
+                .targetNode(targetNode)
+                .sourcePort("out")
+                .build();
+        when(edgeRepository.findBySourceNode_Workflow_Id(new Workflow.WorkflowId(1L))).thenReturn(java.util.List.of(edge));
+
+        var dtos = edgeService.findByWorkflowId(1L);
+
+        assertThat(dtos.size()).isEqualTo(1);
+        assertThat(dtos.get(0).sourceNodeId()).isEqualTo(1L);
+        assertThat(dtos.get(0).targetNodeId()).isEqualTo(2L);
+        assertThat(dtos.get(0).sourcePort()).isEqualTo("out");
+    }
+
     // ---- findById ----
 
     @Test

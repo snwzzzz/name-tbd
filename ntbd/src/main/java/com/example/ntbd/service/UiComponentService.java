@@ -10,12 +10,17 @@ import com.example.ntbd.dto.UiComponentDto;
 import com.example.ntbd.mapper.UiComponentMapper;
 import com.example.ntbd.persistence.PageRepository;
 import com.example.ntbd.persistence.UiComponentRepository;
+import com.example.ntbd.persistence.WidgetPropDefinitionRepository;
 import com.example.ntbd.persistence.WorkflowRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import com.example.ntbd.domain.UiComponentProperty;
 
 @RequiredArgsConstructor
 @Service
@@ -24,6 +29,7 @@ public class UiComponentService {
     private final UiComponentRepository uiComponentRepository;
     private final PageRepository pageRepository;
     private final WorkflowRepository workflowRepository;
+    private final WidgetPropDefinitionRepository widgetPropDefinitionRepository;
 
     @Transactional
     public UiComponentDto createComponent(NewUiComponentCommand command) {
@@ -45,7 +51,6 @@ public class UiComponentService {
         UiComponent component = UiComponent.builder()
                 .page(page)
                 .type(command.type())
-                .props(command.props())
                 .workflow(workflow)
                 .parent(parent)
                 .x(command.x())
@@ -53,6 +58,17 @@ public class UiComponentService {
                 .w(command.w())
                 .h(command.h())
                 .build();
+
+        if (command.props() != null) {
+            List<UiComponentProperty> propsList = command.props().entrySet().stream().map(e -> {
+                UiComponentProperty p = new UiComponentProperty();
+                p.setComponent(component);
+                p.setPropKey(e.getKey());
+                p.setPropValue(e.getValue() != null ? e.getValue().toString() : null);
+                return p;
+            }).collect(Collectors.toList());
+            component.setProperties(propsList);
+        }
 
         return UiComponentMapper.toDto(uiComponentRepository.saveAndFlush(component));
     }
@@ -83,7 +99,15 @@ public class UiComponentService {
                 .orElseThrow(() -> new UiComponentNotFoundException("UI Component not found with id " + id));
 
         if (command.props() != null) {
-            component.setProps(command.props());
+            component.getProperties().clear();
+            List<UiComponentProperty> propsList = command.props().entrySet().stream().map(e -> {
+                UiComponentProperty p = new UiComponentProperty();
+                p.setComponent(component);
+                p.setPropKey(e.getKey());
+                p.setPropValue(e.getValue() != null ? e.getValue().toString() : null);
+                return p;
+            }).collect(Collectors.toList());
+            component.getProperties().addAll(propsList);
         }
         if (command.x() != null) {
             component.setX(command.x());
@@ -118,4 +142,19 @@ public class UiComponentService {
         }
         uiComponentRepository.deleteById(new UiComponent.UiComponentId(id));
     }
+
+    @Transactional
+    public Map<String, String> findPropsById(Long id) {
+        UiComponent component = uiComponentRepository.findById(new UiComponent.UiComponentId(id))
+                .orElseThrow(() -> new UiComponentNotFoundException("UI Component not found with id " + id));
+
+        // Start from the defaults registered for the widget type, then overlay the values stored for this component
+        Map<String, String> props = new LinkedHashMap<>();
+        widgetPropDefinitionRepository.findByWidgetType(component.getType())
+                .forEach(def -> props.put(def.getPropKey(), def.getDefaultValue()));
+        component.getProperties()
+                .forEach(prop -> props.put(prop.getPropKey(), prop.getPropValue()));
+        return props;
+    }
+
 }

@@ -1,0 +1,96 @@
+<div class="workflow-editor">
+  <div class="toolbar">
+    <button type="button" class="add-node-btn" (click)="addNode('Trigger')">New Trigger</button>
+    <button type="button" class="add-node-btn" (click)="addNode('Action')">New Action</button>
+    <button type="button" class="add-node-btn" (click)="addNode('Condition')">New Condition</button>
+  </div>
+
+  <div class="flow-wrap">
+    <!-- The border: nodes stay inside it and panning always keeps part of it in view -->
+    <div class="world-border" [style]="boundsStyle()"></div>
+
+    <f-flow
+      #flowEl
+      fDraggable
+      appViewportControls
+      class="flow-viewport"
+      [fCanvasMoveTrigger]="canvasMoveTrigger"
+      [fNodeMoveTrigger]="nodeMoveTrigger"
+      (fCreateConnection)="onConnectionCreated($event)"
+      (fReassignConnection)="onConnectionReassigned($event)"
+      (fDeleteSelected)="onDeleteSelected($event)"
+      (panBy)="onPanBy($event)"
+      (zoomAt)="onZoomAt($event)"
+      (command)="onCommand($event)"
+      (contextmenu)="$event.preventDefault(); closeContextMenu()">
+
+      <f-canvas [position]="pan()" [scale]="zoom()" (fCanvasChange)="onCanvasChange($event)">
+        <f-background>
+          <f-circle-pattern />
+        </f-background>
+
+        <!-- Nodes must be rendered before the connections -->
+        @for (node of nodes(); track node.id) {
+          <app-workflow-node
+            fNode
+            fDragHandle
+            [fNodeId]="node.id"
+            [fNodePosition]="node.position"
+            [attr.data-node-id]="node.id"
+            [node]="node"
+            [pageItems]="pageItems()"
+            (fNodePositionChange)="onNodePositionChange(node, $event)"
+            (changed)="updateNode($event)"
+            (deleted)="deleteNode(node.id)"
+            (contextmenu)="openNodeMenu($event, node)" />
+        }
+
+        <f-connection-for-create fBehavior="floating" fType="bezier" />
+
+        @for (connection of connections(); track connection.id) {
+          <f-connection
+            fBehavior="floating"
+            fType="bezier"
+            [fConnectionId]="connection.id"
+            [fSourceId]="connection.fromPort"
+            [fTargetId]="connection.toPort"
+            (contextmenu)="openConnectionMenu($event, connection.id)" />
+        }
+      </f-canvas>
+    </f-flow>
+
+    <app-zoom-controls
+      [zoomPercent]="zoomPercent()"
+      (zoomIn)="zoomIn()"
+      (zoomOut)="zoomOut()"
+      (zoomReset)="zoomReset()"
+      (fit)="zoomFit()" />
+  </div>
+
+  @if (contextMenu(); as menu) {
+    <app-context-menu [x]="menu.x" [y]="menu.y" (closed)="closeContextMenu()">
+      @if (menu.kind === 'node') {
+        @switch (menu.node.type) {
+          @case ('Trigger') {
+            <button app-context-menu-item [icon]="icons.add" (click)="addActionAfter(menu.node.id)">Add action</button>
+          }
+          @case ('Action') {
+            <button app-context-menu-item [icon]="icons.add" (click)="addActionAfter(menu.node.id)">Add action after</button>
+          }
+          @case ('Condition') {
+            <button app-context-menu-item [icon]="icons.addIfTrue" (click)="addActionAfter(menu.node.id, 'true')">Add action if true</button>
+            <button app-context-menu-item [icon]="icons.addIfFalse" (click)="addActionAfter(menu.node.id, 'false')">Add action if false</button>
+          }
+        }
+        <app-context-menu-divider />
+        <button app-context-menu-item danger [icon]="icons.delete" (click)="deleteNode(menu.node.id)">
+          Delete {{ menu.node.type.toLowerCase() }}
+        </button>
+      } @else {
+        <button app-context-menu-item danger [icon]="icons.unlink" (click)="deleteConnection(menu.connectionId)">
+          Delete connection
+        </button>
+      }
+    </app-context-menu>
+  }
+</div>

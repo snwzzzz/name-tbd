@@ -17,6 +17,7 @@ public class PageController {
 
     private final PageService pageService;
     private final com.example.ntbd.service.UiComponentService uiComponentService;
+    private final com.example.ntbd.service.WorkflowService workflowService;
 
     @PostMapping
     public ResponseEntity<PageDto> createPage(@RequestBody NewPageCommand command) {
@@ -36,5 +37,11 @@ public class PageController {
     @GetMapping(value = "/{id}/ui-components", produces = "application/json")
     public ResponseEntity<List<com.example.ntbd.dto.UiComponentDto>> getComponents(@PathVariable Long id) {
         return ResponseEntity.ok(uiComponentService.findByPageId(id));
+    }
+
+    /** The workflow holding this page's UI logic; created on first access. */
+    @GetMapping(value = "/{id}/workflow", produces = "application/json")
+    public ResponseEntity<com.example.ntbd.dto.WorkflowDto> getPageWorkflow(@PathVariable Long id) {
+        return ResponseEntity.ok(workflowService.findOrCreateForPage(id));
     }
 }

@@ -1,0 +1,12 @@
+.mode-dropdown {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  border-left: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  height: 100%;
+
+  .mode-select {
+    width: 11rem;
+  }
+}

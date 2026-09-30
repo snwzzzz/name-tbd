@@ -1,25 +1,27 @@
-import { Component, input, booleanAttribute, output } from '@angular/core';
-
-export type InputSize = 'sm' | 'md' | 'lg';
-export type InputVariant = 'outline' | 'filled' | 'flushed';
+import { Component, booleanAttribute, computed, input, output } from '@angular/core';
+import { InputSize, InputVariant } from '../../_types/button.types';
 
 @Component({
   selector: 'app-input',
-  standalone: true,
-  imports: [],
   templateUrl: './input.html',
   styleUrl: './input.scss',
 })
 export class Input {
-  value = input<string>('');
-  valueChange = output<string>();
-  placeholder = input<string>('');
-  type = input<string>('text');
-  size = input<InputSize>('md');
-  variant = input<InputVariant>('outline');
-  disabled = input<boolean, unknown>(false, { transform: booleanAttribute });
+  readonly value = input('');
+  readonly placeholder = input('');
+  readonly type = input('text');
+  readonly size = input<InputSize>('md');
+  readonly variant = input<InputVariant>('outline');
+  readonly disabled = input(false, { transform: booleanAttribute });
+  readonly valueChange = output<string>();
 
-  onInput(event: Event) {
+  readonly classes = computed(() => [
+    `input-size-${this.size()}`,
+    `input-variant-${this.variant()}`,
+    this.disabled() ? 'input-disabled' : '',
+  ]);
+
+  onInput(event: Event): void {
     this.valueChange.emit((event.target as HTMLInputElement).value);
   }
 }

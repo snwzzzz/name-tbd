@@ -35,6 +35,10 @@ public class Workflow extends AuditableEntity {
     @JoinColumn(name = "branch_id")
     private Branch branch;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "page_id")
+    private Page page;
+
     @Embeddable
     public record WorkflowId(@GeneratedValue Long id) {}
 }

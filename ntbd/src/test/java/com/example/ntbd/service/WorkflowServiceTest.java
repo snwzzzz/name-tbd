@@ -1,9 +1,12 @@
 package com.example.ntbd.service;
 
 import com.example.ntbd.Exception.BranchNotFoundException;
+import com.example.ntbd.Exception.PageNotFoundException;
 import com.example.ntbd.Exception.WorkflowNotFoundException;
 import com.example.ntbd.commands.NewWorkflowCommand;
 import com.example.ntbd.domain.Branch;
+import com.example.ntbd.domain.Page;
+import com.example.ntbd.persistence.PageRepository;
 import com.example.ntbd.domain.Workflow;
 import com.example.ntbd.domain.WorkflowStatus;
 import com.example.ntbd.dto.WorkflowDto;
@@ -36,11 +39,54 @@ public class WorkflowServiceTest {
     @Mock
     private BranchRepository branchRepository;
 
+    @Mock
+    private PageRepository pageRepository;
+
     private WorkflowService workflowService;
 
     @BeforeEach
     void setUp() {
-        workflowService = new WorkflowService(workflowRepository, branchRepository);
+        workflowService = new WorkflowService(workflowRepository, branchRepository, pageRepository);
+    }
+
+    // ---- findOrCreateForPage ----
+
+    @Test
+    void findOrCreateForPage_returns_existing_workflow() {
+        var page = Page.builder().id(new Page.PageId(3L)).name("Home").build();
+        var existing = Workflow.builder().id(new Workflow.WorkflowId(9L)).name("Home workflow").status(WorkflowStatus.DRAFT).page(page).build();
+        when(pageRepository.findById(new Page.PageId(3L))).thenReturn(Optional.of(page));
+        when(workflowRepository.findFirstByPage_Id(new Page.PageId(3L))).thenReturn(Optional.of(existing));
+
+        WorkflowDto dto = workflowService.findOrCreateForPage(3L);
+
+        assertThat(dto.id()).isEqualTo(9L);
+        verify(workflowRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void findOrCreateForPage_creates_workflow_for_page_on_first_access() {
+        var branch = Branch.builder().id(new Branch.BranchId(1L)).name("main").description("d").build();
+        var page = Page.builder().id(new Page.PageId(3L)).name("Home").branch(branch).build();
+        when(pageRepository.findById(new Page.PageId(3L))).thenReturn(Optional.of(page));
+        when(workflowRepository.findFirstByPage_Id(new Page.PageId(3L))).thenReturn(Optional.empty());
+        when(workflowRepository.saveAndFlush(any(Workflow.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        WorkflowDto dto = workflowService.findOrCreateForPage(3L);
+
+        ArgumentCaptor<Workflow> captor = ArgumentCaptor.forClass(Workflow.class);
+        verify(workflowRepository).saveAndFlush(captor.capture());
+        assertThat(captor.getValue().getPage()).isEqualTo(page);
+        assertThat(captor.getValue().getBranch()).isEqualTo(branch);
+        assertThat(dto.name()).isEqualTo("Home workflow");
+    }
+
+    @Test
+    void findOrCreateForPage_throws_when_page_missing() {
+        when(pageRepository.findById(new Page.PageId(404L))).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> workflowService.findOrCreateForPage(404L))
+                .isInstanceOf(PageNotFoundException.class);
     }
 
     // ---- createWorkflow ----

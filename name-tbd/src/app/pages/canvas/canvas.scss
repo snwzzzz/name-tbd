@@ -1,0 +1,195 @@
+@use 'sass:math';
+
+// ─── Artboard dimensions (keep in sync with _constants/artboard.constants.ts) ─
+$aw: 90rem;
+$ah: 50.625rem;
+
+:host {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.canvas-area {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-bg-canvas);
+}
+
+// ─── Infinite-canvas viewport ─────────────────────────────────────────────────
+.canvas-viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+
+  background-color: var(--color-bg-canvas);
+
+  cursor: default;
+  outline: none;
+
+  &.is-panning {
+    cursor: grab;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+}
+
+// ─── Artboard (the 16:9 "page") ───────────────────────────────────────────────
+.artboard {
+  // Centered in viewport via negative margin (half of artboard size)
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-left: math.div(-$aw, 2); // -45rem
+  margin-top: math.div(-$ah, 2); // -25.3125rem
+  width: $aw;
+  height: $ah;
+
+  // Pan happens via transform (set by [style.transform] binding)
+  transform-origin: center center;
+  will-change: transform;
+
+  background-color: var(--color-surface);
+  // Visual grid overlay matching the 24 columns and 18 rows
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 0.0625rem, transparent 0.0625rem),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 0.0625rem, transparent 0.0625rem);
+  background-size: calc(100% / 24) calc(100% / 18);
+
+  border-radius: 0.125rem;
+  box-shadow:
+    0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.1),
+    0 0.5rem 1.5rem rgba(0, 0, 0, 0.05);
+
+  // Prevent text selection from interfering with pan gestures
+  user-select: none;
+}
+
+// ─── GridStack container matches artboard exactly ────────────────────────────
+// GridStack mounts on .grid-stack with position:relative + overflow:hidden.
+// row:18 × cellHeight:2.8125rem = 50.625rem height (artboard height).
+// The grid MUST NOT add scrollbars — row count is fixed.
+:host ::ng-deep .artboard .grid-stack {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+// ─── Dropped grid items ───────────────────────────────────────────────────────
+:host ::ng-deep .grid-stack-item-content {
+  border-radius: 0.1875rem;
+  overflow: hidden !important;
+
+  .grid-item-content {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(220 85% 96%);
+    border: 0.0938rem solid hsl(220 60% 75%);
+    border-radius: 0.1875rem;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
+
+    &:hover {
+      background: hsl(220 85% 93%);
+      border-color: hsl(220 60% 60%);
+    }
+
+    // Allow dynamic widgets to grow in height so sizeToContent works
+    &.form-widget {
+      height: max-content;
+      min-height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    // Different accent colours per component type (expandable in Phase 2)
+    &[data-type='detail-section'] {
+      background: hsl(260 80% 96%);
+      border-color: hsl(260 60% 72%);
+    }
+    &[data-type='chart'] {
+      background: hsl(160 70% 94%);
+      border-color: hsl(160 55% 60%);
+    }
+    &[data-type='text'] {
+      background: hsl(45 85% 95%);
+      border-color: hsl(45 60% 68%);
+    }
+    &[data-type='image'] {
+      background: hsl(340 70% 96%);
+      border-color: hsl(340 55% 72%);
+    }
+  }
+
+  &.container-widget {
+    background: rgba(0, 0, 0, 0.03); // light gray for testing
+    inset: 0 !important; // override GridStack margin so it acts as a flush structural wrapper
+    overflow: hidden !important; // strictly enforce no scrollbars on the container itself
+  }
+}
+
+:host ::ng-deep .grid-item-type {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: hsl(220 50% 40%);
+  text-transform: capitalize;
+  letter-spacing: 0.04em;
+}
+
+// ─── GridStack placeholder highlight ─────────────────────────────────────────
+:host ::ng-deep .grid-stack-placeholder > .placeholder-content {
+  background: hsl(220 90% 60% / 0.15) !important;
+  border: 0.125rem dashed hsl(220 70% 60%) !important;
+  border-radius: 0.25rem !important;
+}
+
+:host ::ng-deep .widget-remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    background 0.2s;
+
+  &:hover {
+    background: rgba(220, 38, 38, 0.9); /* red */
+  }
+}
+
+:host ::ng-deep .grid-stack-item:hover > .widget-remove-btn {
+  opacity: 1;
+}
+
+:host ::ng-deep .grid-stack-item.selected > .grid-stack-item-content {
+  outline: 3px solid #ffa200;
+}
+
+// ─── Preview mode ────────────────────────────────────────────────────────────
+.is-preview {
+  ::ng-deep .widget-remove-btn {
+    display: none;
+  }
+
+  ::ng-deep .grid-stack-item[data-type='button'] > .grid-stack-item-content {
+    cursor: pointer;
+  }
+}

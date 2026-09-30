@@ -5,6 +5,7 @@ import com.example.ntbd.Exception.NodeNotFoundException;
 import com.example.ntbd.commands.NewEdgeCommand;
 import com.example.ntbd.domain.Edge;
 import com.example.ntbd.domain.Node;
+import com.example.ntbd.domain.Workflow;
 import com.example.ntbd.dto.EdgeDto;
 import com.example.ntbd.mapper.EdgeMapper;
 import com.example.ntbd.persistence.EdgeRepository;
@@ -12,6 +13,8 @@ import com.example.ntbd.persistence.NodeRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -42,6 +45,13 @@ public class EdgeService {
         return edgeRepository.findById(new Edge.EdgeId(id))
                 .map(EdgeMapper::toDto)
                 .orElseThrow(() -> new EdgeNotFoundException(id));
+    }
+
+    @Transactional
+    public List<EdgeDto> findByWorkflowId(Long workflowId) {
+        return edgeRepository.findBySourceNode_Workflow_Id(new Workflow.WorkflowId(workflowId)).stream()
+                .map(EdgeMapper::toDto)
+                .toList();
     }
 
     @Transactional
