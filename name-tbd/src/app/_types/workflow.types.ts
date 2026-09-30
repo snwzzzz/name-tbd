@@ -1,3 +1,4 @@
+import { Type } from '@angular/core';
 import { Point } from './viewport.types';
 
 export type FlowNodeType = 'Trigger' | 'Condition' | 'Action';
@@ -35,8 +36,14 @@ export interface SetTextConfig {
   resetAfterSeconds: number;
 }
 
-/** Config of any action (only `set_text` exists so far). */
-export type ActionConfig = SetTextConfig;
+/** Config of the table action: the data table it acts on, and what it does (see TABLE_OPERATIONS). */
+export interface TableActionConfig {
+  tableId: string;           // id of the data table on the page
+  operation: string;         // e.g. 'add_row'
+}
+
+/** Config of any action. */
+export type ActionConfig = SetTextConfig | TableActionConfig;
 
 export interface ActionNode extends FlowNodeBase {
   type: 'Action';
@@ -74,10 +81,32 @@ export interface ConditionOperator {
   requiresValue: boolean;
 }
 
+/** Whether the flow goes on after an action (a cancelled modal stops it). */
+export type ActionOutcome = 'continue' | 'stop';
+
+/** One run of an action node while a page is previewed. */
+export interface ActionRun {
+  pageId: string;
+  node: ActionNode;
+  /** False once the preview was stopped: the action must not change anything any more. */
+  isCurrent(): boolean;
+}
+
+/** Runs one action type in the preview. Implementations are injectable services. */
+export interface ActionHandler {
+  run(run: ActionRun): Promise<ActionOutcome>;
+  /** Undo what the action changed on the page (called when the preview stops). */
+  reset?(pageId: string): void;
+}
+
+/** An action nodes can perform: its settings editor and what it does when run. */
 export interface ActionType {
   id: string;
   label: string;
   defaultConfig: ActionConfig;
+  /** A component extending BaseActionEditor for this action's config (typed loosely: inputs are invariant). */
+  editor: Type<unknown>;
+  handler: Type<ActionHandler>;
 }
 
 /** The right-click menu of the workflow editor. */

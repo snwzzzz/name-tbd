@@ -18,7 +18,7 @@ export class WidgetRegistryService {
     this.requestedTypes.add(type);
 
     this.api.getDefinitionsByType(type).subscribe({
-      // The generated type lacks label/group/options, which the backend does send
+      // The generated type is looser (every field optional, propType any string) and has no options
       next: (defs) => this.propDefinitions.update((all) => ({ ...all, [type]: defs as WidgetPropDefinition[] })),
       error: (err) => {
         this.requestedTypes.delete(type);

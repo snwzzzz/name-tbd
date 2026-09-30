@@ -53,6 +53,15 @@ export class DataSourceStateService {
     });
   }
 
+  /** A data source with its rows, loading it first if needed. */
+  async loadDetails(id: number): Promise<DataSourceDto> {
+    const loaded = this.details()[id];
+    if (loaded) return loaded;
+    const source = await firstValueFrom(this.api.getDataSource(id));
+    this.cache(source);
+    return source;
+  }
+
   /** Imports a file as a new data source; resolves to its id (undefined if it failed). */
   async importFile(file: File): Promise<number | undefined> {
     const format = formatOf(file.name);

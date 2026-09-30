@@ -1,5 +1,9 @@
 import { ActionType, ConditionOperator } from '../_types/workflow.types';
 import { Rect } from '../_types/viewport.types';
+import { SetTextEditor } from '../workflow-actions/set-text/set-text-editor';
+import { SetTextHandler } from '../workflow-actions/set-text/set-text.handler';
+import { TableActionEditor } from '../workflow-actions/table/table-action-editor';
+import { TableActionHandler } from '../workflow-actions/table/table-action.handler';
 
 export const CONDITION_OPERATORS: ConditionOperator[] = [
   { id: 'equals', label: 'Equals', requiresValue: true },
@@ -11,12 +15,24 @@ export const CONDITION_OPERATORS: ConditionOperator[] = [
   { id: 'isFalse', label: 'Is False', requiresValue: false },
 ];
 
-// Only actions the preview runtime (workflow-runtime.service.ts) can execute are listed here.
+/**
+ * The actions workflow nodes can perform: each brings its settings editor and its handler, which
+ * the preview runtime (workflow-runtime.service.ts) runs. A new action is added by adding an entry.
+ */
 export const ACTION_TYPES: ActionType[] = [
   {
     id: 'set_text',
     label: 'Change text',
     defaultConfig: { targetId: '', text: '', resetEnabled: false, resetAfterSeconds: 5 },
+    editor: SetTextEditor,
+    handler: SetTextHandler,
+  },
+  {
+    id: 'table',
+    label: 'Table action',
+    defaultConfig: { tableId: '', operation: 'add_row' },
+    editor: TableActionEditor,
+    handler: TableActionHandler,
   },
 ];
 

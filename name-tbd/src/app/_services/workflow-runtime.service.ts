@@ -1,23 +1,18 @@
-import { Injectable, inject } from '@angular/core';
-import { LayoutStateService } from './layout-state.service';
+import { Injectable, Injector, inject } from '@angular/core';
 import { WorkflowStateService } from './workflow-state.service';
-import { ActionNode, FlowNode, PageWorkflow, TriggerNode } from '../_types/workflow.types';
-import { CLICK_EVENT } from '../_constants/workflow.constants';
+import { ActionNode, ActionOutcome, FlowNode, PageWorkflow, TriggerNode } from '../_types/workflow.types';
+import { ACTION_TYPES, CLICK_EVENT } from '../_constants/workflow.constants';
 import { outputPortId } from '../_utils/port.utils';
 
 /**
- * Runs page workflows in the browser while the canvas is in preview mode.
- * Everything it changes is temporary: widgets get preview props, never saved ones.
+ * Runs page workflows in the browser while the canvas is in preview mode. What each action does
+ * is up to its handler (see ACTION_TYPES); none of it is saved.
  */
 @Injectable({ providedIn: 'root' })
 export class WorkflowRuntimeService {
   private readonly workflowState = inject(WorkflowStateService);
-  private readonly layoutState = inject(LayoutStateService);
+  private readonly injector = inject(Injector);
 
-  // Widgets currently showing preview props, per page
-  private readonly previewed = new Map<string, Set<string>>();
-  // Changes to one widget take turns: each waits until the one before it has finished (`${pageId}:${widgetId}`)
-  private readonly widgetQueues = new Map<string, Promise<void>>();
   // Bumped by reset(), so waiting steps of an old preview session never apply
   private readonly generations = new Map<string, number>();
 
@@ -33,19 +28,12 @@ export class WorkflowRuntimeService {
   /** Undo all temporary changes on the page (called when leaving preview). */
   reset(pageId: string): void {
     this.generations.set(pageId, this.generation(pageId) + 1);
-    for (const key of [...this.widgetQueues.keys()]) {
-      if (key.startsWith(`${pageId}:`)) this.widgetQueues.delete(key);
-    }
-    for (const id of this.previewed.get(pageId) ?? []) {
-      this.layoutState.previewItemProps(pageId, id, null);
-    }
-    this.previewed.delete(pageId);
+    for (const type of ACTION_TYPES) this.injector.get(type.handler).reset?.(pageId);
   }
 
   /**
-   * Start everything connected to the node's output. Branches run side by side, but
-   * actions on the same widget run one after another, top to bottom as laid out.
-   * A connected action starts once the one before it has finished (its reset included).
+   * Start everything connected to the node's output. Branches run side by side; a connected
+   * action starts once the one before it has finished, and not at all if that one stopped the flow.
    */
   private runNext(pageId: string, graph: PageWorkflow, node: FlowNode, visited: Set<string>, gen: number): void {
     const next = this.next(graph, node, 'out').sort((a, b) => a.position.y - b.position.y);
@@ -54,8 +42,8 @@ export class WorkflowRuntimeService {
       visited.add(child.id);
 
       if (child.type === 'Action') {
-        this.execute(pageId, child, gen).then(() => {
-          if (this.generation(pageId) === gen) this.runNext(pageId, graph, child, visited, gen);
+        this.execute(pageId, child, gen).then((outcome) => {
+          if (outcome === 'continue' && this.generation(pageId) === gen) this.runNext(pageId, graph, child, visited, gen);
         });
       } else {
         console.warn(`[workflow] ${child.type} nodes are not supported in preview yet; stopping this branch.`);
@@ -71,38 +59,23 @@ export class WorkflowRuntimeService {
       .filter((n): n is FlowNode => !!n);
   }
 
-  /** Queue the action on its widget; resolves once it has finished (after its reset, if any). */
-  private execute(pageId: string, node: ActionNode, gen: number): Promise<void> {
-    if (node.actionType !== 'set_text') {
+  /** Run the action with its type's handler; a failing action stops its branch. */
+  private async execute(pageId: string, node: ActionNode, gen: number): Promise<ActionOutcome> {
+    const type = ACTION_TYPES.find((t) => t.id === node.actionType);
+    if (!type) {
       console.warn(`[workflow] Unknown action "${node.actionType}"`);
-      return Promise.resolve();
+      return 'continue';
     }
-
-    const config = node.config;
-    if (!config.targetId) return Promise.resolve();
-
-    const key = `${pageId}:${config.targetId}`;
-    const run = (this.widgetQueues.get(key) ?? Promise.resolve()).then(async () => {
-      if (this.generation(pageId) !== gen) return;
-
-      this.layoutState.previewItemProps(pageId, config.targetId, { text: config.text ?? '' });
-      if (!this.previewed.has(pageId)) this.previewed.set(pageId, new Set());
-      this.previewed.get(pageId)!.add(config.targetId);
-
-      if (!config.resetEnabled) return;
-      const seconds = Math.max(0, Number(config.resetAfterSeconds) || 0);
-      await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
-      if (this.generation(pageId) !== gen) return;
-
-      this.previewed.get(pageId)?.delete(config.targetId);
-      // Back to the label's own text prop
-      this.layoutState.previewItemProps(pageId, config.targetId, null);
-    });
-
-    this.widgetQueues.set(key, run);
-    // Forget the queue once it has drained, so it doesn't grow forever
-    run.then(() => { if (this.widgetQueues.get(key) === run) this.widgetQueues.delete(key); });
-    return run;
+    try {
+      return await this.injector.get(type.handler).run({
+        pageId,
+        node,
+        isCurrent: () => this.generation(pageId) === gen,
+      });
+    } catch (err) {
+      console.error(`[workflow] Action "${node.actionType}" failed`, err);
+      return 'stop';
+    }
   }
 
   private generation(pageId: string): number {

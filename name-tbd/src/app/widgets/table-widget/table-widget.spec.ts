@@ -4,6 +4,8 @@ import { TableWidget } from './table-widget';
 import { DataSourceStateService } from '../../_services/data-source-state.service';
 import { DataSourceDto, DataSourceSummaryDto } from '../../api/models';
 import { WidgetProps } from '../../_types/layout.types';
+import { PreviewSessionService } from '../../_services/preview-session.service';
+import { PreviewDataService } from '../../_services/preview-data.service';
 
 const PEOPLE: DataSourceDto = {
   id: 5,
@@ -25,14 +27,15 @@ describe('TableWidget', () => {
     ensureDetails: () => {},
   };
 
-  const render = (props: WidgetProps): HTMLElement => {
+  const mount = (props: WidgetProps) => {
     TestBed.configureTestingModule({ providers: [{ provide: DataSourceStateService, useValue: state }] });
     const fixture = TestBed.createComponent(TableWidget);
     fixture.componentRef.setInput('id', '1');
     fixture.componentRef.setInput('props', props);
     fixture.detectChanges();
-    return fixture.nativeElement;
+    return fixture;
   };
+  const render = (props: WidgetProps): HTMLElement => mount(props).nativeElement;
 
   const texts = (el: HTMLElement, selector: string) => [...el.querySelectorAll(selector)].map((e) => e.textContent?.trim());
 
@@ -57,5 +60,30 @@ describe('TableWidget', () => {
     expect(render({ dataSourceId: '' }).textContent).toContain('Pick a data source');
     TestBed.resetTestingModule();
     expect(render({ dataSourceId: '9' }).textContent).toContain('Data source not found');
+  });
+
+  it('selects rows by clicking them only while previewing, and shows the preview copy', () => {
+    const fixture = mount({ dataSourceId: '5', multiSelect: 'true' });
+    const el: HTMLElement = fixture.nativeElement;
+    const click = (i: number) => {
+      (el.querySelectorAll('tbody tr')[i] as HTMLElement).click();
+      fixture.detectChanges();
+    };
+
+    click(0);
+    expect(el.querySelectorAll('tr.selected').length).toBe(0);
+
+    TestBed.inject(PreviewSessionService).start('page');
+    TestBed.inject(PreviewDataService).addRow(5, ['Dave', '50', 'Aarau']);
+    fixture.detectChanges();
+    click(0);
+    click(2);
+    expect(el.querySelectorAll('tr.selected').length).toBe(2);
+    expect(el.querySelectorAll('tbody tr').length).toBe(4);
+
+    TestBed.inject(PreviewSessionService).stop();
+    fixture.detectChanges();
+    expect(el.querySelectorAll('tr.selected').length).toBe(0);
+    expect(el.querySelectorAll('tbody tr').length).toBe(3);
   });
 });

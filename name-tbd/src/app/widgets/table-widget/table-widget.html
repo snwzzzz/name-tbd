@@ -7,11 +7,11 @@
     <div class="table-message">Pick a data source in the properties panel.</div>
   } @else if (missing()) {
     <div class="table-message">Data source not found.</div>
-  } @else if (!source()) {
+  } @else if (!data()) {
     <div class="table-message">Loading…</div>
   } @else {
     <div class="table-scroll">
-      <table [class.striped]="striped()">
+      <table [class.striped]="striped()" [class.selectable]="previewing()">
         @if (showHeader()) {
           <thead>
             <tr>
@@ -22,9 +22,9 @@
           </thead>
         }
         <tbody>
-          @for (row of rows(); track $index) {
-            <tr>
-              @for (value of row; track $index) {
+          @for (row of rows(); track row.id) {
+            <tr [class.selected]="selectedIds().has(row.id)" (click)="onRowClick(row.id)">
+              @for (value of row.values; track $index) {
                 <td>{{ value }}</td>
               }
             </tr>

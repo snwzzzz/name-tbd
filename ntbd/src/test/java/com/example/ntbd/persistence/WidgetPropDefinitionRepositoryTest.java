@@ -22,7 +22,7 @@ public class WidgetPropDefinitionRepositoryTest {
         var defs = repository.findByWidgetType("table");
 
         assertThat(defs).extracting(WidgetPropDefinition::getPropKey)
-                .containsExactlyInAnyOrder("dataSourceId", "columns", "title", "maxRows", "showHeader", "striped");
+                .containsExactlyInAnyOrder("dataSourceId", "columns", "title", "maxRows", "showHeader", "striped", "multiSelect");
         assertThat(defs).filteredOn(d -> d.getPropKey().equals("dataSourceId")).singleElement()
                 .satisfies(d -> {
                     assertThat(d.getPropType()).isEqualTo("dataSource");

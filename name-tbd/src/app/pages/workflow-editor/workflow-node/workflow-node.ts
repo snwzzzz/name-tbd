@@ -1,14 +1,15 @@
 import { Component, computed, input, output } from '@angular/core';
+import { NgComponentOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FFlowModule } from '@foblex/flow';
 import {
-  LucideFileText, LucideGitBranch, LucideMousePointerClick, LucideType, LucideWrench, LucideX, LucideZap,
+  LucideFileText, LucideGitBranch, LucideMousePointerClick, LucideWrench, LucideX, LucideZap,
 } from '@lucide/angular';
 import { UiSelect } from '../../../components/ui-select/ui-select';
 import { ACTION_TYPES, CLICK_EVENT, CONDITION_OPERATORS } from '../../../_constants/workflow.constants';
 import { LayoutItem } from '../../../_types/layout.types';
 import { SelectOption } from '../../../_types/select.types';
-import { Condition, FlowNode, SetTextConfig, TriggerNode } from '../../../_types/workflow.types';
+import { ActionConfig, Condition, FlowNode, TriggerNode } from '../../../_types/workflow.types';
 import { propText } from '../../../_utils/widget-props.utils';
 import { inputPortId, outputPortId } from '../../../_utils/port.utils';
 
@@ -22,7 +23,7 @@ const prop = (item: LayoutItem, key: string) => propText(item.props, key);
  */
 @Component({
   selector: 'app-workflow-node',
-  imports: [FormsModule, FFlowModule, UiSelect, LucideZap, LucideGitBranch, LucideWrench, LucideX],
+  imports: [FormsModule, NgComponentOutlet, FFlowModule, UiSelect, LucideZap, LucideGitBranch, LucideWrench, LucideX],
   templateUrl: './workflow-node.html',
   styleUrl: './workflow-node.scss',
   host: {
@@ -34,7 +35,7 @@ const prop = (item: LayoutItem, key: string) => propText(item.props, key);
 })
 export class WorkflowNode {
   readonly node = input.required<FlowNode>();
-  /** The page's widgets, for the button and label pickers. */
+  /** The page's widgets, for the button picker and the actions' pickers. */
   readonly pageItems = input.required<LayoutItem[]>();
 
   readonly changed = output<FlowNode>();
@@ -59,11 +60,6 @@ export class WorkflowNode {
         icon: LucideMousePointerClick,
       })),
   ]);
-
-  readonly labelOptions = computed<SelectOption[]>(() =>
-    this.pageItems()
-      .filter((i) => i.type === 'label' && typeof i.id === 'number')
-      .map((i) => ({ value: i.id!.toString(), label: `${prop(i, 'text') ?? 'New Label'} (#${i.id})`, icon: LucideType })));
 
   /** The widget a click trigger belongs to. */
   private readonly triggerElement = computed(() => {
@@ -100,10 +96,8 @@ export class WorkflowNode {
   readonly trigger = computed(() => this.asType('Trigger'));
   readonly condition = computed(() => this.asType('Condition')?.condition ?? null);
   readonly action = computed(() => this.asType('Action'));
-  readonly setText = computed<SetTextConfig | null>(() => {
-    const action = this.action();
-    return action?.actionType === 'set_text' ? action.config : null;
-  });
+  /** The action's type, whose editor shows the action's settings. */
+  readonly actionType = computed(() => ACTION_TYPES.find((a) => a.id === this.action()?.actionType) ?? null);
 
   // ─── Edits ───────────────────────────────────────────────────────────────
   /** Point a trigger at a button's click, or back to page load when no button is chosen. */
@@ -127,10 +121,11 @@ export class WorkflowNode {
     if (node && type) this.changed.emit({ ...node, actionType, config: { ...type.defaultConfig } });
   }
 
-  updateSetText(patch: Partial<SetTextConfig>): void {
+  /** Given to the action's editor (a stable function, so the editor isn't recreated on each change). */
+  readonly updateConfig = (patch: Partial<ActionConfig>): void => {
     const node = this.action();
-    if (node) this.changed.emit({ ...node, config: { ...node.config, ...patch } });
-  }
+    if (node) this.changed.emit({ ...node, config: { ...node.config, ...patch } as ActionConfig });
+  };
 
   private asType<T extends FlowNode['type']>(type: T): Extract<FlowNode, { type: T }> | null {
     const node = this.node();

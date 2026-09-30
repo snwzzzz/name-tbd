@@ -42,32 +42,8 @@
     <div class="node-fields" (mousedown)="$event.stopPropagation()">
       <app-select size="sm" [options]="actionTypeOptions" [ngModel]="action.actionType" (ngModelChange)="setActionType($event)" />
 
-      @if (setText(); as config) {
-        <label class="field-label">Label</label>
-        <app-select
-          size="sm"
-          placeholder="Select a label…"
-          [options]="labelOptions()"
-          [ngModel]="config.targetId"
-          (ngModelChange)="updateSetText({ targetId: $event })" />
-
-        <label class="field-label">New text</label>
-        <input class="node-input" placeholder="Text to show" [ngModel]="config.text" (ngModelChange)="updateSetText({ text: $event })" />
-
-        <div class="reset-row">
-          <label class="check-label">
-            <input type="checkbox" [ngModel]="config.resetEnabled" (ngModelChange)="updateSetText({ resetEnabled: $event })" />
-            Reset after
-          </label>
-          <input
-            class="node-input seconds-input"
-            type="number"
-            min="1"
-            [disabled]="!config.resetEnabled"
-            [ngModel]="config.resetAfterSeconds"
-            (ngModelChange)="updateSetText({ resetAfterSeconds: $event })" />
-          <span>s</span>
-        </div>
+      @if (actionType(); as type) {
+        <ng-container *ngComponentOutlet="type.editor; inputs: { config: action.config, pageItems: pageItems(), update: updateConfig }" />
       }
     </div>
   }

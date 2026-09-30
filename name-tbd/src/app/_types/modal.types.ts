@@ -44,6 +44,8 @@ export interface ConfirmOptions {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  /** Only the confirm button, e.g. for a notice. */
+  hideCancel?: boolean;
   confirmColor?: ButtonColor;
   destructive?: boolean;
   closeOnBackdropClick?: boolean;

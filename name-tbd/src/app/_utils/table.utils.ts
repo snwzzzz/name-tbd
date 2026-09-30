@@ -1,3 +1,5 @@
+import { TableData } from '../_types/data-source.types';
+
 // The data table widget's rules, shared by the widget and its settings.
 // The backend's export applies the same rules (TableRenderer.java).
 
@@ -17,4 +19,12 @@ export function parseColumnList(value: unknown): string[] {
 export function visibleColumnIndexes(allColumns: string[], chosen: string[]): number[] {
   const indexes = [...new Set(chosen.map((name) => allColumns.indexOf(name)).filter((i) => i >= 0))];
   return indexes.length > 0 ? indexes : allColumns.map((_, i) => i);
+}
+
+/** A loaded data source as table data; rows are identified by their position. */
+export function toTableData(source: { columns?: string[]; rows?: string[][] }): TableData {
+  return {
+    columns: source.columns ?? [],
+    rows: (source.rows ?? []).map((values, index) => ({ id: String(index), values })),
+  };
 }

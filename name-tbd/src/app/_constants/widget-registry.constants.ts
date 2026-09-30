@@ -48,6 +48,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
       maxRows: String(TABLE_DEFAULT_MAX_ROWS),
       showHeader: 'true',
       striped: 'false',
+      multiSelect: 'false',
     },
     component: TableWidget,
   },

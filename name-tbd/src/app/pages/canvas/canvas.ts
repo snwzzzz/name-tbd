@@ -9,6 +9,7 @@ import { SelectionService } from '../../_services/selection.service';
 import { TabsService } from '../../_services/tabs.service';
 import { WidgetRegistryService } from '../../_services/widget-registry.service';
 import { WorkflowRuntimeService } from '../../_services/workflow-runtime.service';
+import { PreviewSessionService } from '../../_services/preview-session.service';
 import { WorkflowStateService } from '../../_services/workflow-state.service';
 import { ViewportCommand, ViewportControls, ZoomAtEvent } from '../../_directives/viewport-controls.directive';
 import { BaseWidget } from '../../_directives/base-widget.directive';
@@ -56,6 +57,7 @@ export class Canvas implements AfterViewInit {
   private readonly widgetRegistry = inject(WidgetRegistryService);
   private readonly workflowState = inject(WorkflowStateService);
   private readonly workflowRuntime = inject(WorkflowRuntimeService);
+  private readonly previewSession = inject(PreviewSessionService);
   private readonly vcr = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -202,6 +204,7 @@ export class Canvas implements AfterViewInit {
     this.grid.setStatic(true);
     this.previewPageId = tabId;
     this.previewMode.set(true);
+    this.previewSession.start(tabId);
   }
 
   /** In preview, clicking a button runs the workflows triggered by it. */
@@ -218,6 +221,7 @@ export class Canvas implements AfterViewInit {
     if (!this.previewMode()) return;
     this.grid?.setStatic(false);
     if (this.previewPageId) this.workflowRuntime.reset(this.previewPageId);
+    this.previewSession.stop();
     this.previewPageId = null;
     this.previewMode.set(false);
   }

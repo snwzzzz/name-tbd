@@ -16,3 +16,14 @@ export interface ColumnInfo {
   type: ColumnType;
   filledCount: number;
 }
+
+/** A table's data as the page shows it, each row with an id (for selection and edits). */
+export interface TableData {
+  columns: string[];
+  rows: TableRow[];
+}
+
+export interface TableRow {
+  id: string;
+  values: string[];
+}
