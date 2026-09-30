@@ -10,6 +10,7 @@ import { TabsService } from '../../_services/tabs.service';
 import { WidgetRegistryService } from '../../_services/widget-registry.service';
 import { WorkflowRuntimeService } from '../../_services/workflow-runtime.service';
 import { PreviewSessionService } from '../../_services/preview-session.service';
+import { LayoutOverlay } from './layout-overlay/layout-overlay';
 import { WorkflowStateService } from '../../_services/workflow-state.service';
 import { ViewportCommand, ViewportControls, ZoomAtEvent } from '../../_directives/viewport-controls.directive';
 import { BaseWidget } from '../../_directives/base-widget.directive';
@@ -46,7 +47,7 @@ const isTyping = () => /INPUT|TEXTAREA|SELECT/.test((document.activeElement as H
  */
 @Component({
   selector: 'app-canvas',
-  imports: [ViewportControls, ZoomControls, ZoomButton, ContextMenu, ContextMenuItem],
+  imports: [ViewportControls, ZoomControls, ZoomButton, ContextMenu, ContextMenuItem, LayoutOverlay],
   templateUrl: './canvas.html',
   styleUrl: './canvas.scss',
 })
@@ -101,7 +102,11 @@ export class Canvas implements AfterViewInit {
       // untracked: only a tab switch should rebuild the grid, not every layout or prop change
       untracked(() => {
         this.stopPreview();
-        this.layoutState.loadLayoutForTab(tabId).subscribe((layout) => this.restoreLayout(tabId, layout));
+        this.layoutState.loadLayoutForTab(tabId).subscribe((layout) => {
+          this.restoreLayout(tabId, layout);
+          // Arrived here by following a link in a preview: the preview goes on on this page
+          if (this.previewSession.resumesOn(tabId)) this.togglePreview();
+        });
       });
     });
 

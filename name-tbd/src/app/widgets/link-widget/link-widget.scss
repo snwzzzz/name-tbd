@@ -1,0 +1,28 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.link-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  overflow: hidden;
+}
+
+.link {
+  font-size: var(--font-size-sm);
+  text-decoration: underline;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  // While editing, a click selects the widget (see follow())
+  cursor: inherit;
+
+  &.live {
+    cursor: pointer;
+  }
+}

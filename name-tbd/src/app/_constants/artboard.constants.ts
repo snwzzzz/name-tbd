@@ -50,4 +50,4 @@ export function subGridOptions(rows: number): GridStackOptions {
 }
 
 /** Widget types that can be resized on the canvas. */
-export const RESIZABLE_WIDGET_TYPES = ['button', 'container'];
+export const RESIZABLE_WIDGET_TYPES = ['button', 'container', 'table', 'link', 'nav'];

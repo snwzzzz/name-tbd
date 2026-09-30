@@ -6,6 +6,7 @@ import { WorkflowControllerService } from '../../api/services/workflowController
 import { PageDto, WorkflowDto } from '../../api/models';
 import { TabsService } from '../../_services/tabs.service';
 import { ModalService } from '../../_services/modal/modal.service';
+import { PagesStateService } from '../../_services/pages-state.service';
 import { EditorMode } from '../../_types/tab.types';
 import { CreatePageModal, CreatePageResult } from './create-page-modal/create-page-modal';
 import { OpenPageModal, OpenPageModalData } from './open-page-modal/open-page-modal';
@@ -25,6 +26,7 @@ export class Welcome implements OnInit {
   private readonly workflowService = inject(WorkflowControllerService);
   private readonly tabs = inject(TabsService);
   private readonly modalService = inject(ModalService);
+  private readonly pagesState = inject(PagesStateService);
   private readonly router = inject(Router);
 
   readonly pages = signal<PageDto[]>([]);
@@ -82,9 +84,11 @@ export class Welcome implements OnInit {
     this.openInTab(id.toString(), title, 'workflow');
   }
 
-  private createPage({ name, path }: CreatePageResult): void {
-    this.pageService.createPage({ branchId: DEFAULT_BRANCH_ID, name, path }).subscribe((page) => {
+  private createPage({ name, path, layout }: CreatePageResult): void {
+    this.pageService.createPage({ branchId: DEFAULT_BRANCH_ID, name, path, layout }).subscribe((page) => {
       this.pages.update((pages) => [...pages, page]);
+      // Links and the layout layer pick up the new page
+      this.pagesState.refresh();
       this.openPage(page.id!, page.name);
     });
   }

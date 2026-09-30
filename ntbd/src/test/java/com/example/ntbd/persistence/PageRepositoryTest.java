@@ -50,4 +50,19 @@ public class PageRepositoryTest {
         assertThat(pages.get(0).getName()).isEqualTo("Home");
         assertThat(pages.get(0).getPath()).isEqualTo("/home");
     }
+
+    @Test
+    void knows_whether_a_branch_has_a_layout_page() {
+        var user = User.builder().username(new com.example.ntbd.domain.Username("layoutuser")).email(new com.example.ntbd.domain.Email("layout@example.com")).password("test").firstName("Test").lastName("Test").build();
+        userRepository.save(user);
+        var app = Application.builder().title("App").description("Desc").build();
+        applicationRepository.save(app);
+        var branch = branchRepository.save(Branch.builder().name("main").description("main branch").createdBy(user).application(app).build());
+
+        pageRepository.save(Page.builder().name("Home").path("/home").branch(branch).build());
+        assertThat(pageRepository.existsByBranch_IdAndLayoutTrue(branch.getId())).isFalse();
+
+        pageRepository.save(Page.builder().name("Layout").path("/layout").branch(branch).layout(true).build());
+        assertThat(pageRepository.existsByBranch_IdAndLayoutTrue(branch.getId())).isTrue();
+    }
 }

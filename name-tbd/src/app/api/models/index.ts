@@ -153,6 +153,7 @@ export interface NewPageCommand {
     name?: string;
     path?: string;
     branchId?: number;
+    layout?: boolean;
 }
 
 export interface PageDto {
@@ -160,6 +161,7 @@ export interface PageDto {
     name?: string;
     path?: string;
     branchId?: number;
+    layout?: boolean;
 }
 
 export interface NewDataSourceCommand {

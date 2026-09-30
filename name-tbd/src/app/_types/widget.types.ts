@@ -26,10 +26,20 @@ export interface WidgetPropDefinition {
   options?: string[];
 }
 
-/** An entry of the component list (drag source for the canvas). */
+/** A section of the component list. */
+export interface PaletteCategory {
+  id: string;
+  label: string;
+}
+
+/** An entry of the component list (drag source for the canvas); its icon is its widget's. */
 export interface PaletteItem {
   type: string;
   label: string;
+  /** The id of its PaletteCategory. */
+  category: string;
+  /** More words the search finds it by (besides its label and category). */
+  keywords?: string[];
   w: number;
   h: number;
   minW?: number;

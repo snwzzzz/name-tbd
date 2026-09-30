@@ -28,6 +28,11 @@ public class Page extends AuditableEntity {
     @JoinColumn(name = "branch_id", nullable = false)
     private Branch branch;
 
+    /** The branch's layout page: its widgets show on every other page of the branch. */
+    @Column(name = "is_layout", nullable = false)
+    @Builder.Default
+    private boolean layout = false;
+
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "page")
     @Builder.Default
     private List<UiComponent> components = List.of();

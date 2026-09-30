@@ -1,8 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
-import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
-import { LucideGripVertical } from '@lucide/angular';
 import { BasePropEditor } from '../../../_directives/base-prop-editor.directive';
 import { DataSourceStateService } from '../../../_services/data-source-state.service';
+import { ChecklistItem, OrderedChecklist } from '../../../components/ordered-checklist/ordered-checklist';
 import { parseColumnList, visibleColumnIndexes } from '../../../_utils/table.utils';
 
 interface ColumnChoice {
@@ -16,9 +15,15 @@ interface ColumnChoice {
  */
 @Component({
   selector: 'app-columns-prop-editor',
-  imports: [CdkDropList, CdkDrag, CdkDragHandle, LucideGripVertical],
-  templateUrl: './columns-prop-editor.html',
-  styleUrl: './columns-prop-editor.scss',
+  imports: [OrderedChecklist],
+  template: `
+    @if (items(); as items) {
+      <app-ordered-checklist keepOneChecked [items]="items" (changed)="save($event)" />
+    } @else {
+      <p class="hint">Pick a data source to choose its columns.</p>
+    }
+  `,
+  styleUrl: '../prop-editor.scss',
 })
 export class ColumnsPropEditor extends BasePropEditor {
   private readonly state = inject(DataSourceStateService);
@@ -38,7 +43,9 @@ export class ColumnsPropEditor extends BasePropEditor {
     return [...shown.map((name) => ({ name, shown: true })), ...hidden.map((name) => ({ name, shown: false }))];
   });
 
-  readonly shownCount = computed(() => this.choices()?.filter((c) => c.shown).length ?? 0);
+  readonly items = computed<ChecklistItem[] | null>(
+    () => this.choices()?.map((c) => ({ id: c.name, label: c.name, checked: c.shown })) ?? null,
+  );
 
   constructor() {
     super();
@@ -46,17 +53,10 @@ export class ColumnsPropEditor extends BasePropEditor {
   }
 
   toggle(name: string): void {
-    const choices = this.choices() ?? [];
-    this.save(choices.map((c) => (c.name === name ? { ...c, shown: !c.shown } : c)));
+    this.save((this.items() ?? []).map((item) => (item.id === name ? { ...item, checked: !item.checked } : item)));
   }
 
-  reorder(event: CdkDragDrop<ColumnChoice[]>): void {
-    const choices = [...(this.choices() ?? [])];
-    moveItemInArray(choices, event.previousIndex, event.currentIndex);
-    this.save(choices);
-  }
-
-  private save(choices: ColumnChoice[]): void {
-    this.update(JSON.stringify(choices.filter((c) => c.shown).map((c) => c.name)));
+  save(items: ChecklistItem[]): void {
+    this.update(JSON.stringify(items.filter((item) => item.checked).map((item) => item.id)));
   }
 }

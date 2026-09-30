@@ -55,6 +55,25 @@
     }
   }
 
+  .layout-check {
+    align-items: flex-start;
+
+    &.disabled {
+      cursor: default;
+      color: var(--color-text-secondary);
+    }
+
+    input {
+      margin-top: 0.125rem;
+    }
+
+    .hint {
+      display: block;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+    }
+  }
+
   .modal-actions {
     display: flex;
     justify-content: flex-end;

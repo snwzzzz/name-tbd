@@ -8,7 +8,10 @@
       <button type="button" class="page-list-item" (click)="onSelect(page.id!)">
         <svg lucideFile class="page-icon"></svg>
         <div class="page-info">
-          <span class="page-name">{{ page.name }}</span>
+          <span class="page-name">
+            {{ page.name }}
+            @if (page.layout) { <span class="layout-badge">Layout</span> }
+          </span>
           <span class="page-path">{{ page.path }}</span>
         </div>
       </button>

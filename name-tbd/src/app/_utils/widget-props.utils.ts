@@ -20,3 +20,15 @@ export function propNumber(props: WidgetProps | undefined, key: string, fallback
   const value = text === undefined ? NaN : Number(text);
   return Number.isFinite(value) ? value : fallback;
 }
+
+/** A list prop, stored as a JSON array (e.g. '["a","b"]'); anything else counts as an empty list. */
+export function parseJsonList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value !== 'string' || value.trim() === '') return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}

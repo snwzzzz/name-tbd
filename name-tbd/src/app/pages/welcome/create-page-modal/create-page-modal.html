@@ -26,6 +26,16 @@
         (keydown.enter)="onSubmit()"
       />
     </div>
+
+    <label class="ui-check layout-check" [class.disabled]="layoutExists()">
+      <input type="checkbox" [checked]="layout()" [disabled]="layoutExists()" (change)="layout.set($any($event.target).checked)" />
+      <span>
+        Layout page
+        <span class="hint">
+          {{ layoutExists() ? 'This project already has one.' : 'Its widgets (navbar, sidebar, …) show on every page.' }}
+        </span>
+      </span>
+    </label>
   </div>
 
   <div class="modal-actions">

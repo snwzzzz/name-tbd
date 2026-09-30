@@ -1,19 +1,11 @@
 import { TableData } from '../_types/data-source.types';
+import { parseJsonList } from './widget-props.utils';
 
 // The data table widget's rules, shared by the widget and its settings.
 // The backend's export applies the same rules (TableRenderer.java).
 
 /** The chosen column names, stored as a JSON array; anything else counts as none chosen. */
-export function parseColumnList(value: unknown): string[] {
-  if (Array.isArray(value)) return value.map(String);
-  if (typeof value !== 'string' || value.trim() === '') return [];
-  try {
-    const parsed: unknown = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed.map(String) : [];
-  } catch {
-    return [];
-  }
-}
+export const parseColumnList = parseJsonList;
 
 /** Indexes of the columns to show: the chosen ones that exist, in their order; all if none are. */
 export function visibleColumnIndexes(allColumns: string[], chosen: string[]): number[] {

@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface PageRepository extends JpaRepository<Page, Page.PageId> {
     List<Page> findByBranch_Id(com.example.ntbd.domain.Branch.BranchId branchId);
+
+    boolean existsByBranch_IdAndLayoutTrue(com.example.ntbd.domain.Branch.BranchId branchId);
 }

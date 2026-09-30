@@ -1,10 +1,10 @@
-.column-choices {
+.choices {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.column-name {
+.name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -32,12 +32,6 @@
   opacity: 0.4;
 }
 
-.cdk-drop-list-dragging .column-choice:not(.cdk-drag-placeholder) {
+.cdk-drop-list-dragging .choice:not(.cdk-drag-placeholder) {
   transition: transform 0.2s ease;
-}
-
-.hint {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
 }

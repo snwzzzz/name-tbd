@@ -12,7 +12,8 @@ public class PageMapper {
                 page.getId() != null ? page.getId().id() : null,
                 page.getName(),
                 page.getPath(),
-                page.getBranch() != null && page.getBranch().getId() != null ? page.getBranch().getId().id() : null
+                page.getBranch() != null && page.getBranch().getId() != null ? page.getBranch().getId().id() : null,
+                page.isLayout()
         );
     }
 }

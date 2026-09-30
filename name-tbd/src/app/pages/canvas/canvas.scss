@@ -192,4 +192,13 @@ $ah: 50.625rem;
   ::ng-deep .grid-stack-item[data-type='button'] > .grid-stack-item-content {
     cursor: pointer;
   }
+
+  // Clicks between this page's widgets reach the layout page's widgets underneath
+  ::ng-deep .artboard > .grid-stack {
+    pointer-events: none;
+  }
+
+  ::ng-deep .artboard > .grid-stack .grid-stack-item {
+    pointer-events: auto;
+  }
 }
