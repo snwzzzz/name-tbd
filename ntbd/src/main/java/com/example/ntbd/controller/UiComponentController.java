@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -30,6 +31,11 @@ public class UiComponentController {
     @GetMapping("/{id}")
     public ResponseEntity<UiComponentDto> getComponent(@PathVariable Long id) {
         return ResponseEntity.ok(uiComponentService.findById(id));
+    }
+
+    @GetMapping("/{id}/props")
+    public ResponseEntity<Map<String, String>> getComponentProps(@PathVariable Long id) {
+        return ResponseEntity.ok(uiComponentService.findPropsById(id));
     }
 
     @PutMapping("/{id}")

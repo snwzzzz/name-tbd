@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { WidgetPropDefinitionControllerService } from '../api/services/widgetPropDefinitionController.service';
 
 export interface WidgetPropDefinition {
   id: number;
@@ -15,16 +15,25 @@ export interface WidgetPropDefinition {
   providedIn: 'root'
 })
 export class WidgetRegistryService {
-  private http = inject(HttpClient);
-  
+  private api = inject(WidgetPropDefinitionControllerService);
+
   // Dictionary grouping props by widget type
   public propDefinitions = signal<Record<string, WidgetPropDefinition[]>>({});
 
-  loadDefinitions() {
-    this.http.get<Record<string, WidgetPropDefinition[]>>('/api/widget-props')
+  // Types whose definitions were already requested, so each type is fetched only once
+  private requestedTypes = new Set<string>();
+
+  loadDefinitionsForType(type: string) {
+    if (this.requestedTypes.has(type)) return;
+    this.requestedTypes.add(type);
+
+    this.api.getDefinitionsByType(type)
       .subscribe({
-        next: (defs) => this.propDefinitions.set(defs),
-        error: (err) => console.error('Failed to load widget prop definitions', err)
+        next: (defs) => this.propDefinitions.update((all) => ({ ...all, [type]: defs as WidgetPropDefinition[] })),
+        error: (err) => {
+          this.requestedTypes.delete(type);
+          console.error(`Failed to load prop definitions for widget type "${type}"`, err);
+        }
       });
   }
 

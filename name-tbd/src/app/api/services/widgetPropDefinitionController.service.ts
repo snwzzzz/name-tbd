@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestOptions } from "../models";
+import { RequestOptions, WidgetPropDefinition } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class WidgetPropDefinitionControllerService {
@@ -30,6 +30,32 @@ export class WidgetPropDefinitionControllerService {
     getAllDefinitions(observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Record<string, any>>>;
     getAllDefinitions(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/widget-props`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            responseType: 'json',
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    getDefinitionsByType(type: string, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<WidgetPropDefinition>>;
+    getDefinitionsByType(type: string, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<WidgetPropDefinition>>>;
+    getDefinitionsByType(type: string, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<WidgetPropDefinition>>>;
+    getDefinitionsByType(type: string, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/widget-props/${encodeURIComponent(type)}`;
 
         let headers: HttpHeaders;
         if (options?.headers instanceof HttpHeaders) {

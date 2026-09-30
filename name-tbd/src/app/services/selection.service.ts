@@ -14,7 +14,6 @@ export class SelectionService {
   }
 
   clear() {
-    this.layoutState.flushPendingSaves();
     this.selectedId.set(null);
   }
 

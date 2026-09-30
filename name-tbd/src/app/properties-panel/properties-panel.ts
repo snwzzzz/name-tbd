@@ -79,12 +79,10 @@ export class PropertiesPanelComponent {
     const tabId = this.tabs.activeTabId();
     if (!item || !tabId || typeof item.id !== 'number') return;
 
-    // Cancel any pending debounced save to avoid a double-write racing this explicit one
-    this.layoutState.flushPendingSaves();
-
     this.saveState.set('saving');
 
-    this.layoutState.updateComponent(tabId, item).subscribe({
+    // The only place prop edits are written to the database
+    this.layoutState.updateComponent(tabId, item, true).subscribe({
       next: () => {
         this.saveState.set('saved');
         clearTimeout(this.savedTimer);

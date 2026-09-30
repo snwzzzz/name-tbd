@@ -1,9 +1,8 @@
-import { ApplicationConfig, APP_INITIALIZER, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { provideDefaultClient } from './api';
-import { WidgetRegistryService } from './core/widget-registry.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -13,12 +12,6 @@ export const appConfig: ApplicationConfig = {
       basePath: 'http://localhost:8080',
       interceptors: []
     }),
-    {
-      provide: APP_INITIALIZER,
-      useFactory: (reg: WidgetRegistryService) => () => reg.loadDefinitions(),
-      deps: [WidgetRegistryService],
-      multi: true,
-    },
   ],
 };
 

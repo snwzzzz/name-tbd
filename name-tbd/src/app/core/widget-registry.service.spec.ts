@@ -32,15 +32,22 @@ describe('WidgetRegistryService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should load definitions from API', () => {
-    service.loadDefinitions();
-    
-    const req = httpMock.expectOne('/api/widget-props');
+  it('should load the definitions of a widget type from API', () => {
+    service.loadDefinitionsForType('button');
+
+    const req = httpMock.expectOne(r => r.url.endsWith('/api/widget-props/button'));
     expect(req.request.method).toBe('GET');
-    
-    req.flush(mockDefinitions);
-    
-    expect(service.propDefinitions()).toEqual(mockDefinitions);
+
+    req.flush(mockDefinitions['button']);
+
+    expect(service.propDefinitions()).toEqual({ button: mockDefinitions['button'] });
+  });
+
+  it('should request the definitions of a widget type only once', () => {
+    service.loadDefinitionsForType('button');
+    service.loadDefinitionsForType('button');
+
+    httpMock.expectOne(r => r.url.endsWith('/api/widget-props/button')).flush(mockDefinitions['button']);
   });
 
   it('should return combined props for a widget type', () => {

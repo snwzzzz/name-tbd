@@ -37,4 +37,16 @@ class UiComponentControllerTest {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(dto, response.getBody());
     }
+
+    @Test
+    void getComponentProps() {
+        Map<String, String> props = Map.of("label", "Save", "color", "#3b82f6");
+
+        when(uiComponentService.findPropsById(1L)).thenReturn(props);
+
+        ResponseEntity<Map<String, String>> response = uiComponentController.getComponentProps(1L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(props, response.getBody());
+    }
 }

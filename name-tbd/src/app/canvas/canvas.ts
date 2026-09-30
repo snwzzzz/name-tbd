@@ -7,6 +7,7 @@ import {
   computed,
   signal,
   effect,
+  untracked,
   viewChild,
   ViewContainerRef,
   ComponentRef,
@@ -27,6 +28,7 @@ import { SelectionService } from '../services/selection.service';
 import { FormsModule } from '@angular/forms';
 
 import { WIDGET_REGISTRY } from '../widgets/registry';
+import { WidgetRegistryService } from '../core/widget-registry.service';
 import { PropertiesPanelComponent } from '../properties-panel/properties-panel';
 
 // ─── Artboard constants (16:9 website viewport reference) ─────────────────────
@@ -67,6 +69,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
   private workflowState = inject(WorkflowStateService);
   private tabsService = inject(TabsService);
   private layoutStateService = inject(LayoutStateService);
+  private widgetRegistry = inject(WidgetRegistryService);
 
   // ─── Zoom / Pan state ──────────────────────────────────────────────────────
   readonly zoom  = signal(1);
@@ -152,7 +155,9 @@ export class Canvas implements AfterViewInit, OnDestroy {
       const tabId = this.tabsService.activeTabId();
       const ready = this.gridReady();
       if (tabId && ready && this.grid) {
-        this.layoutStateService.loadLayoutForTab(tabId).subscribe((savedLayout: LayoutItem[]) => {
+        // untracked: loadLayoutForTab reads the layout signal, and tracking it here would tear down
+        // and rebuild the whole grid on every layout or prop change instead of only on tab switches.
+        untracked(() => this.layoutStateService.loadLayoutForTab(tabId)).subscribe((savedLayout: LayoutItem[]) => {
           this.ngZone.runOutsideAngular(() => {
             this.isRestoring = true;
             this.grid!.removeAll();
@@ -198,6 +203,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
                // Instantiate Angular component
                if (item.id && item.type !== 'container') {
                  this.instantiateWidget(item.id.toString(), item.type || 'unknown', content, item.props);
+                 if (typeof item.id === 'number') this.layoutStateService.loadComponentProps(tabId, item.id);
                }
 
                if (item.children && item.children.length > 0 && node && node.subGrid) {
@@ -225,8 +231,16 @@ export class Canvas implements AfterViewInit, OnDestroy {
 
   instantiateWidget(id: string, type: string, contentEl: HTMLElement, props?: Record<string, any>) {
     const def = WIDGET_REGISTRY[type] || WIDGET_REGISTRY['default'];
+
+    // Make sure the settings panel has the prop definitions for this widget type
+    this.widgetRegistry.loadDefinitionsForType(type);
+
+    // GridStack's 'added' handler may already have mounted a widget for this id — replace it
+    // instead of stacking a second one (the hidden duplicate would receive all prop updates).
+    this.widgetRefs.get(id)?.destroy();
+
     const compRef = this.vcr.createComponent(def.component);
-    
+
     compRef.setInput('id', id);
     compRef.setInput('props', { ...(def.defaultProps || {}), ...(props || {}) });
     
@@ -453,10 +467,13 @@ export class Canvas implements AfterViewInit, OnDestroy {
                 mode: 'float',
               }, undefined, false); // pass saveContent = false to avoid auto-creating a child widget
               contentEl.classList.add('container-widget');
+            } else if (this.widgetRefs.get(id as string)?.location.nativeElement.parentElement === contentEl) {
+              // The widget was moved into/out of a container: GridStack re-adds the same element to the
+              // new grid, so the live widget (and its props and listeners) is already in place — keep it.
             } else {
               contentEl.innerHTML = '';
               this.instantiateWidget(id as string, type, contentEl as HTMLElement, {});
-              
+
               // Add right-click listener
               contentEl.addEventListener('contextmenu', (e: Event) => {
                 const me = e as MouseEvent;
@@ -524,6 +541,9 @@ export class Canvas implements AfterViewInit, OnDestroy {
 
                 // 4. Re-sync layout signal so it picks up the real DB ID
                 syncLayout();
+
+                // 4b. Now that the layout knows the DB ID, pull the component's props (type defaults included)
+                this.layoutStateService.loadComponentProps(tabId, dto.id);
 
                 // 5. If the user resized/moved the item before the DB save completed, sync it now
                 if (actualNode.w !== dto.w || actualNode.h !== dto.h || actualNode.x !== dto.x || actualNode.y !== dto.y) {
@@ -652,7 +672,6 @@ export class Canvas implements AfterViewInit, OnDestroy {
     document.removeEventListener('keyup',   this._onKeyUp);
     document.removeEventListener('mouseup', this._onMouseUp);
     this.viewportRef().nativeElement.removeEventListener('wheel', this._onWheel);
-    this.layoutStateService.flushPendingSaves();
     this.grid?.destroy(false);
     this.grid = null;
   }

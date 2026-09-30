@@ -2,9 +2,11 @@ package com.example.ntbd.controller;
 
 import com.example.ntbd.domain.WidgetPropDefinition;
 import com.example.ntbd.persistence.WidgetPropDefinitionRepository;
+import com.example.ntbd.service.WidgetPropDefinitionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,16 +19,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WidgetPropDefinitionController {
 
-    private final WidgetPropDefinitionRepository repository;
+    private final WidgetPropDefinitionService service;
 
     @GetMapping
     public ResponseEntity<Map<String, List<WidgetPropDefinition>>> getAllDefinitions() {
-        List<WidgetPropDefinition> allProps = repository.findAll();
-        
-        // Group properties by widget type so the frontend can easily consume them
-        Map<String, List<WidgetPropDefinition>> groupedProps = allProps.stream()
-                .collect(Collectors.groupingBy(WidgetPropDefinition::getWidgetType));
-                
-        return ResponseEntity.ok(groupedProps);
+        return ResponseEntity.ok(service.getAllDefinitions());
+    }
+
+    @GetMapping("/{type}")
+    public ResponseEntity<List<WidgetPropDefinition>> getDefinitionsByType(@PathVariable String type) {
+        return ResponseEntity.ok(service.getDefinitionsByType(type));
     }
 }

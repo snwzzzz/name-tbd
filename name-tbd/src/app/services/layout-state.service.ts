@@ -91,22 +91,28 @@ export class LayoutStateService {
     this.layouts.update((l) => ({ ...l, [pageId]: mergeProps(incoming) }));
   }
 
-  updateComponent(pageId: string, item: LayoutItem): Observable<any> {
+  /**
+   * Persist an item's geometry. Props are only sent when `includeProps` is set
+   * (the explicit Save in the properties panel) — otherwise the backend keeps
+   * the stored props, so moving a widget never saves unsaved prop edits.
+   */
+  updateComponent(pageId: string, item: LayoutItem, includeProps = false): Observable<any> {
     if (!item.id || typeof item.id === 'string') {
       return of(null);
     }
 
-    // Always read the freshest version of this item from the signal so we
-    // never send stale (or missing) props from a closure captured earlier.
+    // Geometry comes from the caller: the canvas passes the node's new position
+    // before the layout signal has been updated (saveLayout runs after the diff).
+    // Props are read from the signal, which holds the latest edits.
     const liveItem = this.findById(pageId, item.id) ?? item;
 
     return this.uiService.updateComponent(item.id, {
-      x: liveItem.x,
-      y: liveItem.y,
-      w: liveItem.w,
-      h: liveItem.h,
-      props: liveItem.props || {},
-      parentId: liveItem.parentId || -1,
+      x: item.x,
+      y: item.y,
+      w: item.w,
+      h: item.h,
+      props: includeProps ? liveItem.props || {} : undefined,
+      parentId: item.parentId || -1,
     } as any);
   }
 
@@ -130,20 +136,30 @@ export class LayoutStateService {
     return this.uiService.deleteComponent(id);
   }
 
-  private saveTimeouts = new Map<string | number, any>();
-  /** Stores {pageId, node} so flushPendingSaves can fire the PUT immediately. */
-  private pendingSaves = new Map<string | number, { pageId: string; node: any }>();
+  /**
+   * Fetch the props of a placed component (type defaults overlaid with its
+   * stored values) and apply them to the layout and the live widget.
+   * Nothing is written back — this only mirrors what the backend resolved.
+   */
+  loadComponentProps(pageId: string, id: number): void {
+    this.uiService.getComponentProps(id).subscribe({
+      // Local values win so an edit made while the request was in flight is not reverted
+      next: (props) => this.setItemProps(pageId, id, (current) => ({ ...props, ...current })),
+      error: (err) => console.error(`Failed to load props for component ${id}:`, err),
+    });
+  }
 
-  patchItemProps(pageId: string, id: string | number, props: any) {
+  /** Recompute the props of one item in the layout tree and notify the canvas. Returns the updated node. */
+  private setItemProps(pageId: string, id: string | number, compute: (current: any) => any): any {
     const layout = this.layouts()[pageId];
-    if (!layout) return;
+    if (!layout) return null;
 
     const updatedLayout = JSON.parse(JSON.stringify(layout));
-    
+
     const updateInTree = (nodes: any[]): any => {
       for (const node of nodes) {
         if (node.id === id || node.id?.toString() === id?.toString()) {
-          node.props = { ...node.props, ...props };
+          node.props = compute(node.props);
           return node;
         }
         if (node.children) {
@@ -161,41 +177,16 @@ export class LayoutStateService {
 
       // Notify canvas so the live widget re-renders its props
       this.propPatch$.next({ id: targetNode.id?.toString(), props: targetNode.props });
-      
-      // Sync to backend with debounce to prevent spamming PUT requests on every keystroke
-      if (typeof targetNode.id === 'number') {
-        if (this.saveTimeouts.has(targetNode.id)) {
-          clearTimeout(this.saveTimeouts.get(targetNode.id));
-        }
-        
-        this.pendingSaves.set(targetNode.id, { pageId, node: targetNode });
-
-        const timeoutId = setTimeout(() => {
-          this.updateComponent(pageId, targetNode).subscribe({
-            error: (err) => console.error('[DEBUG] Failed to save props:', err)
-          });
-          this.saveTimeouts.delete(targetNode.id as number);
-          this.pendingSaves.delete(targetNode.id as number);
-        }, 500);
-        
-        this.saveTimeouts.set(targetNode.id, timeoutId);
-      }
     }
+    return targetNode;
   }
 
-  /** Immediately flush all pending debounced prop saves (call on deselect / tab switch). */
-  flushPendingSaves() {
-    this.saveTimeouts.forEach((timeoutId, id) => {
-      clearTimeout(timeoutId);
-      const pending = this.pendingSaves.get(id);
-      if (pending) {
-        this.updateComponent(pending.pageId, pending.node).subscribe({
-          error: (err) => console.error('[DEBUG] Failed to flush save:', err)
-        });
-      }
-    });
-    this.saveTimeouts.clear();
-    this.pendingSaves.clear();
+  /**
+   * Apply prop edits locally (layout state + live widget) only.
+   * They reach the database when the user presses Save in the properties panel.
+   */
+  patchItemProps(pageId: string, id: string | number, props: any) {
+    this.setItemProps(pageId, id, (current) => ({ ...current, ...props }));
   }
 
   addComponent(pageId: string, item: LayoutItem) {
