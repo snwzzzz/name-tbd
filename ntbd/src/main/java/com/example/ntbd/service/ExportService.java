@@ -5,6 +5,7 @@ import com.example.ntbd.dto.NodeDto;
 import com.example.ntbd.dto.PageDto;
 import com.example.ntbd.dto.UiComponentDto;
 import com.example.ntbd.dto.WorkflowDto;
+import com.example.ntbd.export.WidgetHtmlRendererRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
@@ -16,6 +17,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static com.example.ntbd.export.WidgetHtml.escapeHtml;
 
 /**
  * Exports a page as one self-contained HTML file: the layout as it looks on the editor's artboard,
@@ -38,6 +41,7 @@ public class ExportService {
     private final WorkflowService workflowService;
     private final NodeService nodeService;
     private final EdgeService edgeService;
+    private final WidgetHtmlRendererRegistry renderers;
 
     public String exportPageToHtml(Long pageId) {
         PageDto page = pageService.findById(pageId);
@@ -76,7 +80,7 @@ public class ExportService {
                     """;
             return fill(template, Map.of(
                     "TITLE", escapeHtml(page.name()),
-                    "STYLES", STYLES,
+                    "STYLES", STYLES + renderers.styles(),
                     "BODY", body.toString(),
                     "WORKFLOW", workflowJson(pageId),
                     "RUNTIME", RUNTIME));
@@ -142,21 +146,7 @@ public class ExportService {
         Map<String, Object> props = c.props() != null ? c.props() : Map.of();
         String id = String.valueOf(c.id());
 
-        String inner = switch (type) {
-            case "button" -> "<button type=\"button\" class=\"widget-button\" data-component-id=\"" + id + "\""
-                    + " style=\"background: " + escapeHtml(cssColor(prop(props, "color"), "#3b82f6")) + ";\">"
-                    + escapeHtml(prop(props, "label", "Button")) + "</button>";
-            case "label" -> {
-                String color = cssColor(prop(props, "color"), null);
-                yield "<div class=\"widget-label\" data-component-id=\"" + id + "\""
-                        + (color != null ? " style=\"color: " + escapeHtml(color) + ";\"" : "") + ">"
-                        + "<span class=\"widget-label-text\">" + escapeHtml(prop(props, "text", "New Label")) + "</span></div>";
-            }
-            case "form", "input" -> "<div class=\"widget-form\"><input type=\"text\" placeholder=\""
-                    + escapeHtml(prop(props, "placeholder", "Enter text...")) + "\" /></div>";
-            default -> "<div class=\"widget-text\">"
-                    + escapeHtml(prop(props, "text", prop(props, "label", "Widget"))) + "</div>";
-        };
+        String inner = renderers.getRenderer(type).render(id, props);
 
         return "<div class=\"cell\" style=\"" + placement + "\">\n" + inner + "\n</div>\n";
     }
@@ -167,39 +157,6 @@ public class ExportService {
     private static String fill(String template, Map<String, String> values) {
         return PLACEHOLDER.matcher(template)
                 .replaceAll(m -> Matcher.quoteReplacement(values.getOrDefault(m.group(1), m.group())));
-    }
-
-    private static String prop(Map<String, Object> props, String key) {
-        Object v = props.get(key);
-        return v != null ? v.toString() : null;
-    }
-
-    private static String prop(Map<String, Object> props, String key, String fallback) {
-        String v = prop(props, key);
-        return v != null && !v.isEmpty() ? v : fallback;
-    }
-
-    /** Only plain color values may end up in a style attribute. */
-    private static String cssColor(String value, String fallback) {
-        if (value == null) return fallback;
-        String v = value.trim();
-        return v.matches("#[0-9a-fA-F]{3,8}|[a-zA-Z]+|(rgb|hsl)a?\\([0-9.,%\\s]+\\)") ? v : fallback;
-    }
-
-    private static String escapeHtml(String s) {
-        if (s == null) return "";
-        StringBuilder out = new StringBuilder(s.length());
-        for (char ch : s.toCharArray()) {
-            switch (ch) {
-                case '&' -> out.append("&amp;");
-                case '<' -> out.append("&lt;");
-                case '>' -> out.append("&gt;");
-                case '"' -> out.append("&quot;");
-                case '\'' -> out.append("&#39;");
-                default -> out.append(ch);
-            }
-        }
-        return out.toString();
     }
 
     private static final String STYLES = """

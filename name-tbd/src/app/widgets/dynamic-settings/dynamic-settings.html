@@ -36,6 +36,11 @@
             @case ('select') {
               <app-select [options]="options(def)" [ngModel]="value(def)" (ngModelChange)="updateProp(def.propKey, $event)" />
             }
+            @default {
+              @if (editor(def); as editor) {
+                <ng-container *ngComponentOutlet="editor; inputs: { def: def, props: props() }" />
+              }
+            }
           }
         </div>
       }

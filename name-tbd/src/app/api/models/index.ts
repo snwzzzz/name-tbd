@@ -196,6 +196,8 @@ export interface WidgetPropDefinition {
     propKey?: string;
     propType?: string;
     defaultValue?: string;
+    label?: string;
+    group?: string;
 }
 
 export interface DataSourceSummaryDto {

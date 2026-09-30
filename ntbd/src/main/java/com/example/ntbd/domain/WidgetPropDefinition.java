@@ -27,4 +27,17 @@ public class WidgetPropDefinition {
 
     @Column(name = "default_value")
     private String defaultValue;
+
+    /** Shown in the properties panel instead of the prop key. */
+    @Column(name = "label")
+    private String label;
+
+    /** The heading the prop is listed under in the properties panel (none: listed first). */
+    @Column(name = "prop_group")
+    private String group;
+
+    /** A definition without label or group (shown under its key, ungrouped). */
+    public WidgetPropDefinition(Long id, String widgetType, String propKey, String propType, String defaultValue) {
+        this(id, widgetType, propKey, propType, defaultValue, null, null);
+    }
 }

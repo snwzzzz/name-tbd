@@ -5,11 +5,16 @@ import com.example.ntbd.dto.NodeDto;
 import com.example.ntbd.dto.PageDto;
 import com.example.ntbd.dto.UiComponentDto;
 import com.example.ntbd.dto.WorkflowDto;
+import com.example.ntbd.export.WidgetHtmlRendererRegistry;
+import com.example.ntbd.export.renderers.ButtonRenderer;
+import com.example.ntbd.export.renderers.FormRenderer;
+import com.example.ntbd.export.renderers.LabelRenderer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -26,6 +31,8 @@ class ExportServiceTest {
     @Mock private WorkflowService workflowService;
     @Mock private NodeService nodeService;
     @Mock private EdgeService edgeService;
+    @Spy private WidgetHtmlRendererRegistry renderers =
+            new WidgetHtmlRendererRegistry(List.of(new ButtonRenderer(), new LabelRenderer(), new FormRenderer()));
 
     @InjectMocks
     private ExportService exportService;

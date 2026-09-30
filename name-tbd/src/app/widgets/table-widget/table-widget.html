@@ -1,0 +1,39 @@
+<div class="table-widget">
+  @if (title(); as title) {
+    <div class="table-title">{{ title }}</div>
+  }
+
+  @if (dataSourceId() === null) {
+    <div class="table-message">Pick a data source in the properties panel.</div>
+  } @else if (missing()) {
+    <div class="table-message">Data source not found.</div>
+  } @else if (!source()) {
+    <div class="table-message">Loading…</div>
+  } @else {
+    <div class="table-scroll">
+      <table [class.striped]="striped()">
+        @if (showHeader()) {
+          <thead>
+            <tr>
+              @for (header of headers(); track $index) {
+                <th>{{ header }}</th>
+              }
+            </tr>
+          </thead>
+        }
+        <tbody>
+          @for (row of rows(); track $index) {
+            <tr>
+              @for (value of row; track $index) {
+                <td>{{ value }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (hiddenRowCount() > 0) {
+      <div class="table-message">+ {{ hiddenRowCount() }} more rows</div>
+    }
+  }
+</div>

@@ -17,24 +17,27 @@ export class DataSourceStateService {
   readonly sources = signal<DataSourceSummaryDto[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  /** Whether the list has been loaded (so a data source missing from it doesn't exist). */
+  readonly loaded = signal(false);
 
   /** Fully loaded data sources (with rows) by id. */
   readonly details = signal<Record<number, DataSourceDto>>({});
 
-  private loaded = false;
+  private requested = false;
 
   /** Loads the list of data sources, unless it's already loaded. */
   ensureLoaded(): void {
-    if (this.loaded) return;
-    this.loaded = true;
+    if (this.requested) return;
+    this.requested = true;
     this.loading.set(true);
     this.api.getDataSources(DATA_SOURCE_BRANCH_ID).subscribe({
       next: (sources) => {
         this.sources.set(sources);
+        this.loaded.set(true);
         this.loading.set(false);
       },
       error: (err) => {
-        this.loaded = false;
+        this.requested = false;
         this.fail('Failed to load data sources', err);
       },
     });
