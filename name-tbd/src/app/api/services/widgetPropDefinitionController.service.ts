@@ -25,9 +25,9 @@ export class WidgetPropDefinitionControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    getAllDefinitions(observe?: 'body', options?: RequestOptions<'blob'>): Observable<Record<string, any>>;
-    getAllDefinitions(observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<Record<string, any>>>;
-    getAllDefinitions(observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<Record<string, any>>>;
+    getAllDefinitions(observe?: 'body', options?: RequestOptions<'json'>): Observable<Record<string, any>>;
+    getAllDefinitions(observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Record<string, any>>>;
+    getAllDefinitions(observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Record<string, any>>>;
     getAllDefinitions(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/widget-props`;
 
@@ -37,15 +37,14 @@ export class WidgetPropDefinitionControllerService {
         } else {
             headers = new HttpHeaders(options?.headers);
         }
-        // Advertise the response content type declared in the spec
         if (!headers.has('Accept')) {
-            headers = headers.set('Accept', '*/*');
+            headers = headers.set('Accept', 'application/json');
         }
 
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            responseType: 'blob',
+            responseType: 'json',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

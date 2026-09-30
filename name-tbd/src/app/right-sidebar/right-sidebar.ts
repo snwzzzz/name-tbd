@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
+import { InspectorPanel } from '../inspector-panel/inspector-panel';
 
 @Component({
   selector: 'app-right-sidebar',
-  imports: [],
+  imports: [InspectorPanel],
   templateUrl: './right-sidebar.html',
   styleUrl: './right-sidebar.scss',
 })

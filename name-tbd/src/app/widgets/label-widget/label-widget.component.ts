@@ -6,8 +6,8 @@ import { BaseWidget } from '../../core/base-widget';
   standalone: true,
   template: `
     <div class="label-wrapper">
-      <span class="dynamic-label" [style.color]="props()['color'] || '#ffffff'">
-        {{ props()['text'] || 'New Label' }}
+      <span class="dynamic-label" [style.color]="(props() || {})['color'] || '#ffffff'">
+        {{ (props() || {})['text'] || 'New Label' }}
       </span>
     </div>
   `,

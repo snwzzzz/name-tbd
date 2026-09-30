@@ -14,6 +14,7 @@ export class SelectionService {
   }
 
   clear() {
+    this.layoutState.flushPendingSaves();
     this.selectedId.set(null);
   }
 
@@ -22,7 +23,6 @@ export class SelectionService {
     const tabId = this.tabs.activeTabId();
     if (!id || !tabId) return;
 
-    // Send update to the backend
-    this.layoutState.updateComponent(tabId, { id: Number(id), props: newProps } as any).subscribe();
+    this.layoutState.patchItemProps(tabId, id, newProps);
   }
 }

@@ -1,4 +1,4 @@
-import { Component, inject, effect, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 import { SelectionService } from '../services/selection.service';
 import { LayoutStateService } from '../services/layout-state.service';
@@ -18,7 +18,7 @@ import { DynamicSettingsComponent } from '../widgets/dynamic-settings/dynamic-se
           <i [class]="getDef(item.type).icon" class="text-xl" style="color: var(--color-primary);"></i>
           <h3 class="font-semibold">{{ getDef(item.type).name }} Settings</h3>
         </div>
-        
+
         <div class="flex-1 overflow-y-auto">
           @if (registry.getPropsForWidget(item.type).length > 0) {
             <!-- Auto-generated standard props from the DB -->
@@ -31,6 +31,22 @@ import { DynamicSettingsComponent } from '../widgets/dynamic-settings/dynamic-se
               No settings available for this widget.
             </div>
           }
+        </div>
+
+        <!-- Save button -->
+        <div class="p-3" style="border-top: 1px solid var(--color-border); flex-shrink: 0;">
+          <button
+            (click)="save()"
+            [disabled]="saveState() === 'saving'"
+            class="w-full py-2 px-4 rounded text-sm font-semibold transition-all"
+            [style]="saveButtonStyle()">
+            @switch (saveState()) {
+              @case ('saving') { Saving… }
+              @case ('saved')  { ✓ Saved }
+              @case ('error')  { ✗ Error — Retry }
+              @default         { Save }
+            }
+          </button>
         </div>
       } @else {
         <div class="p-4 text-gray-500 text-sm flex h-full items-center justify-center text-center">
@@ -45,22 +61,50 @@ export class PropertiesPanelComponent {
   layoutState = inject(LayoutStateService);
   tabs = inject(TabsService);
   registry = inject(WidgetRegistryService);
-  
-  selectedItem = signal<any>(null);
 
-  constructor() {
-    effect(() => {
-      const id = this.selection.selectedId();
-      const tabId = this.tabs.activeTabId();
-      if (!id || !tabId) {
-        this.selectedItem.set(null);
-        return;
+  /** Recomputes whenever selection, tab, or any layout prop changes. */
+  selectedItem = computed(() => {
+    const id = this.selection.selectedId();
+    const tabId = this.tabs.activeTabId();
+    if (!id || !tabId) return null;
+    return this.findInLayout(this.layoutState.getLayout(tabId), id);
+  });
+
+  saveState = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  private savedTimer: any;
+
+  save() {
+    const item = this.selectedItem();
+    const tabId = this.tabs.activeTabId();
+    if (!item || !tabId || typeof item.id !== 'number') return;
+
+    // Cancel any pending debounced save to avoid a double-write racing this explicit one
+    this.layoutState.flushPendingSaves();
+
+    this.saveState.set('saving');
+
+    this.layoutState.updateComponent(tabId, item).subscribe({
+      next: () => {
+        this.saveState.set('saved');
+        clearTimeout(this.savedTimer);
+        this.savedTimer = setTimeout(() => this.saveState.set('idle'), 2000);
+      },
+      error: () => {
+        this.saveState.set('error');
+        clearTimeout(this.savedTimer);
+        this.savedTimer = setTimeout(() => this.saveState.set('idle'), 3000);
       }
-      
-      const layout = this.layoutState.getLayout(tabId) || [];
-      const item = this.findInLayout(layout, id);
-      this.selectedItem.set(item);
-    }, { allowSignalWrites: true });
+    });
+  }
+
+  saveButtonStyle(): string {
+    switch (this.saveState()) {
+      case 'saving': return 'background: var(--color-primary); color: #fff; opacity: 0.6; cursor: not-allowed;';
+      case 'saved':  return 'background: #16a34a; color: #fff; cursor: default;';
+      case 'error':  return 'background: #dc2626; color: #fff;';
+      default:       return 'background: var(--color-primary); color: #fff; cursor: pointer;';
+    }
   }
 
   getDef(type: string) {
@@ -71,7 +115,7 @@ export class PropertiesPanelComponent {
     for (const item of layout) {
       if (item.id?.toString() === id) return item;
       if (item.children) {
-        const found = this.findInLayout(item.children, id);
+        const found: any = this.findInLayout(item.children, id);
         if (found) return found;
       }
     }

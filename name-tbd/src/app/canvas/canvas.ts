@@ -136,8 +136,18 @@ export class Canvas implements AfterViewInit, OnDestroy {
   private isRestoring = false;
   private gridReady = signal(false);
   private lastKnownState = new Map<string, {x: number, y: number, w: number, h: number, parentId: string | number | undefined}>();
+  private propPatchSub?: ReturnType<typeof this.layoutStateService.propPatch$.subscribe>;
 
   constructor(private ngZone: NgZone) {
+    // Live-update widget props when the user edits them in the sidebar
+    this.propPatchSub = this.layoutStateService.propPatch$.subscribe(({ id, props }) => {
+      const ref = this.widgetRefs.get(id);
+      if (ref) {
+        ref.setInput('props', props);
+        ref.changeDetectorRef.markForCheck();
+      }
+    });
+
     effect(() => {
       const tabId = this.tabsService.activeTabId();
       const ready = this.gridReady();
@@ -637,10 +647,12 @@ export class Canvas implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.propPatchSub?.unsubscribe();
     document.removeEventListener('keydown', this._onKeyDown);
     document.removeEventListener('keyup',   this._onKeyUp);
     document.removeEventListener('mouseup', this._onMouseUp);
     this.viewportRef().nativeElement.removeEventListener('wheel', this._onWheel);
+    this.layoutStateService.flushPendingSaves();
     this.grid?.destroy(false);
     this.grid = null;
   }
