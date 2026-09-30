@@ -16,7 +16,6 @@ import {
   HostListener
 } from '@angular/core';
 import { JsonPipe } from '@angular/common';
-import { Observable } from 'rxjs';
 import { GridStack, GridStackNode } from 'gridstack';
 import { ButtonWidgetComponent } from '../widgets/button-widget/button-widget.component';
 import { FormWidgetComponent } from '../widgets/form-widget/form-widget.component';
@@ -95,6 +94,8 @@ export class Canvas implements AfterViewInit, OnDestroy {
       this.contextMenuState.set(null);
       return;
     }
+    // Pressing a menu entry must not close the menu before its click handler runs
+    if ((e?.target as HTMLElement | undefined)?.closest?.('.custom-context-menu')) return;
     this.contextMenuState.set(null);
     if (this.previewMode()) return; // no selection while previewing
     if (e && e.type === 'pointerdown') {
@@ -792,17 +793,6 @@ export class Canvas implements AfterViewInit, OnDestroy {
 
   /** "Add action": new action on the button's click flow (trigger created if missing), then open the workflow section. */
   addActionToItem(item: LayoutItem): void {
-    this.openWorkflowFor(item, (pageId, elementId) =>
-      this.workflowState.addActionForElement(pageId, elementId, 'element_click'));
-  }
-
-  /** "Open workflow": make sure the button has a click trigger, then open the workflow section. */
-  addLogicToItem(item: LayoutItem): void {
-    this.openWorkflowFor(item, (pageId, elementId) =>
-      this.workflowState.addTriggerForElement(pageId, elementId, 'element_click'));
-  }
-
-  private openWorkflowFor(item: LayoutItem, prepare: (pageId: string, elementId: string) => Observable<string>): void {
     this.contextMenuState.set(null);
     const tabId = this.tabsService.activeTabId();
     if (!tabId) return;
@@ -816,7 +806,7 @@ export class Canvas implements AfterViewInit, OnDestroy {
       console.warn('This button is not saved yet, so no trigger could be created for it.');
       return;
     }
-    prepare(tabId, elementId).subscribe({
+    this.workflowState.addActionForElement(tabId, elementId, 'element_click').subscribe({
       error: (err) => console.error('Failed to update the page workflow', err),
     });
   }

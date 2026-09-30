@@ -1,6 +1,6 @@
 import { Injectable, signal, inject } from '@angular/core';
-import { Observable, forkJoin, from, of } from 'rxjs';
-import { concatMap, finalize, map, shareReplay, switchMap, tap, toArray } from 'rxjs/operators';
+import { Observable, forkJoin, of } from 'rxjs';
+import { finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { ActionNode, FlowNode, FlowConnection, TriggerNode } from '../workflow-editor/workflow.types';
 import { ACTION_TYPES } from '../workflow-editor/workflow-operators';
 import { WorkflowControllerService } from '../api/services/workflowController.service';
@@ -172,15 +172,6 @@ export class WorkflowStateService {
       this.workflowService.deleteEdge(workflowId, Number(connectionId))
         .subscribe({ error: (err) => console.error(`Failed to delete workflow connection ${connectionId}`, err) });
     }
-  }
-
-  /** Make sure each of these elements has a click trigger (one at a time, so none is created twice). */
-  ensureTriggersForElements(pageId: string, elementIds: string[]): Observable<string[]> {
-    if (elementIds.length === 0) return of([]);
-    return from(elementIds).pipe(
-      concatMap((id) => this.addTriggerForElement(pageId, id)),
-      toArray(),
-    );
   }
 
   /** Return the click trigger of an element, creating it if the element has none yet. */

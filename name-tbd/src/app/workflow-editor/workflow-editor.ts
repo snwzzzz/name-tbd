@@ -14,7 +14,6 @@ import { FlowNode, TriggerNode, ConditionNode, ActionNode, SetTextConfig } from 
 import { ACTION_TYPES, CONDITION_OPERATORS } from './workflow-operators';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
 
 /** Port ids are `${nodeId}-${port}`; node ids never contain '-' (they are DB ids). */
 const splitPortId = (portId: string) => {
@@ -75,11 +74,8 @@ export class WorkflowEditor {
       const id = params.get('tabId');
       if (id) {
         this.tabId.set(id);
-        // Load the workflow and the page's widgets (they feed the button/label pickers), then
-        // give every saved button that has no click trigger yet one, so it's there to build on
-        forkJoin([this.workflowState.ensureGraph(id), this.layoutState.loadLayoutForTab(id)]).pipe(
-          switchMap(() => this.workflowState.ensureTriggersForElements(id, this.buttons().map((b) => b.id))),
-        ).subscribe({
+        // Load the workflow and the page's widgets (they feed the button/label pickers)
+        forkJoin([this.workflowState.ensureGraph(id), this.layoutState.loadLayoutForTab(id)]).subscribe({
           error: (err) => console.error('Failed to load the page workflow', err),
         });
       }
@@ -258,18 +254,13 @@ export class WorkflowEditor {
   }
 
   deleteNode(nodeId: string): void {
-    const node = this.nodes().find(n => n.id === nodeId);
-    if (!node || node.type === 'Trigger') return;
+    if (!this.nodes().some(n => n.id === nodeId)) return;
     this.workflowState.deleteNode(this.tabId(), nodeId);
   }
 
   onDeleteSelected(event: FDeleteSelectedEvent): void {
     const connIds = event.connectionIds ?? [];
-    // Trigger nodes belong to their element and can't be deleted here
-    const nodeIds = (event.nodeIds ?? []).filter((id) => {
-      const node = this.nodes().find(n => n.id === id);
-      return node && node.type !== 'Trigger';
-    });
+    const nodeIds = (event.nodeIds ?? []).filter((id) => this.nodes().some(n => n.id === id));
 
     connIds.forEach((id) => this.workflowState.disconnect(this.tabId(), id));
     nodeIds.forEach((id) => this.workflowState.deleteNode(this.tabId(), id));

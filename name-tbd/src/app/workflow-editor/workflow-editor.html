@@ -62,9 +62,7 @@
                   @default { {{ node.type }} }
                 }
               </span>
-              @if (node.type !== 'Trigger') {
-                <button class="delete-node-btn" (click)="deleteNode(node.id); $event.stopPropagation()">✕</button>
-              }
+              <button class="delete-node-btn" (click)="deleteNode(node.id); $event.stopPropagation()">✕</button>
             </div>
             
             <div class="node-body">
