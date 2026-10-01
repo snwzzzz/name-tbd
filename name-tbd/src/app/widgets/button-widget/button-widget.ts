@@ -9,10 +9,10 @@ import { CLICK_EVENT } from '../../_constants/widget-events.constants';
   selector: 'app-button-widget',
   templateUrl: './button-widget.html',
   styleUrl: './button-widget.scss',
-  host: { '(click)': 'onClick()' },
+  host: { '(click)': 'onClick()', '[class.live]': 'session.live()' },
 })
 export class ButtonWidget extends BaseWidget {
-  private readonly session = inject(APP_SESSION);
+  protected readonly session = inject(APP_SESSION);
   private readonly widgetEvents = inject(WidgetEventsService);
 
   readonly label = computed(() => this.text('label') ?? 'Button');

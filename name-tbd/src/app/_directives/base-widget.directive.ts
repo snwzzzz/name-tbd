@@ -1,13 +1,19 @@
-import { Directive, input, model } from '@angular/core';
+import { Directive, computed, input, model } from '@angular/core';
 import { WidgetProps } from '../_types/layout.types';
 import { propText } from '../_utils/widget-props.utils';
+import { textSizeOf } from '../core/rendering/text-sizes';
 
-/** Base of every widget the canvas places: the canvas sets `id` and `props`. */
-@Directive()
+/**
+ * Base of every widget the canvas places: the canvas sets `id` and `props`. Its "Text size" prop
+ * sets --widget-text-size, which all widget text is sized by.
+ */
+@Directive({ host: { '[style.--widget-text-size]': 'textSize()' } })
 export abstract class BaseWidget {
   readonly id = input.required<string>();
   readonly props = model<WidgetProps>({});
   readonly selected = input<boolean>(false);
+
+  protected readonly textSize = computed(() => textSizeOf(this.props()));
 
   /** A prop as text (undefined when it isn't set). */
   protected text(key: string): string | undefined {

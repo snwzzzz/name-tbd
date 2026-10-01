@@ -13,7 +13,6 @@ import java.util.List;
 public record WidgetCatalogDocument(
         int version,
         List<Category> categories,
-        List<Prop> globalProps,
         List<Widget> widgets
 ) {
 

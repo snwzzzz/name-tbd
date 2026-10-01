@@ -16,23 +16,18 @@ import java.util.Map;
 @Service
 public class WidgetPropDefinitionService {
 
-    /** The props that apply to every widget are listed under this type. */
-    static final String GLOBAL_TYPE = "global";
-
     private final WidgetCatalog catalog;
 
-    /** All definitions by widget type, 'global' first. */
+    /** All definitions by widget type. Position and size aren't props (components have them as fields). */
     public Map<String, List<WidgetPropDefinitionDto>> getAllDefinitions() {
         Map<String, List<WidgetPropDefinitionDto>> all = new LinkedHashMap<>();
-        all.put(GLOBAL_TYPE, getDefinitionsByType(GLOBAL_TYPE));
         catalog.widgets().forEach(w -> all.put(w.type(), getDefinitionsByType(w.type())));
         return all;
     }
 
     public List<WidgetPropDefinitionDto> getDefinitionsByType(String widgetType) {
-        List<WidgetCatalogDocument.Prop> props = GLOBAL_TYPE.equals(widgetType)
-                ? catalog.globalProps()
-                : catalog.widget(widgetType).map(WidgetCatalogDocument.Widget::props).orElse(List.of());
+        List<WidgetCatalogDocument.Prop> props = catalog.widget(widgetType)
+                .map(WidgetCatalogDocument.Widget::props).orElse(List.of());
 
         List<WidgetPropDefinitionDto> definitions = new ArrayList<>();
         for (int i = 0; i < props.size(); i++) {

@@ -25,7 +25,7 @@ class SingleFileHtmlExportTest {
     private final ObjectMapper json = JsonMapper.builder().build();
 
     private SingleFileHtmlExport export(String runtimeLocation) {
-        return new SingleFileHtmlExport(new ExportRuntime(new DefaultResourceLoader(), runtimeLocation), json);
+        return new SingleFileHtmlExport(new ExportRuntime(new DefaultResourceLoader(), List.of(runtimeLocation)), json);
     }
 
     private AppDefinition definition(String appName) {

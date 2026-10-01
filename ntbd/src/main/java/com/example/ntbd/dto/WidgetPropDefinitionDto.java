@@ -2,7 +2,7 @@ package com.example.ntbd.dto;
 
 import java.util.List;
 
-/** One setting of a widget type, as the widget catalog defines it ('global' ones apply to every widget). */
+/** One setting of a widget type, as the widget catalog defines it. */
 public record WidgetPropDefinitionDto(
         Long id,
         String widgetType,

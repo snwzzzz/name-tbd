@@ -3,11 +3,12 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve name-tbd",
+    "start": "ng build runtime && ng serve name-tbd",
     "build": "ng build name-tbd",
     "watch": "ng build name-tbd --watch --configuration development",
     "test": "ng test",
-    "build:runtime": "ng build runtime"
+    "build:runtime": "ng build runtime",
+    "watch:runtime": "ng build runtime --watch"
   },
   "private": true,
   "packageManager": "npm@11.19.1",

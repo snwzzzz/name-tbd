@@ -67,9 +67,22 @@
   --font-size-2xl: 1.75rem;   // 28px
   --font-size-3xl: 2rem;      // 32px
 
-  // Text of the widgets on the canvas, so they read as one design
-  --widget-text-size: var(--font-size-sm);        // labels, buttons, links, menus, tables
-  --widget-text-size-small: var(--font-size-xs);  // hints and secondary text inside widgets
+  // The text sizes a widget can pick (its "Text size" setting, see core/rendering/text-sizes.ts)
+  --text-size-small: var(--font-size-xs);      // 12px
+  --text-size-normal: var(--font-size-sm);     // 14px
+  --text-size-large: var(--font-size-md);      // 18px
+  --text-size-title: var(--font-size-xl);      // 24px
+  --text-size-headline: var(--font-size-3xl);  // 32px
+
+  // Text of the widgets on the canvas, so they read as one design; a widget's text size sets
+  // --widget-text-size on it
+  --widget-text-size: var(--text-size-normal);       // labels, buttons, links, menus, tables
+  --widget-text-size-small: var(--text-size-small);  // hints and secondary text inside widgets
+
+  // How widgets react to the pointer while the app runs (same in the preview and the export)
+  --widget-hover-dim: brightness(0.92);   // filled widgets (buttons), any color
+  --widget-active-dim: brightness(0.84);
+  --widget-transition: 0.12s ease;
 }
 
 // =====================================================

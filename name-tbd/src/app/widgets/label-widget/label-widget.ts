@@ -8,5 +8,5 @@ import { BaseWidget } from '../../_directives/base-widget.directive';
 })
 export class LabelWidget extends BaseWidget {
   readonly content = computed(() => this.text('text') ?? 'New Label');
-  readonly color = computed(() => this.text('color') ?? '#ffffff');
+  readonly color = computed(() => this.text('color') ?? 'var(--color-text-primary)');
 }

@@ -42,10 +42,6 @@ public class WidgetCatalog {
         return document.widgets();
     }
 
-    public List<WidgetCatalogDocument.Prop> globalProps() {
-        return document.globalProps() != null ? document.globalProps() : List.of();
-    }
-
     public Optional<WidgetCatalogDocument.Widget> widget(String type) {
         return widgets().stream().filter(w -> w.type().equals(type)).findFirst();
     }

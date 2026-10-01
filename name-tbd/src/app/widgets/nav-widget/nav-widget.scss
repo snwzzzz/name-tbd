@@ -48,7 +48,7 @@ a {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: background-color 0.12s ease;
+  transition: background-color var(--widget-transition);
   // While editing, a click selects the widget
   cursor: inherit;
 

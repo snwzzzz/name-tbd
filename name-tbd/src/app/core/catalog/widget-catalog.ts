@@ -37,7 +37,6 @@ export interface CatalogWidget {
 export interface WidgetCatalog {
   version: number;
   categories: CatalogCategory[];
-  globalProps: CatalogProp[];
   widgets: CatalogWidget[];
 }
 

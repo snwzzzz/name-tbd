@@ -17,18 +17,19 @@ class WidgetPropDefinitionServiceTest {
     void definitionsOfATypeComeFromTheCatalog() {
         List<WidgetPropDefinitionDto> defs = service.getDefinitionsByType("button");
 
-        assertThat(defs).extracting(WidgetPropDefinitionDto::propKey).containsExactly("label", "color");
+        assertThat(defs).extracting(WidgetPropDefinitionDto::propKey).containsExactly("label", "color", "textSize");
         assertThat(defs.get(0).label()).isEqualTo("Label");
         assertThat(defs.get(0).defaultValue()).isEqualTo("Click Me");
         assertThat(defs).allMatch(d -> d.widgetType().equals("button"));
     }
 
     @Test
-    void globalPropsAndAllTypes() {
+    void allTypesWithoutPositionAndSize() {
         Map<String, List<WidgetPropDefinitionDto>> all = service.getAllDefinitions();
 
-        assertThat(all.keySet()).startsWith("global").contains("button", "table");
-        assertThat(all.get("global")).extracting(WidgetPropDefinitionDto::propKey).containsExactly("x", "y", "w", "h");
+        assertThat(all.keySet()).contains("button", "table").doesNotContain("global");
+        assertThat(all.values()).flatMap(defs -> defs).extracting(WidgetPropDefinitionDto::propKey)
+                .doesNotContain("x", "y", "w", "h");
         assertThat(service.getDefinitionsByType("unknown")).isEmpty();
     }
 }

@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * A branch's app, from what the editor saved to its definition and the downloadable file. Packaged
  * with a stand-in runtime (test resources), so the test doesn't need the frontend's runtime build.
  */
-@SpringBootTest(properties = "ntbd.export.runtime-location=classpath:export-runtime-test/")
+@SpringBootTest(properties = "ntbd.export.runtime-locations=classpath:export-runtime-test/")
 @Transactional
 class AppExportIntegrationTest {
 

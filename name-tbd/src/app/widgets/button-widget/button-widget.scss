@@ -18,15 +18,29 @@
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 0;
+  border-radius: 0.375rem;
   background: #3b82f6;
   color: white;
   font-size: var(--widget-text-size);
   font-weight: 600;
   pointer-events: none; /* Make it unclickable so GridStack handles the click selection */
-  
+  transition: filter var(--widget-transition);
+
   /* Text overflow protection */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+// While the app runs the host takes the clicks (see onClick), so it shows the hover and press
+:host(.live) {
+  cursor: pointer;
+}
+
+:host(.live:hover) .dynamic-button {
+  filter: var(--widget-hover-dim);
+}
+
+:host(.live:active) .dynamic-button {
+  filter: var(--widget-active-dim);
 }
