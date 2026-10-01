@@ -37,4 +37,10 @@ public class WidgetPropDefinitionRepositoryTest {
         assertThat(repository.findByWidgetType("button")).extracting(WidgetPropDefinition::getLabel)
                 .contains("Label", "Color");
     }
+
+    @Test
+    void the_detail_widget_has_its_props() {
+        assertThat(repository.findByWidgetType("detail")).extracting(WidgetPropDefinition::getPropKey)
+                .containsExactlyInAnyOrder("dataSourceId", "columns", "title", "emptyText");
+    }
 }

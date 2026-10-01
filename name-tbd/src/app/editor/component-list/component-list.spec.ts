@@ -16,7 +16,7 @@ describe('ComponentList', () => {
     const el: HTMLElement = mount().nativeElement;
 
     expect(sections(el)).toEqual(['Basic', 'Actions', 'Navigation', 'Data', 'Layout']);
-    expect(labels(el)).toEqual(['Text Label', 'Button', 'Link', 'Nav Menu', 'Data Table', 'Container']);
+    expect(labels(el)).toEqual(['Text Label', 'Button', 'Link', 'Nav Menu', 'Data Table', 'Detail Section', 'Container']);
     expect(el.textContent).not.toContain('Dynamic Form');
   });
 

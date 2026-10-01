@@ -1,0 +1,22 @@
+<section class="detail-widget">
+  @if (title(); as title) {
+    <h3 class="detail-title">{{ title }}</h3>
+  }
+
+  @if (previewing() && rowDeleted()) {
+    <p class="detail-message">This row was deleted.</p>
+  } @else if (fields().length) {
+    <dl class="fields">
+      @for (field of fields(); track field.label) {
+        <div class="field">
+          <dt>{{ field.label }}</dt>
+          <dd [class.placeholder]="!previewing()">{{ previewing() ? (field.value || '—') : '—' }}</dd>
+        </div>
+      }
+    </dl>
+  } @else if (previewing()) {
+    <p class="detail-message">{{ emptyText() }}</p>
+  } @else {
+    <p class="detail-message">Shows the row a workflow's “Show row in detail” action sends here. Pick a data source to lay out its fields.</p>
+  }
+</section>

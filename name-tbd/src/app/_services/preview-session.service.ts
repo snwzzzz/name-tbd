@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { PreviewDataService } from './preview-data.service';
 import { TableSelectionService } from './table-selection.service';
+import { DetailRecordsService } from './detail-records.service';
 
 /**
  * Whether (and which) page is being previewed on the canvas. Widgets use it to become
@@ -11,6 +12,7 @@ import { TableSelectionService } from './table-selection.service';
 export class PreviewSessionService {
   private readonly previewData = inject(PreviewDataService);
   private readonly selection = inject(TableSelectionService);
+  private readonly details = inject(DetailRecordsService);
 
   readonly pageId = signal<string | null>(null);
   readonly active = computed(() => this.pageId() !== null);
@@ -28,6 +30,7 @@ export class PreviewSessionService {
     if (this.nextPageId !== null) return;
     this.previewData.reset();
     this.selection.reset();
+    this.details.reset();
   }
 
   /** The preview goes on on this page once it's opened (see resumesOn). */

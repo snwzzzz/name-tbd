@@ -1,5 +1,5 @@
 import {
-  LucideComponent, LucideLink, LucideMousePointerClick, LucideNavigation, LucideSheet, LucideSquareDashed,
+  LucideComponent, LucideLink, LucideMousePointerClick, LucideNavigation, LucidePanelsTopLeft, LucideSheet, LucideSquareDashed,
   LucideTextCursorInput, LucideType,
 } from '@lucide/angular';
 import { PaletteCategory, PaletteItem, WidgetDefinition } from '../_types/widget.types';
@@ -12,6 +12,7 @@ import { LabelSettings } from '../widgets/label-settings/label-settings';
 import { TableWidget, TABLE_DEFAULT_MAX_ROWS } from '../widgets/table-widget/table-widget';
 import { LinkWidget, LINK_DEFAULT_COLOR } from '../widgets/link-widget/link-widget';
 import { NavWidget, NAV_DEFAULT_COLOR } from '../widgets/nav-widget/nav-widget';
+import { DetailWidget, DETAIL_DEFAULT_EMPTY_TEXT } from '../widgets/detail-widget/detail-widget';
 
 export const DEFAULT_WIDGET_TYPE = 'default';
 
@@ -69,6 +70,13 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     defaultProps: { pages: '[]', vertical: 'false', highlightCurrent: 'true', color: NAV_DEFAULT_COLOR },
     component: NavWidget,
   },
+  detail: {
+    type: 'detail',
+    name: 'Detail Section',
+    icon: LucidePanelsTopLeft,
+    defaultProps: { dataSourceId: '', columns: '[]', title: '', emptyText: DETAIL_DEFAULT_EMPTY_TEXT },
+    component: DetailWidget,
+  },
   // No widget component: the canvas turns it into a nested grid; listed for its name and icon
   container: {
     type: 'container',
@@ -110,5 +118,6 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   { type: 'link', label: 'Link', category: 'navigation', keywords: ['a', 'href', 'url', 'hyperlink', 'anchor'], w: 2, h: 1 },
   { type: 'nav', label: 'Nav Menu', category: 'navigation', keywords: ['navbar', 'menu', 'navigation', 'header', 'sidebar'], w: 8, h: 1 },
   { type: 'table', label: 'Data Table', category: 'data', keywords: ['grid', 'rows', 'csv', 'list'], w: 6, h: 4, minW: 3, minH: 2 },
+  { type: 'detail', label: 'Detail Section', category: 'data', keywords: ['record', 'row', 'details', 'fields', 'view'], w: 6, h: 4, minW: 3, minH: 2 },
   { type: 'container', label: 'Container', category: 'layout', keywords: ['group', 'box', 'section'], w: 4, h: 3, minW: 2, minH: 2 },
 ];

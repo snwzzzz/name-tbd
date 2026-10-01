@@ -42,8 +42,15 @@ export interface TableActionConfig {
   operation: string;         // e.g. 'add_row'
 }
 
+/** Config of `show_detail`: shows the row selected in a table in a detail section (on any page). */
+export interface ShowDetailConfig {
+  tableId: string;           // id of the data table on this page
+  detailId: string;          // id of the detail section
+  detailPageId: string;      // the page the detail section is on (opened if it isn't this one)
+}
+
 /** Config of any action. */
-export type ActionConfig = SetTextConfig | TableActionConfig;
+export type ActionConfig = SetTextConfig | TableActionConfig | ShowDetailConfig;
 
 export interface ActionNode extends FlowNodeBase {
   type: 'Action';

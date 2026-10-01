@@ -4,6 +4,8 @@ import { SetTextEditor } from '../workflow-actions/set-text/set-text-editor';
 import { SetTextHandler } from '../workflow-actions/set-text/set-text.handler';
 import { TableActionEditor } from '../workflow-actions/table/table-action-editor';
 import { TableActionHandler } from '../workflow-actions/table/table-action.handler';
+import { ShowDetailEditor } from '../workflow-actions/show-detail/show-detail-editor';
+import { ShowDetailHandler } from '../workflow-actions/show-detail/show-detail.handler';
 
 export const CONDITION_OPERATORS: ConditionOperator[] = [
   { id: 'equals', label: 'Equals', requiresValue: true },
@@ -33,6 +35,13 @@ export const ACTION_TYPES: ActionType[] = [
     defaultConfig: { tableId: '', operation: 'add_row' },
     editor: TableActionEditor,
     handler: TableActionHandler,
+  },
+  {
+    id: 'show_detail',
+    label: 'Show row in detail',
+    defaultConfig: { tableId: '', detailId: '', detailPageId: '' },
+    editor: ShowDetailEditor,
+    handler: ShowDetailHandler,
   },
 ];
 
