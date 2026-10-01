@@ -38,13 +38,14 @@ describe('DataManager', () => {
     { id: 6, name: 'Orders', format: 'csv', columns: ['id'], rowCount: 40 },
   ];
 
-  it('lists the data sources, opens the first one and shows its dashboard', () => {
+  it('lists the data sources, opens the first one and shows its figures and typed columns', () => {
     const el: HTMLElement = mount(SOURCES).nativeElement;
 
-    expect([...el.querySelectorAll('.source-name')].map((n) => n.textContent)).toEqual(['People', 'Orders']);
+    expect([...el.querySelectorAll('.item-name')].map((n) => n.textContent)).toEqual(['People', 'Orders']);
     expect(openId()).toBe(5);
-    expect(el.querySelector('.source.selected .source-name')?.textContent).toBe('People');
-    expect([...el.querySelectorAll('.stat-value')].map((v) => v.textContent)).toEqual(['2', '2', '75%', '1']);
+    expect(el.querySelector('.item.selected .item-name')?.textContent).toBe('People');
+    expect([...el.querySelectorAll('.figure dd')].map((v) => v.textContent)).toEqual(['2', '2', '75%', '1']);
+    expect([...el.querySelectorAll('.col-type')].map((t) => t.textContent)).toEqual(['text', 'number']);
     expect(el.querySelectorAll('tbody tr').length).toBe(2);
   });
 
@@ -53,13 +54,13 @@ describe('DataManager', () => {
     fixture.componentInstance.query.set('ord');
     fixture.detectChanges();
 
-    expect([...fixture.nativeElement.querySelectorAll('.source-name')].map((n: Element) => n.textContent)).toEqual(['Orders']);
+    expect([...fixture.nativeElement.querySelectorAll('.item-name')].map((n: Element) => n.textContent)).toEqual(['Orders']);
   });
 
   it('invites to import the first dataset when there are none', () => {
     const el: HTMLElement = mount([]).nativeElement;
 
-    expect(el.querySelector('.welcome')?.textContent).toContain('Connect your first dataset');
+    expect(el.querySelector('.empty')?.textContent).toContain('No data sources');
     expect(openId()).toBeNull();
   });
 });

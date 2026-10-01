@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, output } from '@angular/core';
-import { LucideSheet, LucideTrash2, LucideUpload } from '@lucide/angular';
+import { LucideChevronRight, LucideSheet, LucideTrash2 } from '@lucide/angular';
 import { DataSourceStateService } from '../../_services/data-source-state.service';
 import { DataSourceSummaryDto } from '../../api/models';
 import { DATA_SOURCE_FORMATS } from '../../_constants/data-source.constants';
@@ -7,7 +7,7 @@ import { DATA_SOURCE_FORMATS } from '../../_constants/data-source.constants';
 /** The project's data sources: import files (CSV, ...), open or delete one. */
 @Component({
   selector: 'app-data-source-list',
-  imports: [LucideSheet, LucideTrash2, LucideUpload],
+  imports: [LucideChevronRight, LucideSheet, LucideTrash2],
   templateUrl: './data-source-list.html',
   styleUrl: './data-source-list.scss',
 })

@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { PageNavigationService } from './page-navigation.service';
@@ -14,7 +15,7 @@ describe('PageNavigationService', () => {
     sessionStorage.clear();
     TestBed.configureTestingModule({
       providers: [
-        { provide: PagesStateService, useValue: { page: () => ({ id: 7, name: 'About' }) } },
+        { provide: PagesStateService, useValue: { pages: signal([]), ensureLoaded: () => {}, page: () => ({ id: 7, name: 'About' }) } },
       ],
     });
     vi.spyOn(TestBed.inject(Router), 'navigate').mockImplementation(async (...args: unknown[]) => {

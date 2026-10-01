@@ -1,63 +1,57 @@
-<div class="data-source-detail">
-  <div class="detail-header">
-    <button type="button" class="icon-action" title="Back to data" aria-label="Back to data" (click)="back.emit()">
-      <svg lucideArrowLeft></svg>
-    </button>
-    <span class="title">{{ source()?.name ?? 'Data source' }}</span>
+<div class="panel">
+  <nav class="nav">
+    <button type="button" class="back" (click)="back.emit()"><svg lucideChevronLeft></svg> Data</button>
     @if (source()) {
-      <button type="button" class="icon-action danger" title="Delete" aria-label="Delete data source" (click)="requestDelete()">
+      <button type="button" class="icon-btn" title="Delete" aria-label="Delete data source" (click)="requestDelete()">
         <svg lucideTrash2></svg>
       </button>
     }
-  </div>
+  </nav>
 
   @if (source(); as source) {
-    <div class="stats">
-      <div class="stat"><span class="stat-value">{{ columns().length }}</span><span class="stat-label">Columns</span></div>
-      <div class="stat"><span class="stat-value">{{ rows().length }}</span><span class="stat-label">Rows</span></div>
-      <div class="stat"><span class="stat-value">{{ filledPercent() }}%</span><span class="stat-label">Filled</span></div>
-      <div class="stat"><span class="stat-value">{{ source.format?.toUpperCase() }}</span><span class="stat-label">Format</span></div>
-    </div>
+    <p class="overline">{{ source.format?.toUpperCase() }} data source</p>
+    <h2 class="title">{{ source.name }}</h2>
 
-    <h4 class="section-title">Columns</h4>
-    <ul class="column-list">
+    <ul class="group">
+      <li class="row">Rows <span class="row-value">{{ rows().length }}</span></li>
+      <li class="row">Columns <span class="row-value">{{ columns().length }}</span></li>
+      <li class="row">Complete <span class="row-value">{{ filledPercent() }}%</span></li>
+    </ul>
+
+    <h3 class="group-title">Columns</h3>
+    <ul class="group">
       @for (column of columnInfo(); track column.index) {
-        <li class="column">
-          <span class="column-name">{{ column.name }}</span>
-          <span class="type-badge" [attr.data-type]="column.type">{{ column.type }}</span>
-        </li>
+        <li class="row"><span class="name">{{ column.name }}</span> <span class="row-value">{{ column.type }}</span></li>
       }
     </ul>
 
-    <h4 class="section-title">Preview</h4>
-    <div class="preview">
-      <div class="preview-scroll">
-        <table>
-          <thead>
+    <h3 class="group-title">Preview</h3>
+    <div class="group table">
+      <table>
+        <thead>
+          <tr>
+            @for (column of columns(); track $index) {
+              <th>{{ column }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of previewRows(); track $index) {
             <tr>
-              @for (column of columns(); track $index) {
-                <th>{{ column }}</th>
+              @for (value of row; track $index) {
+                <td>{{ value }}</td>
               }
             </tr>
-          </thead>
-          <tbody>
-            @for (row of previewRows(); track $index) {
-              <tr>
-                @for (value of row; track $index) {
-                  <td>{{ value }}</td>
-                }
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      @if (hiddenRowCount() > 0) {
-        <div class="preview-footer">+ {{ hiddenRowCount() }} more rows</div>
-      }
+          }
+        </tbody>
+      </table>
     </div>
+    @if (hiddenRowCount() > 0) {
+      <p class="footnote">Showing {{ previewRows().length }} of {{ rows().length }} rows.</p>
+    }
   } @else if (error(); as error) {
-    <div class="error-message">{{ error }}</div>
+    <p class="footnote error">{{ error }}</p>
   } @else {
-    <div class="message">Loading…</div>
+    <p class="footnote"><span class="ui-spinner"></span> Loading…</p>
   }
 </div>

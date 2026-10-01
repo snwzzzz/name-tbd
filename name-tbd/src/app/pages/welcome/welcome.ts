@@ -1,12 +1,11 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
 import { LucideDatabase, LucideFile, LucideFolderOpen, LucideLayoutTemplate, LucidePanelsTopLeft } from '@lucide/angular';
 import { PageControllerService } from '../../api/services/pageController.service';
-import { EDITOR_NAVIGATION, TabsService } from '../../_services/tabs.service';
+import { TabsService } from '../../_services/tabs.service';
+import { PageNavigationService } from '../../_services/page-navigation.service';
 import { ModalService } from '../../_services/modal/modal.service';
 import { PagesStateService } from '../../_services/pages-state.service';
 import { panelTab } from '../../_constants/sidebar-tabs.constants';
-import { EditorMode } from '../../_types/tab.types';
 import { CreatePageModal, CreatePageResult } from './create-page-modal/create-page-modal';
 import { PagePickerData, PagePickerModal } from './page-picker-modal/page-picker-modal';
 import { RecentPagesService } from '../../_services/recent-pages.service';
@@ -38,7 +37,7 @@ export class Welcome implements OnInit {
   private readonly tabs = inject(TabsService);
   private readonly modalService = inject(ModalService);
   private readonly pagesState = inject(PagesStateService);
-  private readonly router = inject(Router);
+  private readonly navigation = inject(PageNavigationService);
   private readonly recentPages = inject(RecentPagesService);
 
   /** The project's pages (shared with links and the layout layer, so they stay in sync). */
@@ -91,7 +90,7 @@ export class Welcome implements OnInit {
   openOrCreateLayoutPage(): void {
     const layout = this.layoutPage();
     if (layout?.id != null) {
-      this.openPage(layout.id, layout.name);
+      this.openPage(layout.id);
       return;
     }
     if (this.creatingLayout()) return;
@@ -100,7 +99,7 @@ export class Welcome implements OnInit {
       next: (page) => {
         this.creatingLayout.set(false);
         this.pagesState.refresh();
-        this.openPage(page.id!, page.name);
+        this.openPage(page.id!);
       },
       error: (err) => {
         this.creatingLayout.set(false);
@@ -114,29 +113,16 @@ export class Welcome implements OnInit {
     this.tabs.openPanel('data', panelTab('data')?.label ?? 'Data');
   }
 
-  openPage(id: number, name?: string): void {
-    const title = name ?? this.pages().find((p) => p.id === id)?.name ?? `Page ${id}`;
-    this.openInTab(id.toString(), title, 'edit');
+  /** Opens the page in its own tab (or switches to it); the Start tab stays. */
+  openPage(id: number): void {
+    this.navigation.openPage(id);
   }
 
   private createPage({ name, path, layout }: CreatePageResult): void {
     this.pageService.createPage({ branchId: DEFAULT_BRANCH_ID, name, path, layout }).subscribe((page) => {
       // The pages list, links and the layout layer pick up the new page
       this.pagesState.refresh();
-      this.openPage(page.id!, page.name);
+      this.openPage(page.id!);
     });
-  }
-
-  /** Turn this Start tab into the page's tab, or switch to the page's tab if it's already open. */
-  private openInTab(id: string, title: string, mode: EditorMode): void {
-    const currentTabId = this.tabs.activeTabId();
-    const alreadyOpen = this.tabs.tabs().some((t) => t.id === id);
-
-    if (alreadyOpen) {
-      if (currentTabId?.startsWith('welcome-')) this.tabs.closeTab(currentTabId);
-    } else if (currentTabId) {
-      this.tabs.updateTabState(currentTabId, { id, title, mode });
-    }
-    this.router.navigate(['/editor', id, mode], EDITOR_NAVIGATION);
   }
 }

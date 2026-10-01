@@ -1,166 +1,88 @@
 @use '../../_styles/scrollbar' as *;
-
-// Styles are encapsulated, so class names alone are specific enough (kept flat to stay small)
+@use '../../_styles/grouped-list' as *;
 
 :host {
   display: block;
   height: 100%;
 }
 
-.data-source-detail {
+.panel {
   height: 100%;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.5rem;
   overflow-y: auto;
-  background-color: var(--color-surface);
+  padding: 0.5rem 0.75rem 1rem;
+  background: var(--color-surface);
   color: var(--color-text-primary);
   @include thin-scrollbar;
 }
 
-.detail-header {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
+// At the top level, so the rules below can adjust it
+@include grouped-list;
 
-.title {
-  flex: 1;
-  min-width: 0;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.icon-action {
-  display: flex;
-  padding: 0.25rem;
-  border: none;
-  border-radius: 0.25rem;
-  background: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-
-  &:hover {
-    background: var(--color-surface-hover);
-    color: var(--color-text-primary);
-  }
-
-  &.danger:hover {
-    color: var(--color-danger);
-  }
-
-  svg {
-    width: 1rem;
-    height: 1rem;
-  }
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.375rem;
-  flex-shrink: 0;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  padding: 0.375rem 0.5rem;
-  border-radius: 0.375rem;
-  background: var(--color-surface-secondary);
-  min-width: 0;
-}
-
-.stat-value {
-  font-weight: 600;
-  font-size: var(--font-size-sm);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stat-label,
-.preview-footer {
-  font-size: var(--font-size-2xs);
-  color: var(--color-text-secondary);
-}
-
-.section-title {
-  margin: 0.25rem 0 0;
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.column-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.column {
+.nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.25rem 0.125rem;
-
-  & + & {
-    border-top: calc(1rem / 16) solid var(--color-border);
-  }
+  margin-bottom: 0.5rem;
 }
 
-.column-name {
+button {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+// Back to the list, in the accent color (like a navigation bar's back button)
+.back {
+  gap: 0.125rem;
+  padding: 0.25rem 0.375rem 0.25rem 0;
+  color: var(--color-primary);
   font-size: var(--font-size-sm);
+
+  &:hover { text-decoration: underline; }
+}
+
+.icon-btn {
+  padding: 0.3125rem;
+  border-radius: 0.375rem;
+  color: var(--color-text-secondary);
+
+  svg { width: 0.875rem; height: 0.875rem; }
+  &:hover { background: var(--color-surface-hover); color: var(--color-danger); }
+}
+
+.overline {
+  margin: 0 0.25rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.title {
+  margin: 0 0.25rem 0.875rem;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.type-badge {
-  flex-shrink: 0;
-  padding: 0 0.375rem;
-  border-radius: 1rem;
-  font-size: var(--font-size-2xs);
-  background: var(--color-neutral-light);
-  color: var(--color-neutral-dark);
-
-  &[data-type='number'] {
-    background: var(--color-info-light);
-    color: var(--color-info-dark);
-  }
-
-  &[data-type='boolean'] {
-    background: var(--color-warning-light);
-    color: var(--color-warning-dark);
-  }
-
-  &[data-type='date'] {
-    background: var(--color-success-light);
-    color: var(--color-success-dark);
-  }
-}
-
-.preview {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  border: calc(1rem / 16) solid var(--color-border);
-  border-radius: 0.375rem;
-  overflow: hidden;
-}
-
-.preview-scroll {
+.table {
+  max-height: 18rem;
   overflow: auto;
-  max-height: 20rem;
   @include thin-scrollbar;
 }
 
@@ -172,35 +94,27 @@ table {
 
 th,
 td {
-  padding: 0.25rem 0.5rem;
-  border-bottom: calc(1rem / 16) solid var(--color-border);
+  padding: 0.3125rem 0.625rem;
   text-align: left;
-  max-width: 12rem;
+  max-width: 11rem;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+td { border-top: 1px solid var(--color-border); }
+
 th {
   position: sticky;
   top: 0;
-  background: var(--color-surface-secondary);
+  background: var(--color-surface);
+  box-shadow: inset 0 -1px var(--color-border);
   font-weight: 600;
 }
 
-.preview-footer {
-  padding: 0.25rem 0.5rem;
+.footnote {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
 }
 
-.error-message {
-  padding: 0.375rem 0.5rem;
-  border-radius: 0.375rem;
-  font-size: var(--font-size-xs);
-  color: var(--color-danger-dark);
-  background: var(--color-danger-light);
-  overflow-wrap: anywhere;
-}
-
-.message {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
+.error { color: var(--color-danger); }

@@ -52,7 +52,7 @@
         <div class="table">
           <div class="row head"><span>Name</span><span>Path</span><span>Last opened</span></div>
           @for (row of recentRows(); track row.page.id) {
-            <button type="button" class="row" (click)="openPage(row.page.id!, row.page.name)">
+            <button type="button" class="row" (click)="openPage(row.page.id!)">
               <span class="name">
                 <svg lucideFile class="blue"></svg>{{ row.page.name }}
                 @if (row.page.layout) { <span class="badge">Layout</span> }

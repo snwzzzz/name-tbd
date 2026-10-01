@@ -22,7 +22,10 @@ describe('Welcome (Start tab)', () => {
       providers: [
         {
           provide: PagesStateService,
-          useValue: { pages, loaded: signal(true), layoutPage: signal(pages().find((p) => p.layout) ?? null), refresh: () => {} },
+          useValue: {
+            pages, loaded: signal(true), layoutPage: signal(pages().find((p) => p.layout) ?? null),
+            refresh: () => {}, ensureLoaded: () => {}, page: (id: number) => pages().find((p) => p.id === id),
+          },
         },
         { provide: RecentPagesService, useValue: { recent } },
         {

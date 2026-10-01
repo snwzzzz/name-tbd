@@ -1,15 +1,21 @@
 <div class="layers-panel">
-  <div class="list-header">
-    <span class="list-title">Layers</span>
+  <header class="header">
+    <h2>Layers</h2>
     @if (count()) {
-      <span class="count">{{ count() }}</span>
+      <span class="count">{{ count() }} {{ count() === 1 ? 'widget' : 'widgets' }}</span>
     }
-  </div>
+  </header>
 
   @if (!hasPage()) {
-    <p class="empty-state">Open a page to see its layers.</p>
+    <div class="empty-state">
+      <p class="empty-title">No page open</p>
+      <p>Open a page to see its widgets here.</p>
+    </div>
   } @else if (layers().length === 0) {
-    <p class="empty-state">No widgets on this page yet. Drag some in from Components.</p>
+    <div class="empty-state">
+      <p class="empty-title">No widgets yet</p>
+      <p>Drag some in from Components.</p>
+    </div>
   } @else {
     <ul class="layer-list" role="tree">
       <ng-container *ngTemplateOutlet="layerItems; context: { $implicit: layers(), depth: 0 }" />

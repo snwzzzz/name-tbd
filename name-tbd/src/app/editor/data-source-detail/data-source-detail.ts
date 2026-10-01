@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, input, output } from '@angular/core';
-import { LucideArrowLeft, LucideTrash2 } from '@lucide/angular';
+import { LucideChevronLeft, LucideTrash2 } from '@lucide/angular';
 import { DataSourceStateService } from '../../_services/data-source-state.service';
 import { DataSourceDto, DataSourceSummaryDto } from '../../api/models';
 import { DATA_SOURCE_PREVIEW_ROWS } from '../../_constants/data-source.constants';
@@ -8,7 +8,7 @@ import { describeColumns } from '../../_utils/data-source.utils';
 /** One data source in the sidebar: overview, per-column info, and a preview of its rows. */
 @Component({
   selector: 'app-data-source-detail',
-  imports: [LucideArrowLeft, LucideTrash2],
+  imports: [LucideChevronLeft, LucideTrash2],
   templateUrl: './data-source-detail.html',
   styleUrl: './data-source-detail.scss',
 })

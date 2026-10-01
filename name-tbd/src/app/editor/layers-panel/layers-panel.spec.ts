@@ -43,7 +43,7 @@ describe('LayersPanel', () => {
 
     expect(names(el)).toEqual(['Container', 'Text Label', 'Button']);
     expect(el.textContent).toContain('Save');
-    expect(el.querySelector('.count')?.textContent).toBe('3');
+    expect(el.querySelector('.count')?.textContent?.trim()).toBe('3 widgets');
   });
 
   it('selects a widget on click and folds containers', () => {

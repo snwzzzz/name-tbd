@@ -1,57 +1,50 @@
 <div class="manager">
-  <aside class="sources">
-    <header class="sources-header">
-      <div>
-        <h1>Data</h1>
-        <p>{{ sources().length }} {{ sources().length === 1 ? 'source' : 'sources' }}</p>
-      </div>
-      <label class="import" [class.busy]="loading()">
+  <aside class="pane">
+    <div class="pane-header">
+      <h1>Data</h1>
+      <label class="icon-btn" [class.disabled]="loading()" [title]="'Import ' + formatLabels + ' file'">
         @if (loading()) { <span class="ui-spinner"></span> } @else { <svg lucideUpload></svg> }
-        Import
-        <input type="file" [accept]="accept" [disabled]="loading()" (change)="onFileChosen($event)" />
+        <input type="file" [accept]="accept" [disabled]="loading()" [attr.aria-label]="'Import ' + formatLabels + ' file'" (change)="onFileChosen($event)" />
       </label>
-    </header>
+    </div>
 
     <label class="search">
       <svg lucideSearch></svg>
-      <input type="search" placeholder="Filter sources" aria-label="Filter data sources" [value]="query()" (input)="query.set($any($event.target).value)" />
+      <input type="search" placeholder="Search" aria-label="Search data sources" [value]="query()" (input)="query.set($any($event.target).value)" />
     </label>
 
     @if (error(); as error) {
-      <p class="error">{{ error }}</p>
+      <p class="error" role="alert">{{ error }}</p>
     }
 
-    <ul class="source-list">
+    <nav class="list" aria-label="Data sources">
       @for (source of visibleSources(); track source.id) {
-        <li>
-          <button type="button" class="source" [class.selected]="selectedId() === source.id" (click)="select(source.id!)">
-            <span class="source-icon"><svg lucideSheet></svg></span>
-            <span class="source-info">
-              <span class="source-name">{{ source.name }}</span>
-              <span class="source-meta">{{ source.columns?.length ?? 0 }} columns · {{ source.rowCount }} rows</span>
-            </span>
-            <span class="format">{{ source.format }}</span>
-          </button>
-        </li>
+        <button type="button" class="item" [class.selected]="selectedId() === source.id" [attr.aria-current]="selectedId() === source.id" (click)="select(source.id!)">
+          <svg lucideSheet></svg>
+          <span class="item-text">
+            <span class="item-name">{{ source.name }}</span>
+            <span class="item-meta">{{ source.format?.toUpperCase() }} · {{ source.columns?.length ?? 0 }} columns</span>
+          </span>
+          <span class="item-count">{{ source.rowCount }}</span>
+        </button>
       } @empty {
         @if (!loading()) {
-          <li class="none">{{ query() ? 'No sources match.' : 'No data sources yet.' }}</li>
+          <p class="none">{{ query() ? 'No results' : 'No data sources' }}</p>
         }
       }
-    </ul>
+    </nav>
   </aside>
 
-  <main class="detail">
+  <main class="content">
     @if (selectedId(); as id) {
       <app-data-manager-detail [id]="id" (deleteRequested)="confirmDelete($event)" />
     } @else {
-      <div class="welcome">
-        <span class="welcome-icon"><svg lucideDatabase></svg></span>
-        <h2>Connect your first dataset</h2>
-        <p>Import a {{ formatLabels }} file. Tables, detail sections and workflows across your pages can then use it.</p>
-        <label class="import">
-          <svg lucideUpload></svg>
-          Import {{ formatLabels }}
+      <div class="empty">
+        <span class="empty-icon"><svg lucideDatabase></svg></span>
+        <h2>No data sources</h2>
+        <p>Import a {{ formatLabels }} file to use its rows in tables, detail sections and workflows.</p>
+        <label class="primary">
+          Import {{ formatLabels }}…
           <input type="file" [accept]="accept" (change)="onFileChosen($event)" />
         </label>
       </div>

@@ -16,7 +16,8 @@ export const routes: Routes = [
       { path: ':tabId/welcome', loadComponent: () => import('./pages/welcome/welcome').then((m) => m.Welcome) },
       { path: ':tabId/panel', loadComponent: () => import('./pages/panel-page/panel-page').then((m) => m.PanelPage) },
       { path: ':tabId', redirectTo: ':tabId/welcome', pathMatch: 'full' },
-      { path: '', redirectTo: '1/welcome', pathMatch: 'full' },
+      // The Start tab (not tab '1', which would be page 1's)
+      { path: '', redirectTo: 'welcome-0/welcome', pathMatch: 'full' },
     ],
   },
 ];
