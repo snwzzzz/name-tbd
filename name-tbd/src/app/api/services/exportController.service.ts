@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestOptions } from "../models";
+import { RequestOptions, AppDefinition } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class ExportControllerService {
@@ -25,11 +25,42 @@ export class ExportControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    exportPage(pageId: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<string>;
-    exportPage(pageId: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<string>>;
-    exportPage(pageId: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<string>>;
-    exportPage(pageId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
-        const url = `${this.basePath}/api/export/page/${pageId}`;
+    getExportFormats(observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<string>>;
+    getExportFormats(observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<string>>>;
+    getExportFormats(observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<string>>>;
+    getExportFormats(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/export/formats`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    exportApp(branchId: number, format?: string, observe?: 'body', options?: RequestOptions<'blob'>): Observable<string>;
+    exportApp(branchId: number, format?: string, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<string>>;
+    exportApp(branchId: number, format?: string, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<string>>;
+    exportApp(branchId: number, format?: string, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/branches/${branchId}/export`;
+
+        let params = new HttpParams();
+        if (format != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, format, 'format');
+        }
 
         let headers: HttpHeaders;
         if (options?.headers instanceof HttpHeaders) {
@@ -45,7 +76,34 @@ export class ExportControllerService {
         return this.httpClient.request('get', url, {
             observe,
             headers,
+            params,
             responseType: 'blob',
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    getDefinition(branchId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<AppDefinition>;
+    getDefinition(branchId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<AppDefinition>>;
+    getDefinition(branchId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<AppDefinition>>;
+    getDefinition(branchId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/branches/${branchId}/definition`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

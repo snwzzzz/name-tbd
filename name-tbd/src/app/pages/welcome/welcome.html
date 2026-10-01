@@ -1,38 +1,68 @@
-<div class="welcome-container">
-  <div class="welcome-header">
-    <h1>Application Builder</h1>
-    <p>Design your UI, connect your workflows, and build faster.</p>
-  </div>
+<div class="start">
+  <div class="column">
+    <header>
+      <h1>Application Builder</h1>
+      <p class="lead">Build internal apps on your company's data: assemble pages, wire up the logic, ship.</p>
+    </header>
 
-  <div class="dashboard-grid">
-    <button type="button" class="card create-card" (click)="openCreatePageModal()">
-      <span class="card-icon"><svg lucideLayoutTemplate></svg></span>
-      <h3>New UI Page</h3>
-      <p>Create a new blank page to design your interface.</p>
-    </button>
-
-    <button type="button" class="card create-card" (click)="createWorkflow()">
-      <span class="card-icon"><svg lucideGitMerge></svg></span>
-      <h3>New Workflow</h3>
-      <p>Build a new logic flow to connect your components.</p>
-    </button>
-
-    <button type="button" class="card create-card" (click)="openOpenPageModal()">
-      <span class="card-icon"><svg lucideFolderOpen></svg></span>
-      <h3>Open Page...</h3>
-      <p>Browse and open existing pages in this application.</p>
-    </button>
-  </div>
-
-  <div class="recent-section">
-    <h3>Recent Workflows</h3>
-    <div class="list-container">
-      @for (workflow of workflows(); track workflow.id) {
-        <button type="button" class="list-item" (click)="openWorkflow(workflow.id!)">
-          <svg lucideWorkflow class="list-icon"></svg>
-          <span class="item-name">{{ workflow.name }}</span>
-        </button>
-      }
+    <div class="features">
+      <article class="feature blue">
+        <div class="art"><span class="art-card"><svg lucideLayoutTemplate></svg></span></div>
+        <h2>Build a page</h2>
+        <p>Assemble screens from components and wire them to your data and workflows.</p>
+        <button type="button" class="primary" (click)="openCreatePageModal()">New page</button>
+      </article>
+      <article class="feature violet">
+        <div class="art"><span class="art-card"><svg lucideFolderOpen></svg></span></div>
+        <h2>Open a page</h2>
+        <p>Find any page of the app by name or path and keep building where you left off.</p>
+        <button type="button" class="primary" [disabled]="!pages().length" (click)="openPagePicker()">Open a page</button>
+      </article>
+      <article class="feature teal">
+        <div class="art"><span class="art-card"><svg lucideDatabase></svg></span></div>
+        <h2>Manage data</h2>
+        <p>Import the datasets your apps run on and keep them in one place.</p>
+        <button type="button" class="primary" (click)="manageData()">Manage data</button>
+      </article>
     </div>
+
+    <section>
+      <h2 class="section-title">Quick access</h2>
+      <div class="tiles">
+        <button type="button" class="tile" [disabled]="creatingLayout()" (click)="openOrCreateLayoutPage()">
+          <span class="tile-icon violet">
+            @if (creatingLayout()) { <span class="ui-spinner"></span> } @else { <svg lucidePanelsTopLeft></svg> }
+          </span>
+          {{ layoutPage() ? 'Layout page' : 'Create layout page' }}
+        </button>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">Recent pages</h2>
+      @if (!pagesLoaded()) {
+        <p class="empty"><span class="ui-spinner"></span> Loading pages…</p>
+      } @else if (recentRows().length === 0) {
+        <div class="empty">
+          <svg lucideFile class="empty-icon"></svg>
+          <span>No pages yet</span>
+          <button type="button" class="outline" (click)="openCreatePageModal()">Create a page</button>
+        </div>
+      } @else {
+        <div class="table">
+          <div class="row head"><span>Name</span><span>Path</span><span>Last opened</span></div>
+          @for (row of recentRows(); track row.page.id) {
+            <button type="button" class="row" (click)="openPage(row.page.id!)">
+              <span class="name">
+                <svg lucideFile class="blue"></svg>{{ row.page.name }}
+                @if (row.page.layout) { <span class="badge">Layout</span> }
+              </span>
+              <span class="muted">{{ row.page.path }}</span>
+              <span class="muted">{{ row.lastOpened }}</span>
+            </button>
+          }
+        </div>
+      }
+    </section>
   </div>
 </div>

@@ -1,0 +1,28 @@
+// Shared by the editor (src/styles.scss) and the exported app (src/runtime/styles.scss).
+
+// =====================================================
+// GLOBAL RESET
+// =====================================================
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-weight: 500;
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  background-color: var(--color-bg-canvas);
+  color: var(--color-text-primary);
+}

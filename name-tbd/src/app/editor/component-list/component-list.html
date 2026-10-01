@@ -3,31 +3,86 @@
     <span class="list-title">Components</span>
   </div>
 
-  <ul class="item-list">
-    @for (item of items; track item.type) {
-      <!--
-        .gs-drag-item is what the canvas grid accepts on drop; data-type tells it which widget
-        to create, the gs-* attributes the size it's dropped at. Deliberately no .grid-stack-item:
-        GridStack's own CSS for it would break the palette layout. .grid-stack-item-content gives
-        the dropped widget its size inside the grid cell.
-      -->
-      <li>
-        <div
-          class="gs-drag-item palette-item"
-          [attr.data-type]="item.type"
-          [attr.gs-w]="item.w"
-          [attr.gs-h]="item.h"
-          [attr.gs-min-w]="item.minW || (item.resizable === false ? item.w : null)"
-          [attr.gs-min-h]="item.minH || (item.resizable === false ? item.h : null)"
-          [attr.gs-size-to-content]="item.type === 'form' ? 'true' : null"
-          [attr.gs-no-resize]="item.resizable === false ? 'true' : null">
-          <div class="grid-stack-item-content palette-card">
-            <span class="item-icon"><svg lucideComponent></svg></span>
-            <span class="item-label">{{ item.label }}</span>
-            <span class="grab-handle-icon"><svg lucideGripVertical></svg></span>
-          </div>
-        </div>
-      </li>
+  @if (!canPlace()) {
+    <div class="mode-note" role="note">
+      <svg lucideInfo></svg>
+      @if (onWelcome()) {
+        <span>Open or create a page to place components on it.</span>
+      } @else {
+        <span>
+          Components can only be placed in Edit mode.
+          <button type="button" class="link-btn" (click)="switchToEditMode()">Switch to Edit mode</button>
+          <span class="keys">({{ editModeKeys }})</span>
+        </span>
+      }
+    </div>
+  }
+
+  <label class="search">
+    <svg lucideSearch></svg>
+    <input
+      type="search"
+      placeholder="Search components"
+      aria-label="Search components"
+      [value]="query()"
+      (input)="query.set($any($event.target).value)"
+      (keydown.escape)="query.set('')" />
+  </label>
+
+  <div class="sections" [class.locked]="!canPlace()">
+    @if (searching()) {
+      <ul class="item-list">
+        @for (item of results(); track item.type) {
+          <ng-container *ngTemplateOutlet="card; context: { $implicit: item }" />
+        } @empty {
+          <li class="empty-state">No components match “{{ query() }}”.</li>
+        }
+      </ul>
+    } @else {
+      @for (group of groups(); track group.category.id) {
+        <button
+          type="button"
+          class="section-header"
+          [attr.aria-expanded]="!isCollapsed(group.category.id)"
+          (click)="toggle(group.category.id)">
+          @if (isCollapsed(group.category.id)) { <svg lucideChevronRight></svg> } @else { <svg lucideChevronDown></svg> }
+          <span class="section-label">{{ group.category.label }}</span>
+          <span class="section-count">{{ group.items.length }}</span>
+        </button>
+        @if (!isCollapsed(group.category.id)) {
+          <ul class="item-list">
+            @for (item of group.items; track item.type) {
+              <ng-container *ngTemplateOutlet="card; context: { $implicit: item }" />
+            }
+          </ul>
+        }
+      }
     }
-  </ul>
+  </div>
 </div>
+
+<!--
+  .gs-drag-item is what the canvas grid accepts on drop; data-type tells it which widget
+  to create, the gs-* attributes the size it's dropped at. Deliberately no .grid-stack-item:
+  GridStack's own CSS for it would break the palette layout. .grid-stack-item-content gives
+  the dropped widget its size inside the grid cell.
+-->
+<ng-template #card let-item>
+  <li>
+    <div
+      class="gs-drag-item palette-item"
+      [attr.data-type]="item.type"
+      [attr.gs-w]="item.w"
+      [attr.gs-h]="item.h"
+      [attr.gs-min-w]="item.minW || (item.resizable === false ? item.w : null)"
+      [attr.gs-min-h]="item.minH || (item.resizable === false ? item.h : null)"
+      [attr.gs-size-to-content]="item.type === 'form' ? 'true' : null"
+      [attr.gs-no-resize]="item.resizable === false ? 'true' : null">
+      <div class="grid-stack-item-content palette-card">
+        <span class="item-icon"><ng-container *ngComponentOutlet="icon(item)" /></span>
+        <span class="item-label">{{ item.label }}</span>
+        <span class="grab-handle-icon"><svg lucideGripVertical></svg></span>
+      </div>
+    </div>
+  </li>
+</ng-template>

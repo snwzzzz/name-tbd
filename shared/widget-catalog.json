@@ -1,0 +1,130 @@
+{
+  "$comment": "The one registry of widget types, read by the frontend (editor and exported runtime) and the backend. A widget is added here and as a component in the frontend (see widget-registry.constants.ts). Prop types beyond string/number/color/boolean/select/textarea have their own editor (PROP_EDITORS).",
+  "version": 1,
+  "categories": [
+    { "id": "basic", "label": "Basic" },
+    { "id": "actions", "label": "Actions" },
+    { "id": "navigation", "label": "Navigation" },
+    { "id": "data", "label": "Data" },
+    { "id": "layout", "label": "Layout" }
+  ],
+  "widgets": [
+    {
+      "type": "label",
+      "name": "Text Label",
+      "icon": "type",
+      "category": "basic",
+      "keywords": ["text", "heading", "paragraph"],
+      "size": { "w": 2, "h": 1, "minW": 1, "minH": 1 },
+      "resizable": true,
+      "props": [
+        { "key": "text", "type": "string", "label": "Text", "default": "New Label", "group": "Content" },
+        { "key": "color", "type": "color", "label": "Color", "default": "#1f1f1f", "group": "Style" },
+        { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
+      ]
+    },
+    {
+      "type": "button",
+      "name": "Button",
+      "icon": "mouse-pointer-click",
+      "category": "actions",
+      "keywords": ["click", "trigger", "workflow"],
+      "size": { "w": 2, "h": 1, "minW": 1, "minH": 1 },
+      "resizable": true,
+      "props": [
+        { "key": "label", "type": "string", "label": "Label", "default": "Click Me", "group": "Content" },
+        { "key": "color", "type": "color", "label": "Color", "default": "#3b82f6", "group": "Style" },
+        { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
+      ]
+    },
+    {
+      "type": "link",
+      "name": "Link",
+      "icon": "link",
+      "category": "navigation",
+      "keywords": ["a", "href", "url", "hyperlink", "anchor"],
+      "size": { "w": 2, "h": 1 },
+      "resizable": true,
+      "props": [
+        { "key": "text", "type": "string", "label": "Text", "group": "Content", "default": "Link" },
+        { "key": "pageId", "type": "page", "label": "Page", "group": "Target", "default": "" },
+        { "key": "url", "type": "string", "label": "URL (when no page is picked)", "group": "Target", "default": "" },
+        { "key": "newTab", "type": "boolean", "label": "Open in new tab", "group": "Target", "default": "false" },
+        { "key": "color", "type": "color", "label": "Color", "group": "Style", "default": "#2f89ff" },
+        { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
+      ]
+    },
+    {
+      "type": "nav",
+      "name": "Nav Menu",
+      "icon": "navigation",
+      "category": "navigation",
+      "keywords": ["navbar", "menu", "navigation", "header", "sidebar"],
+      "size": { "w": 8, "h": 1 },
+      "resizable": true,
+      "props": [
+        { "key": "pages", "type": "pages", "label": "Pages", "group": "Links", "default": "[]" },
+        { "key": "vertical", "type": "boolean", "label": "Vertical", "group": "Style", "default": "false" },
+        { "key": "highlightCurrent", "type": "boolean", "label": "Highlight current page", "group": "Style", "default": "true" },
+        { "key": "color", "type": "color", "label": "Color", "group": "Style", "default": "#1f1f1f" },
+        { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
+      ]
+    },
+    {
+      "type": "table",
+      "name": "Data Table",
+      "icon": "sheet",
+      "category": "data",
+      "keywords": ["grid", "rows", "csv", "list"],
+      "size": { "w": 6, "h": 4, "minW": 3, "minH": 2 },
+      "resizable": true,
+      "props": [
+        { "key": "dataSourceId", "type": "dataSource", "label": "Data source", "group": "Data", "default": "" },
+        { "key": "columns", "type": "columns", "label": "Columns", "group": "Data", "default": "[]" },
+        { "key": "title", "type": "string", "label": "Title", "group": "Display", "default": "" },
+        { "key": "maxRows", "type": "number", "label": "Max rows", "group": "Display", "default": "10" },
+        { "key": "showHeader", "type": "boolean", "label": "Show header", "group": "Display", "default": "true" },
+        { "key": "striped", "type": "boolean", "label": "Striped rows", "group": "Display", "default": "false" },
+        { "key": "textSize", "type": "select", "label": "Text size", "group": "Display", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] },
+        { "key": "multiSelect", "type": "boolean", "label": "Multi-select rows", "group": "Behavior", "default": "false" }
+      ]
+    },
+    {
+      "type": "detail",
+      "name": "Detail Section",
+      "icon": "panels-top-left",
+      "category": "data",
+      "keywords": ["record", "row", "details", "fields", "view"],
+      "size": { "w": 6, "h": 4, "minW": 3, "minH": 2 },
+      "resizable": true,
+      "props": [
+        { "key": "dataSourceId", "type": "dataSource", "label": "Data source (for its fields)", "group": "Data", "default": "" },
+        { "key": "columns", "type": "columns", "label": "Fields", "group": "Data", "default": "[]" },
+        { "key": "title", "type": "string", "label": "Title", "group": "Display", "default": "" },
+        { "key": "emptyText", "type": "string", "label": "Text when empty", "group": "Display", "default": "Nothing selected yet." },
+        { "key": "textSize", "type": "select", "label": "Text size", "group": "Display", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
+      ]
+    },
+    {
+      "type": "container",
+      "name": "Container",
+      "icon": "square-dashed",
+      "category": "layout",
+      "keywords": ["group", "box", "section"],
+      "size": { "w": 4, "h": 3, "minW": 2, "minH": 2 },
+      "resizable": true,
+      "container": true,
+      "props": []
+    },
+    {
+      "type": "form",
+      "name": "Form Container",
+      "icon": "text-cursor-input",
+      "category": "basic",
+      "palette": false,
+      "size": { "w": 4, "h": 3, "minH": 3 },
+      "resizable": false,
+      "props": []
+    }
+  ]
+}

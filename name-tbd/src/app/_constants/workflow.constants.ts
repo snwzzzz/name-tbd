@@ -1,5 +1,8 @@
 import { ActionType, ConditionOperator } from '../_types/workflow.types';
 import { Rect } from '../_types/viewport.types';
+import { SetTextEditor } from '../editor/action-editors/set-text-editor';
+import { TableActionEditor } from '../editor/action-editors/table-action-editor';
+import { ShowDetailEditor } from '../editor/action-editors/show-detail-editor';
 
 export const CONDITION_OPERATORS: ConditionOperator[] = [
   { id: 'equals', label: 'Equals', requiresValue: true },
@@ -11,17 +14,36 @@ export const CONDITION_OPERATORS: ConditionOperator[] = [
   { id: 'isFalse', label: 'Is False', requiresValue: false },
 ];
 
-// Only actions the preview runtime (workflow-runtime.service.ts) can execute are listed here.
+/**
+ * The actions workflow nodes can perform, as the editor offers them: label, default settings and
+ * settings editor. What each one does is its handler in the runtime core (ACTION_HANDLERS, by the
+ * same id). A new action: an entry here and its handler there.
+ */
 export const ACTION_TYPES: ActionType[] = [
   {
     id: 'set_text',
     label: 'Change text',
     defaultConfig: { targetId: '', text: '', resetEnabled: false, resetAfterSeconds: 5 },
+    editor: SetTextEditor,
+  },
+  {
+    id: 'table',
+    label: 'Table action',
+    defaultConfig: { tableId: '', operation: 'add_row' },
+    editor: TableActionEditor,
+  },
+  {
+    id: 'show_detail',
+    label: 'Show row in detail',
+    defaultConfig: { tableId: '', detailId: '', detailPageId: '' },
+    editor: ShowDetailEditor,
   },
 ];
 
-/** The event a button's click trigger listens to. */
-export const CLICK_EVENT = 'element_click';
+export { CLICK_EVENT, ROW_DOUBLE_CLICK_EVENT } from './widget-events.constants';
+
+// Widget triggers live in the runtime core; re-exported for the editor
+export { WIDGET_TRIGGERS, widgetTrigger } from '../core/workflow/widget-triggers';
 
 // ─── Workflow editor viewport ─────────────────────────────────────────────────
 /** The area nodes live in (world coordinates). Nodes can't be dropped outside it. */

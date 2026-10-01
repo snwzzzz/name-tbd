@@ -1,16 +1,18 @@
 <div class="editor-container">
   <app-navbar />
   <div class="editor-body">
-    <app-resource-navigation />
+    <app-sidebar side="left" />
     <div class="editor-content-area">
       <div class="editor-top-bar">
         <app-editor-tabs class="tabs-area" />
-        <app-mode-dropdown />
+        @if (hasModes()) {
+          <app-mode-dropdown />
+        }
       </div>
       <main class="editor-main">
         <router-outlet />
       </main>
     </div>
-    <app-inspector-panel />
+    <app-sidebar side="right" />
   </div>
 </div>

@@ -153,6 +153,7 @@ export interface NewPageCommand {
     name?: string;
     path?: string;
     branchId?: number;
+    layout?: boolean;
 }
 
 export interface PageDto {
@@ -160,6 +161,23 @@ export interface PageDto {
     name?: string;
     path?: string;
     branchId?: number;
+    layout?: boolean;
+}
+
+export interface NewDataSourceCommand {
+    branchId?: number;
+    name?: string;
+    format?: string;
+    content?: string;
+}
+
+export interface DataSourceDto {
+    id?: number;
+    name?: string;
+    format?: string;
+    branchId?: number;
+    columns?: Array<string>;
+    rows?: Array<Array<string>>;
 }
 
 export interface NewBranchCommand {
@@ -174,12 +192,34 @@ export interface NewApplicationCommand {
     description?: string;
 }
 
-export interface WidgetPropDefinition {
+export interface WidgetPropDefinitionDto {
     id?: number;
     widgetType?: string;
     propKey?: string;
     propType?: string;
     defaultValue?: string;
+    label?: string;
+    group?: string;
+    options?: Array<string>;
+}
+
+export interface DataSourceSummaryDto {
+    id?: number;
+    name?: string;
+    format?: string;
+    branchId?: number;
+    columns?: Array<string>;
+    rowCount?: number;
+}
+
+export interface App {
+    id?: number;
+    name?: string;
+}
+
+export interface AppDefinition {
+    version?: number;
+    app?: App;
 }
 
 /** Request Options for Angular HttpClient requests */

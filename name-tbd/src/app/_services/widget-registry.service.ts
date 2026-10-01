@@ -1,34 +1,25 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { WidgetPropDefinitionControllerService } from '../api/services/widgetPropDefinitionController.service';
-import { WidgetPropDefinition } from '../_types/widget.types';
+import { Injectable } from '@angular/core';
+import { WidgetPropDefinition, WidgetPropType } from '../_types/widget.types';
+import { CatalogProp, catalogWidget } from '../core/catalog/widget-catalog';
 
-/** Definitions of the widget props that show up in the properties panel, loaded per widget type. */
+const toDefinition = (widgetType: string) => (prop: CatalogProp, index: number): WidgetPropDefinition => ({
+  id: index,
+  widgetType,
+  propKey: prop.key,
+  propType: prop.type as WidgetPropType,
+  defaultValue: prop.default ?? '',
+  label: prop.label,
+  group: prop.group,
+  options: prop.options,
+});
+
+/**
+ * The settings the properties panel shows for each widget type, from the widget catalog. Position
+ * and size aren't among them: they're set on the canvas.
+ */
 @Injectable({ providedIn: 'root' })
 export class WidgetRegistryService {
-  private readonly api = inject(WidgetPropDefinitionControllerService);
-
-  /** Definitions by widget type ('global' ones apply to every widget). */
-  readonly propDefinitions = signal<Record<string, WidgetPropDefinition[]>>({});
-
-  // Types already requested, so each type is fetched only once
-  private readonly requestedTypes = new Set<string>();
-
-  loadDefinitionsForType(type: string): void {
-    if (this.requestedTypes.has(type)) return;
-    this.requestedTypes.add(type);
-
-    this.api.getDefinitionsByType(type).subscribe({
-      // The generated type lacks label/group/options, which the backend does send
-      next: (defs) => this.propDefinitions.update((all) => ({ ...all, [type]: defs as WidgetPropDefinition[] })),
-      error: (err) => {
-        this.requestedTypes.delete(type);
-        console.error(`Failed to load prop definitions for widget type "${type}"`, err);
-      },
-    });
-  }
-
   getPropsForWidget(type: string): WidgetPropDefinition[] {
-    const defs = this.propDefinitions();
-    return [...(defs['global'] ?? []), ...(defs[type] ?? [])];
+    return (catalogWidget(type)?.props ?? []).map(toDefinition(type));
   }
 }

@@ -1,5 +1,6 @@
 package com.example.ntbd.service;
 
+import com.example.ntbd.Exception.DuplicateResourceException;
 import com.example.ntbd.Exception.PageNotFoundException;
 import com.example.ntbd.commands.NewPageCommand;
 import com.example.ntbd.domain.Branch;
@@ -26,10 +27,16 @@ public class PageService {
         Branch branch = branchRepository.findById(new Branch.BranchId(command.branchId()))
                 .orElseThrow(() -> new RuntimeException("Branch not found with id: " + command.branchId()));
 
+        boolean layout = Boolean.TRUE.equals(command.layout());
+        if (layout && pageRepository.existsByBranch_IdAndLayoutTrue(branch.getId())) {
+            throw new DuplicateResourceException("Branch " + command.branchId() + " already has a layout page");
+        }
+
         Page page = Page.builder()
                 .name(command.name())
                 .path(command.path())
                 .branch(branch)
+                .layout(layout)
                 .build();
 
         return PageMapper.toDto(pageRepository.saveAndFlush(page));
@@ -38,6 +45,13 @@ public class PageService {
     @Transactional
     public List<PageDto> findAll() {
         return pageRepository.findAll().stream()
+                .map(PageMapper::toDto)
+                .toList();
+    }
+
+    @Transactional
+    public List<PageDto> findByBranchId(Long branchId) {
+        return pageRepository.findByBranch_Id(new Branch.BranchId(branchId)).stream()
                 .map(PageMapper::toDto)
                 .toList();
     }

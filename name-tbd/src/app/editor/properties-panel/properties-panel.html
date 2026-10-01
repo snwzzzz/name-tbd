@@ -1,17 +1,16 @@
 <div class="properties-panel">
   @if (selectedItem(); as item) {
-    <div class="panel-header">
-      <span class="panel-title">Properties</span>
-    </div>
-
-    <!-- The selected element, drawn like a component-list card -->
-    <div class="selected-card">
-      <span class="item-icon"><ng-container *ngComponentOutlet="definition().icon" /></span>
-      <span class="item-label">{{ definition().name }}</span>
-      @if (item.id != null) {
-        <span class="item-id">#{{ item.id }}</span>
-      }
-    </div>
+    <!-- An inspector header: what's selected, quietly -->
+    <header class="inspector-header">
+      <p class="overline">Properties</p>
+      <div class="selected">
+        <span class="item-icon"><ng-container *ngComponentOutlet="definition().icon" /></span>
+        <h2 class="item-name">{{ definition().name }}</h2>
+        @if (item.id != null) {
+          <span class="item-id">#{{ item.id }}</span>
+        }
+      </div>
+    </header>
 
     <div class="panel-body">
       @if (hasDynamicSettings()) {
@@ -25,24 +24,24 @@
       }
     </div>
 
-    <div class="panel-footer">
-      <button
-        type="button"
-        [class]="'save-btn state-' + saveState()"
-        [disabled]="saveState() === 'saving'"
-        (click)="save()">
-        @switch (saveState()) {
-          @case ('saving') { <svg lucideLoaderCircle class="spin"></svg> Saving… }
-          @case ('saved') { <svg lucideCheck></svg> Saved }
-          @case ('error') { <svg lucideCircleAlert></svg> Error — Retry }
-          @default { <svg lucideSave></svg> Save }
+    <!-- Edits save by themselves (see PropsAutosaveService); this just tells how it's going -->
+    <div class="panel-footer" role="status" aria-live="polite">
+      @switch (saveState()) {
+        @case ('unsaved') { <span class="save-status"><span class="dot"></span> Unsaved changes…</span> }
+        @case ('saving') { <span class="save-status"><span class="ui-spinner"></span> Saving…</span> }
+        @case ('error') {
+          <span class="save-status error"><svg lucideCircleAlert></svg> Couldn't save</span>
+          <button type="button" class="retry-btn" (click)="saveNow()">Retry</button>
         }
-      </button>
+        @case ('saved') { <span class="save-status saved"><svg lucideCheck></svg> All changes saved</span> }
+        @default { <span class="save-status">Changes save automatically</span> }
+      }
     </div>
   } @else {
     <div class="panel-empty">
       <span class="empty-icon"><svg lucideMousePointerClick></svg></span>
-      <p>Select an element on the canvas to edit its properties.</p>
+      <p class="empty-title">Nothing selected</p>
+      <p>Select a widget on the canvas or in Layers to edit its properties.</p>
     </div>
   }
 </div>

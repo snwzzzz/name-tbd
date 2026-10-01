@@ -5,3 +5,30 @@ export function propText(props: WidgetProps | undefined, key: string): string | 
   const value = props?.[key];
   return value == null || value === '' ? undefined : String(value);
 }
+
+/** A boolean prop; props loaded from the backend are text, so 'true' counts as true. */
+export function propBool(props: WidgetProps | undefined, key: string, fallback: boolean): boolean {
+  const value = props?.[key];
+  if (typeof value === 'boolean') return value;
+  const text = propText(props, key);
+  return text === undefined ? fallback : text.trim() === 'true';
+}
+
+/** A number prop, or the fallback when it isn't a number. */
+export function propNumber(props: WidgetProps | undefined, key: string, fallback: number): number {
+  const text = propText(props, key);
+  const value = text === undefined ? NaN : Number(text);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+/** A list prop, stored as a JSON array (e.g. '["a","b"]'); anything else counts as an empty list. */
+export function parseJsonList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value !== 'string' || value.trim() === '') return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}

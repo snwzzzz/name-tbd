@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestOptions, WidgetPropDefinition } from "../models";
+import { RequestOptions, WidgetPropDefinitionDto } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class WidgetPropDefinitionControllerService {
@@ -51,9 +51,9 @@ export class WidgetPropDefinitionControllerService {
         });
     }
 
-    getDefinitionsByType(type: string, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<WidgetPropDefinition>>;
-    getDefinitionsByType(type: string, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<WidgetPropDefinition>>>;
-    getDefinitionsByType(type: string, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<WidgetPropDefinition>>>;
+    getDefinitionsByType(type: string, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<WidgetPropDefinitionDto>>;
+    getDefinitionsByType(type: string, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<WidgetPropDefinitionDto>>>;
+    getDefinitionsByType(type: string, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<WidgetPropDefinitionDto>>>;
     getDefinitionsByType(type: string, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/widget-props/${type}`;
 

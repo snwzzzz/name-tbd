@@ -1,0 +1,17 @@
+<nav class="nav" [class.vertical]="vertical()" [class.live]="previewing()" [style.color]="color()">
+  @if (links().length) {
+    <ul>
+      @for (page of links(); track page.id) {
+        <li>
+          <a
+            [href]="page.path"
+            [class.current]="isCurrent(page)"
+            [attr.aria-current]="isCurrent(page) ? 'page' : null"
+            (click)="follow($event, page)">{{ page.name }}</a>
+        </li>
+      }
+    </ul>
+  } @else {
+    <span class="empty">Pick pages in the properties panel</span>
+  }
+</nav>

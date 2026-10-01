@@ -1,0 +1,37 @@
+<!-- Not a <form>: app-button has no type, so any of its buttons would submit it -->
+<div class="row-form-modal">
+  <h3 class="dialog-title">{{ data.title }}</h3>
+
+  <div class="ui-fields fields">
+    @for (field of data.fields; track $index; let i = $index) {
+      <div class="ui-field">
+        @if (inputType(i) === 'checkbox') {
+          <label class="ui-check">
+            <input type="checkbox" [checked]="checked(i)" (change)="set(i, $any($event.target).checked ? 'true' : 'false')" />
+            {{ field.name }}
+            <span class="type">{{ field.type }}</span>
+          </label>
+        } @else {
+          <label class="ui-field-label" [for]="'row-field-' + i">
+            {{ field.name }} <span class="type">{{ field.type }}</span>
+          </label>
+          <input
+            class="ui-input"
+            [id]="'row-field-' + i"
+            [type]="inputType(i)"
+            [value]="values()[i]"
+            (input)="set(i, $any($event.target).value)"
+            (keydown.enter)="submit()" />
+          @if (errors()[i]; as error) {
+            <span class="error">{{ error }}</span>
+          }
+        }
+      </div>
+    }
+  </div>
+
+  <div class="dialog-actions">
+    <app-button color="neutral" variant="ghost" (click)="cancel()">Cancel</app-button>
+    <app-button [disabled]="!valid()" (click)="submit()">{{ data.submitText }}</app-button>
+  </div>
+</div>

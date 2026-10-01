@@ -25,6 +25,7 @@ $ah: 50.625rem;
   position: relative;
   overflow: hidden;
 
+  // Plus the global .blueprint-grid, following pan and zoom (see backdropGrid in canvas.ts)
   background-color: var(--color-bg-canvas);
 
   cursor: default;
@@ -50,9 +51,9 @@ $ah: 50.625rem;
   width: $aw;
   height: $ah;
 
-  // Pan happens via transform (set by [style.transform] binding)
+  // Pan happens via transform (set by [style.transform] binding). No will-change: it makes the
+  // browser scale a cached bitmap of the artboard, which blurs it while zooming.
   transform-origin: center center;
-  will-change: transform;
 
   background-color: var(--color-surface);
   // Visual grid overlay matching the 24 columns and 18 rows
@@ -191,5 +192,14 @@ $ah: 50.625rem;
 
   ::ng-deep .grid-stack-item[data-type='button'] > .grid-stack-item-content {
     cursor: pointer;
+  }
+
+  // Clicks between this page's widgets reach the layout page's widgets underneath
+  ::ng-deep .artboard > .grid-stack {
+    pointer-events: none;
+  }
+
+  ::ng-deep .artboard > .grid-stack .grid-stack-item {
+    pointer-events: auto;
   }
 }

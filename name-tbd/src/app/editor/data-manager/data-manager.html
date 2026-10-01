@@ -1,0 +1,53 @@
+<div class="manager">
+  <aside class="pane">
+    <div class="pane-header">
+      <h1>Data</h1>
+      <label class="icon-btn" [class.disabled]="loading()" [title]="'Import ' + formatLabels + ' file'">
+        @if (loading()) { <span class="ui-spinner"></span> } @else { <svg lucideUpload></svg> }
+        <input type="file" [accept]="accept" [disabled]="loading()" [attr.aria-label]="'Import ' + formatLabels + ' file'" (change)="onFileChosen($event)" />
+      </label>
+    </div>
+
+    <label class="search">
+      <svg lucideSearch></svg>
+      <input type="search" placeholder="Search" aria-label="Search data sources" [value]="query()" (input)="query.set($any($event.target).value)" />
+    </label>
+
+    @if (error(); as error) {
+      <p class="error" role="alert">{{ error }}</p>
+    }
+
+    <nav class="list" aria-label="Data sources">
+      @for (source of visibleSources(); track source.id) {
+        <button type="button" class="item" [class.selected]="selectedId() === source.id" [attr.aria-current]="selectedId() === source.id" (click)="select(source.id!)">
+          <svg lucideSheet></svg>
+          <span class="item-text">
+            <span class="item-name">{{ source.name }}</span>
+            <span class="item-meta">{{ source.format?.toUpperCase() }} · {{ source.columns?.length ?? 0 }} columns</span>
+          </span>
+          <span class="item-count">{{ source.rowCount }}</span>
+        </button>
+      } @empty {
+        @if (!loading()) {
+          <p class="none">{{ query() ? 'No results' : 'No data sources' }}</p>
+        }
+      }
+    </nav>
+  </aside>
+
+  <main class="content">
+    @if (selectedId(); as id) {
+      <app-data-manager-detail [id]="id" (deleteRequested)="confirmDelete($event)" />
+    } @else {
+      <div class="empty">
+        <span class="empty-icon"><svg lucideDatabase></svg></span>
+        <h2>No data sources</h2>
+        <p>Import a {{ formatLabels }} file to use its rows in tables, detail sections and workflows.</p>
+        <label class="primary">
+          Import {{ formatLabels }}…
+          <input type="file" [accept]="accept" (change)="onFileChosen($event)" />
+        </label>
+      </div>
+    }
+  </main>
+</div>

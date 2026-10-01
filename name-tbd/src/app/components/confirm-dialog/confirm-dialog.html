@@ -8,13 +8,15 @@
   </div>
 
   <div class="dialog-actions">
-    <app-button
-      color="neutral"
-      variant="ghost"
-      (click)="onCancel()"
-    >
-      {{ data.cancelText || 'Cancel' }}
-    </app-button>
+    @if (!data.hideCancel) {
+      <app-button
+        color="neutral"
+        variant="ghost"
+        (click)="onCancel()"
+      >
+        {{ data.cancelText || 'Cancel' }}
+      </app-button>
+    }
 
     <app-button
       [color]="confirmButtonColor()"

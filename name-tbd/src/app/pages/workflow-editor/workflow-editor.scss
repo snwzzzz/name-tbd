@@ -85,7 +85,8 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: transparent;
+  // Transparent, so the world border shows through; the global .blueprint-grid lines run across both
+  background-color: transparent;
 
   &.is-panning {
     cursor: grab;

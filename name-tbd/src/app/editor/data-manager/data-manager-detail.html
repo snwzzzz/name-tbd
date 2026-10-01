@@ -1,0 +1,53 @@
+@if (source(); as source) {
+  <div class="detail">
+    <header class="header">
+      <div class="title">
+        <p class="overline">{{ source.format?.toUpperCase() }} data source</p>
+        <h2>{{ source.name }}</h2>
+      </div>
+      <button type="button" class="command" (click)="requestDelete()"><svg lucideTrash2></svg> Delete</button>
+    </header>
+
+    <dl class="summary">
+      @for (stat of stats(); track stat.label) {
+        <div class="figure">
+          <dt>{{ stat.label }}</dt>
+          <dd>{{ stat.value }}</dd>
+        </div>
+      }
+    </dl>
+
+    <!-- Each column's type sits under its name, like in a spreadsheet -->
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th class="num" scope="col"></th>
+            @for (column of columnInfo(); track column.index) {
+              <th scope="col">
+                <span class="col-name">{{ column.name }}</span>
+                <span class="col-type">{{ column.type }}</span>
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track $index; let i = $index) {
+            <tr>
+              <td class="num">{{ i + 1 }}</td>
+              @for (value of row; track $index) {
+                <td>{{ value }}</td>
+              }
+            </tr>
+          } @empty {
+            <tr><td class="num" [attr.colspan]="columns().length + 1">No rows</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+} @else if (error(); as error) {
+  <p class="message">{{ error }}</p>
+} @else {
+  <p class="message"><span class="ui-spinner"></span> Loading…</p>
+}

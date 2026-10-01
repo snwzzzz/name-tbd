@@ -1,0 +1,21 @@
+// Fills the artboard, under its GridStack grid
+:host {
+  position: absolute;
+  inset: 0;
+  // Only for looking at while editing: the page's own grid gets every click
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+// In a preview the widgets work (the gaps between them still let clicks through)
+:host(.interactive) {
+  opacity: 1;
+
+  ::ng-deep .widget {
+    pointer-events: auto;
+  }
+}
+
+:host(.hidden) {
+  display: none;
+}

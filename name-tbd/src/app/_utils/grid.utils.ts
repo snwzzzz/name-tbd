@@ -1,7 +1,8 @@
 import { GridItemHTMLElement, GridStack, GridStackNode } from 'gridstack';
 import { ComponentId, GridGeometry, LayoutItem } from '../_types/layout.types';
 import { newTemporaryId, toComponentId } from './component-id.utils';
-import { RESIZABLE_WIDGET_TYPES, subGridOptions } from '../_constants/artboard.constants';
+import { subGridOptions } from '../_constants/artboard.constants';
+import { RESIZABLE_WIDGET_TYPES } from '../_constants/widget-registry.constants';
 
 // Helpers for the canvas's GridStack grids. A widget's DOM element carries its type in
 // `data-type` and its component id in `data-gs-id` (a temporary id until it's saved).

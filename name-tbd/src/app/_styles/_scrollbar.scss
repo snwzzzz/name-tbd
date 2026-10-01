@@ -1,0 +1,25 @@
+// A slim scrollbar for dense panels (tables, previews).
+// Chromium/Safari use the ::-webkit-scrollbar rules; browsers without them (Firefox) get the
+// standard `thin` width. The standard property isn't set everywhere, because in Chromium it
+// overrides the (slimmer) ::-webkit-scrollbar styling.
+@mixin thin-scrollbar($size: 0.25rem) {
+  &::-webkit-scrollbar {
+    width: $size;
+    height: $size;
+  }
+
+  &::-webkit-scrollbar-track,
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: $size;
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+}

@@ -1,0 +1,114 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.sidebar {
+  display: flex;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  transition: width 0.2s ease;
+
+  &.resizing {
+    transition: none; /* Disable transition during drag */
+    user-select: none; /* Prevent text selection */
+  }
+}
+
+// The icon bar sits on the outer edge: left sidebar on its left, right sidebar on its right
+:host(.side-left) .sidebar {
+  flex-direction: row;
+  border-right: 1px solid var(--color-border);
+
+  .icon-bar {
+    border-right: 1px solid var(--color-border);
+  }
+
+  .resizer {
+    right: -2px;
+  }
+}
+
+:host(.side-right) .sidebar {
+  flex-direction: row-reverse;
+  border-left: 1px solid var(--color-border);
+
+  .icon-bar {
+    border-left: 1px solid var(--color-border);
+  }
+
+  .resizer {
+    left: -2px;
+  }
+}
+
+.icon-bar {
+  width: 3rem;
+  height: 100%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  background-color: var(--color-surface);
+}
+
+.open-in-tab {
+  margin-top: auto;
+  display: flex;
+  padding: 0.375rem;
+  border: none;
+  border-radius: 0.375rem;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+}
+
+// Dragging a tab icon: the icon follows the pointer and a gap shows where it will land
+.cdk-drag {
+  cursor: grab;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}
+
+.cdk-drag-animating,
+.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
+  transition: transform 0.2s ease;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden; /* Keep the flex layout intact while resizing */
+}
+
+.resizer {
+  position: absolute;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+
+  &:hover {
+    background-color: var(--color-primary);
+    opacity: 0.5;
+  }
+}

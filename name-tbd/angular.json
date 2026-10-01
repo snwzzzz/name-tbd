@@ -73,6 +73,61 @@
           "builder": "@angular/build:unit-test"
         }
       }
+    },
+    "runtime": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src/runtime",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/runtime/main.ts",
+            "index": "src/runtime/index.html",
+            "tsConfig": "tsconfig.runtime.json",
+            "inlineStyleLanguage": "scss",
+            "styles": [
+              "src/runtime/styles.scss"
+            ],
+            "outputPath": {
+              "base": "../ntbd/src/main/resources/export-runtime",
+              "browser": ""
+            },
+            "outputHashing": "none",
+            "extractLicenses": false
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              }
+            },
+            "development": {
+              "optimization": false,
+              "sourceMap": false
+            }
+          },
+          "defaultConfiguration": "production"
+        }
+      }
     }
   }
 }

@@ -1,4 +1,5 @@
 import { Point, Rect, Size } from '../_types/viewport.types';
+import { BACKDROP_GRID_MAJOR, BACKDROP_GRID_MIN_VISIBLE, BACKDROP_GRID_MINOR } from '../_constants/artboard.constants';
 
 export const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
@@ -41,5 +42,27 @@ export function fitToViewport(box: Rect, viewport: Size, padding: number, minZoo
   return {
     zoom,
     pan: { x: (viewport.w - box.w * zoom) / 2 - box.x * zoom, y: (viewport.h - box.h * zoom) / 2 - box.y * zoom },
+  };
+}
+
+/**
+ * The style that places the blueprint grid (see _blueprint-grid.scss) so it pans and zooms along:
+ * `origin` is where a major line crossing sits on screen, in px from the element's center or
+ * top-left corner. Minor lines fade out when they'd be too close together to tell apart.
+ */
+export function blueprintGridStyle(origin: Point, zoom: number, relativeTo: 'center' | 'top-left'): Record<string, string> {
+  const major = BACKDROP_GRID_MAJOR * zoom;
+  const minor = BACKDROP_GRID_MINOR * zoom;
+  // A background-position of `calc(50% + d)` puts a tile of size s at center - s/2 + d
+  const at = (size: number) =>
+    relativeTo === 'center'
+      ? `calc(50% + ${origin.x + size / 2}px) calc(50% + ${origin.y + size / 2}px)`
+      : `${origin.x}px ${origin.y}px`;
+  return {
+    '--grid-major-size': `${major}px`,
+    '--grid-minor-size': `${minor}px`,
+    '--grid-major-position': at(major),
+    '--grid-minor-position': at(minor),
+    '--grid-minor-color': minor < BACKDROP_GRID_MIN_VISIBLE ? 'transparent' : 'var(--canvas-grid-minor)',
   };
 }

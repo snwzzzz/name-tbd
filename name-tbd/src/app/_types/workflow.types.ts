@@ -1,3 +1,5 @@
+import { Type } from '@angular/core';
+import { LucideIcon } from '@lucide/angular';
 import { Point } from './viewport.types';
 
 export type FlowNodeType = 'Trigger' | 'Condition' | 'Action';
@@ -35,8 +37,21 @@ export interface SetTextConfig {
   resetAfterSeconds: number;
 }
 
-/** Config of any action (only `set_text` exists so far). */
-export type ActionConfig = SetTextConfig;
+/** Config of the table action: the data table it acts on, and what it does (see TABLE_OPERATIONS). */
+export interface TableActionConfig {
+  tableId: string;           // id of the data table on the page
+  operation: string;         // e.g. 'add_row'
+}
+
+/** Config of `show_detail`: shows the row selected in a table in a detail section (on any page). */
+export interface ShowDetailConfig {
+  tableId: string;           // id of the data table on this page
+  detailId: string;          // id of the detail section
+  detailPageId: string;      // the page the detail section is on (opened if it isn't this one)
+}
+
+/** Config of any action. */
+export type ActionConfig = SetTextConfig | TableActionConfig | ShowDetailConfig;
 
 export interface ActionNode extends FlowNodeBase {
   type: 'Action';
@@ -74,10 +89,44 @@ export interface ConditionOperator {
   requiresValue: boolean;
 }
 
+/** Whether the flow goes on after an action (a cancelled modal stops it). */
+export type ActionOutcome = 'continue' | 'stop';
+
+/** One run of an action node while a page is previewed. */
+export interface ActionRun {
+  pageId: string;
+  node: ActionNode;
+  /** False once the preview was stopped: the action must not change anything any more. */
+  isCurrent(): boolean;
+}
+
+/** Runs one action type in the preview. Implementations are injectable services. */
+export interface ActionHandler {
+  run(run: ActionRun): Promise<ActionOutcome>;
+  /** Undo what the action changed on the page (called when the preview stops). */
+  reset?(pageId: string): void;
+}
+
+/** An action as the editor offers it (what it does is its handler, see ACTION_HANDLERS). */
 export interface ActionType {
   id: string;
   label: string;
   defaultConfig: ActionConfig;
+  /** A component extending BaseActionEditor for this action's config (typed loosely: inputs are invariant). */
+  editor: Type<unknown>;
+}
+
+/** An event a widget type fires on the page that can start a flow (see WIDGET_TRIGGERS). */
+export interface WidgetTrigger {
+  widgetType: string;
+  event: string;
+  /** The trigger node's title, e.g. "On click". */
+  title: string;
+  icon: LucideIcon;
+  /** The prop that names the widget in the trigger picker (e.g. a button's label). */
+  nameProp: string;
+  /** e.g. `button “Save” (#4) is clicked`, for the trigger picker. */
+  describe(name: string): string;
 }
 
 /** The right-click menu of the workflow editor. */

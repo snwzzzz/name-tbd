@@ -1,0 +1,8 @@
+/* The exported app (angular.json project "runtime"): src/runtime plus the runtime core it uses. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "files": ["src/runtime/main.ts"]
+}

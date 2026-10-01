@@ -1,0 +1,41 @@
+<div class="panel">
+  <header class="header">
+    <h2>Data</h2>
+    <label class="text-btn" [class.disabled]="loading()" [title]="'Import ' + formatLabels + ' file'">
+      Import…
+      <input type="file" [accept]="accept" [disabled]="loading()" [attr.aria-label]="'Import ' + formatLabels + ' file'" (change)="onFileChosen($event)" />
+    </label>
+  </header>
+
+  @if (error(); as error) {
+    <p class="error" role="alert">{{ error }}</p>
+  }
+
+  @if (sources().length) {
+    <ul class="group">
+      @for (source of sources(); track source.id) {
+        <li class="row">
+          <button type="button" class="row-main" (click)="opened.emit(source.id!)">
+            <svg lucideSheet class="lead"></svg>
+            <span class="text">
+              <span class="name">{{ source.name }}</span>
+              <span class="meta">{{ source.columns?.length ?? 0 }} columns · {{ source.rowCount }} rows</span>
+            </span>
+            <svg lucideChevronRight class="chevron"></svg>
+          </button>
+          <button type="button" class="row-delete" title="Delete" [attr.aria-label]="'Delete ' + source.name" (click)="requestDelete(source, $event)">
+            <svg lucideTrash2></svg>
+          </button>
+        </li>
+      }
+    </ul>
+    <p class="footnote">Tables, detail sections and workflows can use these.</p>
+  } @else if (loading()) {
+    <p class="footnote"><span class="ui-spinner"></span> Loading…</p>
+  } @else {
+    <div class="empty">
+      <p class="empty-title">No data sources</p>
+      <p class="footnote">Import a {{ formatLabels }} file to use its rows on your pages.</p>
+    </div>
+  }
+</div>

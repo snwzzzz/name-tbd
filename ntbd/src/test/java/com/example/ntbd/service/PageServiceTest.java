@@ -1,5 +1,6 @@
 package com.example.ntbd.service;
 
+import com.example.ntbd.Exception.DuplicateResourceException;
 import com.example.ntbd.Exception.PageNotFoundException;
 import com.example.ntbd.commands.NewPageCommand;
 import com.example.ntbd.domain.Branch;
@@ -56,5 +57,30 @@ class PageServiceTest {
     void findById_NotFound() {
         when(pageRepository.findById(new Page.PageId(1L))).thenReturn(Optional.empty());
         assertThrows(PageNotFoundException.class, () -> pageService.findById(1L));
+    }
+
+    @Test
+    void createPage_Layout() {
+        Branch branch = new Branch();
+        branch.setId(new Branch.BranchId(1L));
+        when(branchRepository.findById(new Branch.BranchId(1L))).thenReturn(Optional.of(branch));
+        when(pageRepository.existsByBranch_IdAndLayoutTrue(branch.getId())).thenReturn(false);
+        when(pageRepository.saveAndFlush(any(Page.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PageDto result = pageService.createPage(new NewPageCommand("Layout", "/layout", 1L, true));
+
+        assertTrue(result.layout());
+    }
+
+    @Test
+    void createPage_SecondLayoutRejected() {
+        Branch branch = new Branch();
+        branch.setId(new Branch.BranchId(1L));
+        when(branchRepository.findById(new Branch.BranchId(1L))).thenReturn(Optional.of(branch));
+        when(pageRepository.existsByBranch_IdAndLayoutTrue(branch.getId())).thenReturn(true);
+
+        assertThrows(DuplicateResourceException.class,
+                () -> pageService.createPage(new NewPageCommand("Layout 2", "/layout-2", 1L, true)));
+        verify(pageRepository, never()).saveAndFlush(any());
     }
 }

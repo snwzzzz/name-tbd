@@ -22,12 +22,18 @@
   </div>
 
   <div class="actions">
+    @if (busy()) {
+      <!-- Only shows once a request takes a moment (see navbar.scss), so quick ones don't flicker -->
+      <span class="busy" role="status" aria-label="Loading"><span class="ui-spinner"></span></span>
+    }
+    <button type="button" class="icon-action" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts" (click)="showShortcuts()">
+      <svg lucideKeyboard></svg>
+    </button>
     <button
       type="button"
       class="export-btn"
-      [disabled]="!activeTabId()"
-      [title]="activeTabId() ? 'Download this page as HTML' : 'Open a page to export it'"
-      (click)="exportPage()">
+      title="Download the app as one HTML file that runs on its own"
+      (click)="exportApp()">
       <svg lucideDownload></svg>
       Export
     </button>

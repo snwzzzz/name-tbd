@@ -1,0 +1,46 @@
+<aside
+  class="sidebar"
+  [class.expanded]="expanded()"
+  [class.resizing]="resizing()"
+  [style.width.px]="renderedWidth()">
+  <div
+    class="icon-bar"
+    cdkDropList
+    [id]="listId"
+    [cdkDropListConnectedTo]="[otherListId]"
+    [cdkDropListData]="side"
+    (cdkDropListDropped)="drop($event)">
+    @for (tab of tabs(); track tab.id) {
+      <app-icon-button
+        cdkDrag
+        [cdkDragData]="tab.id"
+        [icon]="tab.icon"
+        [selected]="activeTab() === tab.id"
+        [attr.title]="tab.label + ' (drag to move)'"
+        (cdkDragStarted)="onDragStarted()"
+        (cdkDragEnded)="onDragEnded()"
+        (click)="select(tab.id)" />
+    }
+    @if (activeDefinition()?.openInTab) {
+      <!-- Outside the drop list's items, at the bottom of the bar -->
+      <button
+        type="button"
+        class="open-in-tab"
+        [title]="'Open ' + activeDefinition()!.label + ' in a tab'"
+        [attr.aria-label]="'Open ' + activeDefinition()!.label + ' in a tab'"
+        (click)="openInTab(activeDefinition()!)">
+        <svg lucideMaximize2></svg>
+      </button>
+    }
+  </div>
+
+  <div class="content">
+    @if (activeDefinition(); as tab) {
+      <ng-container *ngComponentOutlet="tab.component" />
+    }
+  </div>
+
+  @if (expanded()) {
+    <div class="resizer" appResizeHandle [side]="side" [min]="minWidth" [max]="maxWidth" [(width)]="width" [(resizing)]="resizing"></div>
+  }
+</aside>
