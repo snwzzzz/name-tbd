@@ -1,22 +1,24 @@
 import { GridStackOptions } from 'gridstack';
 
-// The artboard is a 16:9 website viewport:
-// 24 columns × 60px = 1440px wide, 18 rows × 45px = 810px tall.
-// A typical button (w:2, h:1) has ~112 × 37px of content after the 4px margins.
-export const ARTBOARD_WIDTH = 1440;
-export const ARTBOARD_HEIGHT = 810;
-export const GRID_COLUMNS = 24;
-export const GRID_ROWS = 18;
-export const CELL_HEIGHT = ARTBOARD_HEIGHT / GRID_ROWS;
+// The artboard is a desktop browser window's page area (2:1, like a 1920 × 1080 screen minus the
+// taskbar and the browser's toolbars): 72 × 36 square cells of 20px = 1440 × 720px.
+// Widget margins are 2px, so a typical button (w:5, h:2) has 96 × 36px of content.
+export const CELL_SIZE = 20;
+export const GRID_COLUMNS = 72;
+export const GRID_ROWS = 36;
+export const ARTBOARD_WIDTH = GRID_COLUMNS * CELL_SIZE;
+export const ARTBOARD_HEIGHT = GRID_ROWS * CELL_SIZE;
+/** Inset of a widget in its cells (each side), so neighbours keep a 4px gap. */
+export const WIDGET_MARGIN = 2;
 
 export const CANVAS_MIN_ZOOM = 0.05;
 export const CANVAS_MAX_ZOOM = 4;
 /**
  * The blueprint grid behind the artboard, in artboard px: both sizes divide the artboard
- * (1440 × 810) evenly, so its edges sit on major lines. Minor lines fade out below this on-screen size.
+ * (1440 × 720) evenly, so its edges sit on major lines. Minor lines fade out below this on-screen size.
  */
-export const BACKDROP_GRID_MINOR = 18;
-export const BACKDROP_GRID_MAJOR = 90;
+export const BACKDROP_GRID_MINOR = CELL_SIZE;
+export const BACKDROP_GRID_MAJOR = CELL_SIZE * 6;
 export const BACKDROP_GRID_MIN_VISIBLE = 6;
 
 /** Space kept around the artboard when fitting it into the viewport. */
@@ -27,9 +29,9 @@ const ACCEPTED_WIDGETS = '.gs-drag-item, .grid-stack-item';
 
 export const ROOT_GRID_OPTIONS: GridStackOptions = {
   column: GRID_COLUMNS,
-  cellHeight: CELL_HEIGHT,
-  margin: 4,
-  // Fixed row count locks the canvas to exactly 16:9
+  cellHeight: CELL_SIZE,
+  margin: WIDGET_MARGIN,
+  // Fixed row count locks the canvas to the artboard's height
   row: GRID_ROWS,
   // No responsive breakpoints, so the grid doesn't drop to 1 column when zoomed out
   columnOpts: { breakpoints: [] },
@@ -47,7 +49,7 @@ export function subGridOptions(rows: number): GridStackOptions {
     column: 'auto',
     row: rows,
     maxRow: rows,
-    cellHeight: CELL_HEIGHT,
+    cellHeight: CELL_SIZE,
     // Children sit flush inside the container
     margin: 0,
     acceptWidgets: ACCEPTED_WIDGETS,

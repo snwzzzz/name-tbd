@@ -39,6 +39,20 @@ describe('NavWidget', () => {
     expect(fakeApp().navigation.opened).toEqual([1]);
   });
 
+  it('takes its appearance, accent and background (underline and transparent by default)', () => {
+    const plain = mount({ pages: '["2"]' }).querySelector('nav') as HTMLElement;
+    expect(plain.classList).toContain('variant-underline');
+    expect(plain.style.background).toBe('');
+    expect(plain.style.getPropertyValue('--nav-accent')).toBe('#0f6cbd');
+
+    TestBed.resetTestingModule();
+    const filled = mount({ pages: '["2"]', variant: 'Filled', accentColor: '#c50f1f', background: '#f5f5f5' }).querySelector('nav') as HTMLElement;
+    expect(filled.classList).toContain('variant-filled');
+    expect(filled.classList).toContain('nav');
+    expect(filled.style.getPropertyValue('--nav-accent')).toBe('#c50f1f');
+    expect(filled.style.background).toBe('rgb(245, 245, 245)');
+  });
+
   it('asks for pages when none are chosen', () => {
     expect(mount({ pages: '[]' }).textContent).toContain('Pick pages');
   });

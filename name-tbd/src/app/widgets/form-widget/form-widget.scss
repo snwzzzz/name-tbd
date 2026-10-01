@@ -2,6 +2,7 @@
   display: block;
   width: 100%;
   min-height: 100%;
+  font-family: var(--widget-font);
 }
 
 .form-widget {
@@ -25,23 +26,40 @@
   margin-bottom: 12px;
 }
 
+// A Fluent input: hairline outline with a darker bottom edge that turns brand-colored on focus
 .form-input {
-  padding: 4px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-bg);
-  color: var(--color-text-primary);
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--widget-stroke);
+  border-bottom-color: var(--widget-stroke-accessible);
+  border-radius: var(--widget-radius);
+  background: var(--widget-bg);
+  color: var(--widget-fg);
+  font: inherit;
+
+  &:focus {
+    outline: none;
+    border-bottom: 2px solid var(--widget-brand);
+  }
 }
 
+// A Fluent secondary button
 .add-input {
-  padding: 6px;
-  border: none;
-  border-radius: 4px;
-  background: var(--color-surface-secondary);
-  color: var(--color-text-primary);
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--widget-stroke);
+  border-radius: var(--widget-radius);
+  background: var(--widget-bg);
+  color: var(--widget-fg);
+  font: inherit;
+  font-weight: 600;
   cursor: pointer;
 
   &:hover {
-    background: var(--color-surface-hover);
+    background: var(--widget-bg-hover);
+  }
+
+  &:active {
+    background: var(--widget-bg-pressed);
   }
 }

@@ -42,7 +42,7 @@ const BUTTON_ZOOM_STEP = 1.25;
 
 
 /**
- * The page editor: a 16:9 artboard with a GridStack grid (containers get nested grids).
+ * The page editor: a 2:1 artboard (a desktop browser window's page area) with a GridStack grid (containers get nested grids).
  * Widgets are Angular components mounted into the grid items; GridStack owns the layout,
  * and every move/resize/drop is persisted. In preview, widgets fire their events (WidgetEventsService) and the workflows run.
  */

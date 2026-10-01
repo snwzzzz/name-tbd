@@ -8,7 +8,7 @@ import { APP_DEFINITION } from '../app-definition.token';
 import { RuntimeLayout } from '../runtime-adapters';
 
 /**
- * The exported app: the artboard (as wide as the window, like a website), the layout page's
+ * The exported app: the artboard (as big as fits the window, like a website), the layout page's
  * widgets on it, and the current page (the router's) over them. Widgets' events run the page's
  * workflows.
  */
@@ -23,10 +23,16 @@ export class RuntimeShell {
 
   readonly width = ARTBOARD_WIDTH;
   readonly height = ARTBOARD_HEIGHT;
-  /** The width there is for the artboard (the window's, without a scrollbar). */
-  private readonly available = signal(window.innerWidth);
-  /** Drawn at its real size and zoomed to fill that width; taller than the window, it scrolls. */
-  readonly scale = computed(() => this.available() / ARTBOARD_WIDTH);
+  /** The room there is for the artboard (the window's). */
+  private readonly available = signal({ w: window.innerWidth, h: window.innerHeight });
+  /**
+   * Drawn at its real size and zoomed to fit the window: it fills its width (or height, in a
+   * window wider than the artboard's 2:1), and never needs scrollbars.
+   */
+  readonly scale = computed(() => {
+    const { w, h } = this.available();
+    return Math.min(w / ARTBOARD_WIDTH, h / ARTBOARD_HEIGHT) || 1;
+  });
 
   private readonly layoutPageId = inject(APP_DEFINITION).pages.find((p) => p.layout)?.id;
   readonly layoutItems = computed(() => (this.layoutPageId == null ? [] : this.layout.items(String(this.layoutPageId))));
@@ -36,9 +42,11 @@ export class RuntimeShell {
     const events = inject(WidgetEventsService).events$.subscribe(({ pageId, elementId, event }) =>
       workflows.handleEvent(pageId, elementId, event),
     );
-    // The shell's own width: unlike the window's, it changes when a scrollbar comes or goes
     const host: HTMLElement = inject(ElementRef).nativeElement;
-    const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => this.available.set(host.clientWidth));
+    const resize =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(() => this.available.set({ w: host.clientWidth, h: host.clientHeight }));
     resize?.observe(host);
     inject(DestroyRef).onDestroy(() => {
       events.unsubscribe();

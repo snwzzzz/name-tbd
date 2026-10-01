@@ -97,6 +97,30 @@ textarea.ui-input {
     font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
     text-transform: uppercase;
+
+    &.is-default {
+      font-family: inherit;
+      text-transform: none;
+    }
+  }
+
+  .ui-color-reset {
+    margin-left: auto;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    border: none;
+    border-radius: 0.25rem;
+    background: none;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--color-surface-secondary);
+      color: var(--color-text-primary);
+    }
   }
 }
 

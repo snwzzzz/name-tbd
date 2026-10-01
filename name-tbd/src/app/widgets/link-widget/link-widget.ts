@@ -3,7 +3,7 @@ import { BaseWidget } from '../../_directives/base-widget.directive';
 import { APP_NAVIGATION, APP_PAGES, APP_SESSION } from '../../core/ports/app-ports';
 import { propBool, propNumber } from '../../_utils/widget-props.utils';
 
-export const LINK_DEFAULT_COLOR = '#2f89ff';
+export const LINK_DEFAULT_COLOR = '#0f6cbd';
 
 /**
  * A hyperlink (`<a>`) to one of the project's pages, or to a URL when no page is picked.

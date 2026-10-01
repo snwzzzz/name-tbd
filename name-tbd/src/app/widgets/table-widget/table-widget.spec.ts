@@ -47,6 +47,19 @@ describe('TableWidget', () => {
     expect(texts(el, 'tbody tr:first-child td')).toEqual(['Alice', '30', 'Bern']);
   });
 
+  it('takes the picked background and header colors, falling back to the theme', () => {
+    const styled = render({ dataSourceId: '5', background: '#fafafa', headerBackground: '#0f6cbd', headerColor: '#ffffff' });
+    const table = styled.querySelector('.table-widget') as HTMLElement;
+    expect(table.style.getPropertyValue('--table-bg')).toBe('#fafafa');
+    expect(table.style.getPropertyValue('--table-header-bg')).toBe('#0f6cbd');
+    expect(table.style.getPropertyValue('--table-header-color')).toBe('#ffffff');
+
+    TestBed.resetTestingModule();
+    const plain = render({ dataSourceId: '5', background: '', headerBackground: '' }).querySelector('.table-widget') as HTMLElement;
+    expect(plain.style.getPropertyValue('--table-bg')).toBe('');
+    expect(plain.style.getPropertyValue('--table-header-bg')).toBe('');
+  });
+
   it('explains a missing or unknown data source', () => {
     expect(render({ dataSourceId: '' }).textContent).toContain('Pick a data source');
     TestBed.resetTestingModule();

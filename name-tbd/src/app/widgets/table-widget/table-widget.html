@@ -1,4 +1,8 @@
-<div class="table-widget">
+<div
+  class="table-widget"
+  [style.--table-bg]="background()"
+  [style.--table-header-bg]="headerBackground()"
+  [style.--table-header-color]="headerColor()">
   @if (title(); as title) {
     <div class="table-title">{{ title }}</div>
   }

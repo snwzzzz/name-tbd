@@ -1,6 +1,7 @@
 <ng-container *ngTemplateOutlet="grid; context: { $implicit: items(), columns: columns, rows: rows, root: true }" />
 
-<!-- One grid of cells; containers nest their own grid (as many cells as they're big, no margins) -->
+<!-- One grid of cells; containers nest their own grid (as many cells as they're big, no margins).
+     Like on the canvas, only the root grid's widgets are inset, and containers fill their cells. -->
 <ng-template #grid let-items let-columns="columns" let-rows="rows" let-root="root">
   <div
     class="layout-grid"
@@ -11,7 +12,8 @@
       <div
         class="cell"
         [style.grid-column]="((item.x ?? 0) + 1) + ' / span ' + (item.w ?? 1)"
-        [style.grid-row]="((item.y ?? 0) + 1) + ' / span ' + (item.h ?? 1)">
+        [style.grid-row]="((item.y ?? 0) + 1) + ' / span ' + (item.h ?? 1)"
+        [style.padding.px]="root && !isContainer(item) ? margin : 0">
         @if (isContainer(item)) {
           <ng-container *ngTemplateOutlet="grid; context: { $implicit: item.children ?? [], columns: item.w ?? 1, rows: item.h ?? 1, root: false }" />
         } @else {

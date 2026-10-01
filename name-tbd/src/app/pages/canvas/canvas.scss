@@ -2,7 +2,9 @@
 
 // ─── Artboard dimensions (keep in sync with _constants/artboard.constants.ts) ─
 $aw: 90rem;
-$ah: 50.625rem;
+$ah: 45rem;
+$columns: 72;
+$rows: 36;
 
 :host {
   display: block;
@@ -40,14 +42,14 @@ $ah: 50.625rem;
   }
 }
 
-// ─── Artboard (the 16:9 "page") ───────────────────────────────────────────────
+// ─── Artboard (the 2:1 "page") ────────────────────────────────────────────────
 .artboard {
   // Centered in viewport via negative margin (half of artboard size)
   position: absolute;
   top: 50%;
   left: 50%;
   margin-left: math.div(-$aw, 2); // -45rem
-  margin-top: math.div(-$ah, 2); // -25.3125rem
+  margin-top: math.div(-$ah, 2); // -22.5rem
   width: $aw;
   height: $ah;
 
@@ -56,11 +58,11 @@ $ah: 50.625rem;
   transform-origin: center center;
 
   background-color: var(--color-surface);
-  // Visual grid overlay matching the 24 columns and 18 rows
+  // Visual grid overlay matching the cells (one line per cell)
   background-image:
     linear-gradient(to right, rgba(0, 0, 0, 0.03) 0.0625rem, transparent 0.0625rem),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 0.0625rem, transparent 0.0625rem);
-  background-size: calc(100% / 24) calc(100% / 18);
+  background-size: calc(100% / #{$columns}) calc(100% / #{$rows});
 
   border-radius: 0.125rem;
   box-shadow:
@@ -73,7 +75,7 @@ $ah: 50.625rem;
 
 // ─── GridStack container matches artboard exactly ────────────────────────────
 // GridStack mounts on .grid-stack with position:relative + overflow:hidden.
-// row:18 × cellHeight:2.8125rem = 50.625rem height (artboard height).
+// row:36 × cellHeight:1.25rem = 45rem height (artboard height).
 // The grid MUST NOT add scrollbars — row count is fixed.
 :host ::ng-deep .artboard .grid-stack {
   width: 100% !important;
@@ -83,7 +85,7 @@ $ah: 50.625rem;
 
 // ─── Dropped grid items ───────────────────────────────────────────────────────
 :host ::ng-deep .grid-stack-item-content {
-  border-radius: 0.1875rem;
+  border-radius: var(--widget-radius);
   overflow: hidden !important;
 
   .grid-item-content {

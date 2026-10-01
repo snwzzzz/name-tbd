@@ -24,7 +24,7 @@
       </button>
     </app-zoom-controls>
 
-    <!-- The artboard (1440 × 810, 16:9). CSS zoom keeps GridStack's drag and drop working. -->
+    <!-- The artboard (1440 × 720, a desktop browser window's page area). CSS zoom keeps GridStack's drag and drop working. -->
     <div class="artboard" [style.zoom]="zoom()" [style.transform]="artboardTransform()">
       <!-- The layout page's widgets (navbar, ...), under this page's own -->
       <app-layout-overlay />

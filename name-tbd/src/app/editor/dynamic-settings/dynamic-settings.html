@@ -23,8 +23,12 @@
             }
             @case ('color') {
               <div class="ui-color">
-                <input type="color" [ngModel]="value(def)" (ngModelChange)="updateProp(def.propKey, $event)" />
-                <span class="ui-color-value">{{ value(def) }}</span>
+                <input type="color" [ngModel]="colorValue(def)" (ngModelChange)="updateProp(def.propKey, $event)" />
+                <span class="ui-color-value" [class.is-default]="!value(def)">{{ value(def) || 'Default' }}</span>
+                <!-- Colors without a default of their own can go back to the theme's -->
+                @if (!def.defaultValue && value(def)) {
+                  <button type="button" class="ui-color-reset" title="Back to default" (click)="updateProp(def.propKey, '')">×</button>
+                }
               </div>
             }
             @case ('boolean') {

@@ -4,6 +4,8 @@ import { APP_SESSION } from '../../core/ports/app-ports';
 import { WidgetEventsService } from '../../core/services/widget-events.service';
 import { CLICK_EVENT } from '../../_constants/widget-events.constants';
 
+export const BUTTON_DEFAULT_COLOR = '#0f6cbd';
+
 /** A button; clicking it while the app runs fires its click trigger (see WIDGET_TRIGGERS). */
 @Component({
   selector: 'app-button-widget',
@@ -16,7 +18,7 @@ export class ButtonWidget extends BaseWidget {
   private readonly widgetEvents = inject(WidgetEventsService);
 
   readonly label = computed(() => this.text('label') ?? 'Button');
-  readonly color = computed(() => this.text('color') ?? '#3b82f6');
+  readonly color = computed(() => this.text('color') ?? BUTTON_DEFAULT_COLOR);
 
   onClick(): void {
     const pageId = this.session.pageId();

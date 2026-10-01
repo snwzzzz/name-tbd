@@ -3,7 +3,12 @@ import { BaseWidget } from '../../_directives/base-widget.directive';
 import { APP_NAVIGATION, APP_PAGES, APP_SESSION, PageInfo } from '../../core/ports/app-ports';
 import { parseJsonList, propBool } from '../../_utils/widget-props.utils';
 
-export const NAV_DEFAULT_COLOR = '#1f1f1f';
+export const NAV_DEFAULT_COLOR = '#242424';
+export const NAV_DEFAULT_ACCENT = '#0f6cbd';
+
+/** How the menu marks the open page (its "Appearance" setting). */
+export const NAV_VARIANTS = ['underline', 'pill', 'filled'] as const;
+export type NavVariant = (typeof NAV_VARIANTS)[number];
 
 /**
  * A `<nav>` with links to the chosen pages, in the chosen order, marking the page that's open.
@@ -22,6 +27,13 @@ export class NavWidget extends BaseWidget {
   readonly vertical = computed(() => propBool(this.props(), 'vertical', false));
   readonly highlightCurrent = computed(() => propBool(this.props(), 'highlightCurrent', true));
   readonly color = computed(() => this.text('color') ?? NAV_DEFAULT_COLOR);
+  readonly accentColor = computed(() => this.text('accentColor') ?? NAV_DEFAULT_ACCENT);
+  /** null: transparent, over whatever is behind it. */
+  readonly background = computed(() => this.text('background') ?? null);
+  readonly variant = computed<NavVariant>(() => {
+    const variant = this.text('variant')?.toLowerCase();
+    return NAV_VARIANTS.find((v) => v === variant) ?? 'underline';
+  });
 
   /** The chosen pages that still exist, in their order. */
   readonly links = computed(() =>

@@ -15,11 +15,11 @@
       "icon": "type",
       "category": "basic",
       "keywords": ["text", "heading", "paragraph"],
-      "size": { "w": 2, "h": 1, "minW": 1, "minH": 1 },
+      "size": { "w": 6, "h": 2, "minW": 2, "minH": 1 },
       "resizable": true,
       "props": [
         { "key": "text", "type": "string", "label": "Text", "default": "New Label", "group": "Content" },
-        { "key": "color", "type": "color", "label": "Color", "default": "#1f1f1f", "group": "Style" },
+        { "key": "color", "type": "color", "label": "Color", "default": "#242424", "group": "Style" },
         { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
       ]
     },
@@ -29,11 +29,11 @@
       "icon": "mouse-pointer-click",
       "category": "actions",
       "keywords": ["click", "trigger", "workflow"],
-      "size": { "w": 2, "h": 1, "minW": 1, "minH": 1 },
+      "size": { "w": 5, "h": 2, "minW": 2, "minH": 1 },
       "resizable": true,
       "props": [
         { "key": "label", "type": "string", "label": "Label", "default": "Click Me", "group": "Content" },
-        { "key": "color", "type": "color", "label": "Color", "default": "#3b82f6", "group": "Style" },
+        { "key": "color", "type": "color", "label": "Color", "default": "#0f6cbd", "group": "Style" },
         { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
       ]
     },
@@ -43,14 +43,14 @@
       "icon": "link",
       "category": "navigation",
       "keywords": ["a", "href", "url", "hyperlink", "anchor"],
-      "size": { "w": 2, "h": 1 },
+      "size": { "w": 4, "h": 2, "minW": 2, "minH": 1 },
       "resizable": true,
       "props": [
         { "key": "text", "type": "string", "label": "Text", "group": "Content", "default": "Link" },
         { "key": "pageId", "type": "page", "label": "Page", "group": "Target", "default": "" },
         { "key": "url", "type": "string", "label": "URL (when no page is picked)", "group": "Target", "default": "" },
         { "key": "newTab", "type": "boolean", "label": "Open in new tab", "group": "Target", "default": "false" },
-        { "key": "color", "type": "color", "label": "Color", "group": "Style", "default": "#2f89ff" },
+        { "key": "color", "type": "color", "label": "Color", "group": "Style", "default": "#0f6cbd" },
         { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
       ]
     },
@@ -60,13 +60,16 @@
       "icon": "navigation",
       "category": "navigation",
       "keywords": ["navbar", "menu", "navigation", "header", "sidebar"],
-      "size": { "w": 8, "h": 1 },
+      "size": { "w": 24, "h": 2, "minW": 4, "minH": 2 },
       "resizable": true,
       "props": [
         { "key": "pages", "type": "pages", "label": "Pages", "group": "Links", "default": "[]" },
         { "key": "vertical", "type": "boolean", "label": "Vertical", "group": "Style", "default": "false" },
+        { "key": "variant", "type": "select", "label": "Appearance", "group": "Style", "default": "Underline", "options": ["Underline", "Pill", "Filled"] },
         { "key": "highlightCurrent", "type": "boolean", "label": "Highlight current page", "group": "Style", "default": "true" },
-        { "key": "color", "type": "color", "label": "Color", "group": "Style", "default": "#1f1f1f" },
+        { "key": "color", "type": "color", "label": "Text color", "group": "Style", "default": "#242424" },
+        { "key": "accentColor", "type": "color", "label": "Current page color", "group": "Style", "default": "#0f6cbd" },
+        { "key": "background", "type": "color", "label": "Background", "group": "Style", "default": "" },
         { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
       ]
     },
@@ -76,7 +79,7 @@
       "icon": "sheet",
       "category": "data",
       "keywords": ["grid", "rows", "csv", "list"],
-      "size": { "w": 6, "h": 4, "minW": 3, "minH": 2 },
+      "size": { "w": 18, "h": 9, "minW": 9, "minH": 5 },
       "resizable": true,
       "props": [
         { "key": "dataSourceId", "type": "dataSource", "label": "Data source", "group": "Data", "default": "" },
@@ -86,6 +89,9 @@
         { "key": "showHeader", "type": "boolean", "label": "Show header", "group": "Display", "default": "true" },
         { "key": "striped", "type": "boolean", "label": "Striped rows", "group": "Display", "default": "false" },
         { "key": "textSize", "type": "select", "label": "Text size", "group": "Display", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] },
+        { "key": "background", "type": "color", "label": "Background", "group": "Style", "default": "" },
+        { "key": "headerBackground", "type": "color", "label": "Header background", "group": "Style", "default": "" },
+        { "key": "headerColor", "type": "color", "label": "Header text color", "group": "Style", "default": "" },
         { "key": "multiSelect", "type": "boolean", "label": "Multi-select rows", "group": "Behavior", "default": "false" }
       ]
     },
@@ -95,7 +101,7 @@
       "icon": "panels-top-left",
       "category": "data",
       "keywords": ["record", "row", "details", "fields", "view"],
-      "size": { "w": 6, "h": 4, "minW": 3, "minH": 2 },
+      "size": { "w": 18, "h": 9, "minW": 9, "minH": 5 },
       "resizable": true,
       "props": [
         { "key": "dataSourceId", "type": "dataSource", "label": "Data source (for its fields)", "group": "Data", "default": "" },
@@ -111,7 +117,7 @@
       "icon": "square-dashed",
       "category": "layout",
       "keywords": ["group", "box", "section"],
-      "size": { "w": 4, "h": 3, "minW": 2, "minH": 2 },
+      "size": { "w": 12, "h": 7, "minW": 6, "minH": 4 },
       "resizable": true,
       "container": true,
       "props": []
@@ -122,7 +128,7 @@
       "icon": "text-cursor-input",
       "category": "basic",
       "palette": false,
-      "size": { "w": 4, "h": 3, "minH": 3 },
+      "size": { "w": 12, "h": 7, "minH": 7 },
       "resizable": false,
       "props": []
     }

@@ -47,6 +47,11 @@ export class DynamicSettings {
     return this.props()?.[def.propKey] ?? def.defaultValue;
   }
 
+  /** What the color picker shows: the color, or white while the theme's is used (it can't show none). */
+  colorValue(def: WidgetPropDefinition): string {
+    return String(this.value(def) || '#ffffff');
+  }
+
   checked(def: WidgetPropDefinition): boolean {
     return !!(this.props()?.[def.propKey] ?? def.defaultValue === 'true');
   }

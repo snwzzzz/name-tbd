@@ -32,6 +32,10 @@ export class TableWidget extends BaseWidget {
   readonly showHeader = computed(() => propBool(this.props(), 'showHeader', true));
   readonly striped = computed(() => propBool(this.props(), 'striped', false));
   readonly multiSelect = computed(() => propBool(this.props(), 'multiSelect', false));
+  /** Colors picked in its style settings (null: the theme's). */
+  readonly background = computed(() => this.text('background') ?? null);
+  readonly headerBackground = computed(() => this.text('headerBackground') ?? null);
+  readonly headerColor = computed(() => this.text('headerColor') ?? null);
   private readonly maxRows = computed(() =>
     Math.min(MAX_ROWS_LIMIT, Math.max(0, Math.floor(propNumber(this.props(), 'maxRows', TABLE_DEFAULT_MAX_ROWS)))),
   );

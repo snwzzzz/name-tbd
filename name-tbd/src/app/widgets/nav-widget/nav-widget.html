@@ -1,4 +1,11 @@
-<nav class="nav" [class.vertical]="vertical()" [class.live]="previewing()" [style.color]="color()">
+<nav
+  class="nav"
+  [class]="'variant-' + variant()"
+  [class.vertical]="vertical()"
+  [class.live]="previewing()"
+  [style.color]="color()"
+  [style.background]="background()"
+  [style.--nav-accent]="accentColor()">
   @if (links().length) {
     <ul>
       @for (page of links(); track page.id) {
