@@ -1,12 +1,12 @@
 import { Component, inject } from '@angular/core';
-import { CdkDrag, CdkDragDrop, CdkDragPlaceholder, CdkDropList } from '@angular/cdk/drag-drop';
+import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 import { TabsService } from '../../_services/tabs.service';
 import { TabItem } from '../../_types/tab.types';
 
 /** The editor's tab strip: switch, close, add and reorder (drag) tabs. */
 @Component({
   selector: 'app-editor-tabs',
-  imports: [CdkDrag, CdkDropList, CdkDragPlaceholder],
+  imports: [CdkDrag, CdkDropList],
   templateUrl: './editor-tabs.html',
   styleUrl: './editor-tabs.scss',
 })

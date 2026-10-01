@@ -33,7 +33,7 @@ import {
   addStoredWidget, createRemoveButton, fitContainersToContent, geometryOf, growContainerForDrop, nodeId,
   parentIdOf, sameGeometry, syncSubGridRows, toLayoutItems, widgetType,
 } from '../../_utils/grid.utils';
-import { clamp, zoomAround } from '../../_utils/viewport.utils';
+import { blueprintGridStyle, clamp, zoomAround } from '../../_utils/viewport.utils';
 import { flattenTree } from '../../_utils/layout-tree.utils';
 
 const BUTTON_ZOOM_STEP = 1.25;
@@ -79,6 +79,13 @@ export class Canvas implements AfterViewInit {
   readonly pan = signal<Point>({ x: 0, y: 0 });
   readonly zoomPercent = computed(() => Math.round(this.zoom() * 100));
   readonly artboardTransform = computed(() => `translate(${this.pan().x}px, ${this.pan().y}px)`);
+
+  /** The blueprint grid behind the artboard, anchored to its top-left corner so it pans and zooms along. */
+  readonly backdropGrid = computed(() => {
+    const zoom = this.zoom(), pan = this.pan();
+    const corner = { x: pan.x - (ARTBOARD_WIDTH / 2) * zoom, y: pan.y - (ARTBOARD_HEIGHT / 2) * zoom };
+    return blueprintGridStyle(corner, zoom, 'center');
+  });
 
   readonly contextMenu = signal<CanvasContextMenu | null>(null);
   readonly addActionIcon = LucideZap;

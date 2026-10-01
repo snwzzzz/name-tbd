@@ -24,7 +24,7 @@
         type="button"
         class="layer"
         [class.selected]="selectedId() === key(item)"
-        [style.padding-left.rem]="0.5 + depth * 1"
+        [style.padding-left.rem]="0.375 + depth * 1"
         title="Double-click to edit its properties"
         (click)="select(item)"
         (dblclick)="openProperties(item)">
@@ -32,7 +32,7 @@
           <span class="toggle" [attr.aria-label]="isCollapsed(item) ? 'Expand' : 'Collapse'" (click)="toggle(item, $event)">
             @if (isCollapsed(item)) { <svg lucideChevronRight></svg> } @else { <svg lucideChevronDown></svg> }
           </span>
-        } @else {
+        } @else if (foldable()) {
           <span class="toggle-spacer"></span>
         }
         <span class="layer-icon"><ng-container *ngComponentOutlet="icon(item)" /></span>

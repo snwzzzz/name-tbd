@@ -4,18 +4,19 @@
   height: 100%;
 }
 
+// Links are pills in the menu's color: the open page gets a tint of it, others one on hover
 .nav {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
-  padding: 0 0.5rem;
+  padding: 0 0.375rem;
   overflow: hidden;
-  font-size: var(--font-size-sm);
+  font-size: var(--widget-text-size);
 
   &.vertical {
-    align-items: flex-start;
-    padding: 0.5rem;
+    align-items: stretch;
+    padding: 0.375rem;
   }
 }
 
@@ -24,38 +25,54 @@ ul {
   margin: 0;
   padding: 0;
   display: flex;
-  gap: 1.25rem;
+  align-items: center;
+  gap: 0.25rem;
   min-width: 0;
 }
 
 .vertical ul {
   flex-direction: column;
-  gap: 0.5rem;
+  align-items: stretch;
+  width: 100%;
+  gap: 0.125rem;
 }
 
 a {
+  display: block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
   color: inherit;
+  font-weight: 500;
+  line-height: 1.25;
   text-decoration: none;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color 0.12s ease;
   // While editing, a click selects the widget
   cursor: inherit;
 
   &.current {
     font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 0.25rem;
+    background: color-mix(in srgb, currentColor 12%, transparent);
   }
 }
 
 .live a {
   cursor: pointer;
 
-  &:hover {
-    text-decoration: underline;
+  &:hover:not(.current) {
+    background: color-mix(in srgb, currentColor 7%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
   }
 }
 
 .empty {
+  padding: 0 0.375rem;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
+  font-size: var(--widget-text-size-small);
 }

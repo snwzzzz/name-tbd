@@ -14,6 +14,7 @@
       fDraggable
       appViewportControls
       class="flow-viewport"
+      [style]="backdropGrid()"
       [fCanvasMoveTrigger]="canvasMoveTrigger"
       [fNodeMoveTrigger]="nodeMoveTrigger"
       (fCreateConnection)="onConnectionCreated($event)"
@@ -25,10 +26,6 @@
       (contextmenu)="$event.preventDefault(); closeContextMenu()">
 
       <f-canvas [position]="pan()" [scale]="zoom()" (fCanvasChange)="onCanvasChange($event)">
-        <f-background>
-          <f-circle-pattern />
-        </f-background>
-
         <!-- Nodes must be rendered before the connections -->
         @for (node of nodes(); track node.id) {
           <app-workflow-node

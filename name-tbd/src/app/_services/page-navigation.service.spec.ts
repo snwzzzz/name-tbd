@@ -27,7 +27,7 @@ describe('PageNavigationService', () => {
     TestBed.inject(PageNavigationService).openPage(7);
 
     expect(TestBed.inject(TabsService).tabs().some((t) => t.id === '7' && t.title === 'About')).toBe(true);
-    expect(navigated).toEqual([[['/editor', '7', 'edit']]]);
+    expect(navigated).toEqual([[['/editor', '7', 'edit'], { queryParamsHandling: 'preserve' }]]);
   });
 
   it('keeps a preview (and its data) going on the next page', () => {

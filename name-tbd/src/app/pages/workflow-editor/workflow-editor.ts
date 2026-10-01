@@ -25,7 +25,7 @@ import {
 import { splitPortId } from '../../_utils/port.utils';
 import { flattenTree } from '../../_utils/layout-tree.utils';
 import {
-  boundingBox, clamp, clampPanToBounds, fitToViewport, zoomAround,
+  blueprintGridStyle, boundingBox, clamp, clampPanToBounds, fitToViewport, zoomAround,
 } from '../../_utils/viewport.utils';
 
 const BUTTON_ZOOM_STEP = 1.25;
@@ -57,6 +57,8 @@ export class WorkflowEditor {
   readonly zoom = signal(1);
   readonly pan = signal<Point>({ x: 0, y: 0 });
   readonly zoomPercent = computed(() => Math.round(this.zoom() * 100));
+  /** The blueprint grid behind the nodes (like the page canvas), anchored to the world's origin. */
+  readonly backdropGrid = computed(() => blueprintGridStyle(this.pan(), this.zoom(), 'top-left'));
 
   /** The border: the world area, grown to include any node that already sits outside it. */
   readonly bounds = computed<Rect>(() => boundingBox([WORKFLOW_WORLD, ...this.nodes().map(nodeRect)])!);

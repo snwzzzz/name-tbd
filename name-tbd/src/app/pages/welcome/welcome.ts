@@ -4,7 +4,7 @@ import { LucideFolderOpen, LucideGitMerge, LucideLayoutTemplate, LucideWorkflow 
 import { PageControllerService } from '../../api/services/pageController.service';
 import { WorkflowControllerService } from '../../api/services/workflowController.service';
 import { PageDto, WorkflowDto } from '../../api/models';
-import { TabsService } from '../../_services/tabs.service';
+import { EDITOR_NAVIGATION, TabsService } from '../../_services/tabs.service';
 import { ModalService } from '../../_services/modal/modal.service';
 import { PagesStateService } from '../../_services/pages-state.service';
 import { EditorMode } from '../../_types/tab.types';
@@ -103,6 +103,6 @@ export class Welcome implements OnInit {
     } else if (currentTabId) {
       this.tabs.updateTabState(currentTabId, { id, title, mode });
     }
-    this.router.navigate(['/editor', id, mode]);
+    this.router.navigate(['/editor', id, mode], EDITOR_NAVIGATION);
   }
 }

@@ -37,6 +37,8 @@ export class LayersPanel {
     return tabId ? sortLayers(this.layoutState.getLayout(tabId)) : [];
   });
   readonly count = computed(() => flattenTree(this.layers()).length);
+  /** Whether any layer can be folded; only then do rows keep room for the fold arrow. */
+  readonly foldable = computed(() => flattenTree(this.layers()).some((item) => !!item.children?.length));
 
   // Containers the user folded, by id
   private readonly collapsed = signal(new Set<string>());

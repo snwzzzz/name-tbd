@@ -1,11 +1,20 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationBehaviorOptions, NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { EditorMode, TabItem } from '../_types/tab.types';
 
 const STORAGE_KEY = 'editor-tabs';
 const EDITOR_MODES: EditorMode[] = ['welcome', 'edit', 'workflow', 'data'];
 const WELCOME_TAB: TabItem = { id: 'welcome-0', title: 'Welcome', mode: 'welcome' };
+
+/**
+ * Every navigation within the editor keeps the URL's query parameters: they hold editor-wide
+ * state, like the data source open in the sidebar (`?dataSource=…`), which switching tab or
+ * mode must not reset.
+ */
+export const EDITOR_NAVIGATION: NavigationBehaviorOptions & { queryParamsHandling: 'preserve' } = {
+  queryParamsHandling: 'preserve',
+};
 
 const isEditorMode = (value: string | undefined): value is EditorMode =>
   EDITOR_MODES.includes(value as EditorMode);
@@ -51,20 +60,20 @@ export class TabsService {
     if (wasActive && remaining.length > 0) {
       this.selectTab(remaining[0].id);
     } else if (remaining.length === 0) {
-      this.router.navigate(['/editor']);
+      this.router.navigate(['/editor'], EDITOR_NAVIGATION);
     }
   }
 
   /** Open a tab in the mode it was last used in. */
   selectTab(id: string): void {
     const tab = this.tabs().find((t) => t.id === id);
-    this.router.navigate(['/editor', id, tab?.mode ?? 'edit']);
+    this.router.navigate(['/editor', id, tab?.mode ?? 'edit'], EDITOR_NAVIGATION);
   }
 
   /** Switch the active tab to another mode. */
   setMode(mode: EditorMode): void {
     const tabId = this.activeTabId();
-    if (tabId) this.router.navigate(['/editor', tabId, mode]);
+    if (tabId) this.router.navigate(['/editor', tabId, mode], EDITOR_NAVIGATION);
   }
 
   reorderTabs(previousIndex: number, currentIndex: number): void {
@@ -113,7 +122,7 @@ export class TabsService {
     if (!tabs.some((t) => t.id === tabId)) {
       // Unknown tab in the URL: fall back to the first one
       const fallback = tabs[0];
-      this.router.navigate(['/editor', fallback.id, fallback.mode ?? 'edit'], { replaceUrl: true });
+      this.router.navigate(['/editor', fallback.id, fallback.mode ?? 'edit'], { ...EDITOR_NAVIGATION, replaceUrl: true });
       return;
     }
 

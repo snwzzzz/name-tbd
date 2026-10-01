@@ -1,0 +1,22 @@
+// A very light blueprint grid: fine lines, and a stronger one every fifth. Sizes and positions
+// come from the element's style (see blueprintGridStyle() in viewport.utils.ts), so the grid
+// pans and zooms with what's drawn on it. Lines are a hint of the text color, on any background.
+@mixin blueprint-grid {
+  --canvas-grid-minor: color-mix(in srgb, var(--color-text-primary) 2%, transparent);
+  --canvas-grid-major: color-mix(in srgb, var(--color-text-primary) 4%, transparent);
+  background-image:
+    linear-gradient(to right, var(--canvas-grid-major) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--canvas-grid-major) 1px, transparent 1px),
+    linear-gradient(to right, var(--grid-minor-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-minor-color) 1px, transparent 1px);
+  background-size:
+    var(--grid-major-size) var(--grid-major-size),
+    var(--grid-major-size) var(--grid-major-size),
+    var(--grid-minor-size) var(--grid-minor-size),
+    var(--grid-minor-size) var(--grid-minor-size);
+  background-position:
+    var(--grid-major-position),
+    var(--grid-major-position),
+    var(--grid-minor-position),
+    var(--grid-minor-position);
+}

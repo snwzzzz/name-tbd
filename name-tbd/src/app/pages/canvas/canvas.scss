@@ -1,4 +1,5 @@
 @use 'sass:math';
+@use '../../_styles/blueprint-grid' as *;
 
 // ─── Artboard dimensions (keep in sync with _constants/artboard.constants.ts) ─
 $aw: 90rem;
@@ -25,7 +26,9 @@ $ah: 50.625rem;
   position: relative;
   overflow: hidden;
 
+  // A blueprint grid in the canvas color, following pan and zoom (see backdropGrid in canvas.ts)
   background-color: var(--color-bg-canvas);
+  @include blueprint-grid;
 
   cursor: default;
   outline: none;
@@ -50,9 +53,9 @@ $ah: 50.625rem;
   width: $aw;
   height: $ah;
 
-  // Pan happens via transform (set by [style.transform] binding)
+  // Pan happens via transform (set by [style.transform] binding). No will-change: it makes the
+  // browser scale a cached bitmap of the artboard, which blurs it while zooming.
   transform-origin: center center;
-  will-change: transform;
 
   background-color: var(--color-surface);
   // Visual grid overlay matching the 24 columns and 18 rows

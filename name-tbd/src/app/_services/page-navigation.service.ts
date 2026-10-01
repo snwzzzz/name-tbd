@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { TabsService } from './tabs.service';
+import { EDITOR_NAVIGATION, TabsService } from './tabs.service';
 import { PagesStateService } from './pages-state.service';
 import { PreviewSessionService } from './preview-session.service';
 
@@ -22,6 +22,6 @@ export class PageNavigationService {
       this.tabs.tabs.update((tabs) => [...tabs, { id: tabId, title, mode: 'edit' }]);
     }
     if (this.preview.active()) this.preview.continueOn(tabId);
-    this.router.navigate(['/editor', tabId, 'edit']);
+    this.router.navigate(['/editor', tabId, 'edit'], EDITOR_NAVIGATION);
   }
 }

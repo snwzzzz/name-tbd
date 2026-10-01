@@ -11,6 +11,14 @@ export const CELL_HEIGHT = ARTBOARD_HEIGHT / GRID_ROWS;
 
 export const CANVAS_MIN_ZOOM = 0.05;
 export const CANVAS_MAX_ZOOM = 4;
+/**
+ * The blueprint grid behind the artboard, in artboard px: both sizes divide the artboard
+ * (1440 × 810) evenly, so its edges sit on major lines. Minor lines fade out below this on-screen size.
+ */
+export const BACKDROP_GRID_MINOR = 18;
+export const BACKDROP_GRID_MAJOR = 90;
+export const BACKDROP_GRID_MIN_VISIBLE = 6;
+
 /** Space kept around the artboard when fitting it into the viewport. */
 export const CANVAS_FIT_PADDING = 56;
 

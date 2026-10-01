@@ -16,14 +16,13 @@
   border-radius: 0.25rem;
   background: var(--color-surface);
   color: var(--color-text-primary);
-  font-size: var(--font-size-xs);
+  font-size: var(--widget-text-size);
 }
 
 .table-title {
   flex-shrink: 0;
   padding: 0.375rem 0.5rem;
   font-weight: 600;
-  font-size: var(--font-size-sm);
   border-bottom: calc(1rem / 16) solid var(--color-border);
 }
 
@@ -79,5 +78,6 @@ tbody tr.selected,
 .table-message {
   flex-shrink: 0;
   padding: 0.375rem 0.5rem;
+  font-size: var(--widget-text-size-small);
   color: var(--color-text-secondary);
 }

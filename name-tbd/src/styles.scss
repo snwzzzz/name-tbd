@@ -68,6 +68,10 @@
   --font-size-xl:  1.5rem;    // 24px
   --font-size-2xl: 1.75rem;   // 28px
   --font-size-3xl: 2rem;      // 32px
+
+  // Text of the widgets on the canvas, so they read as one design
+  --widget-text-size: var(--font-size-sm);        // labels, buttons, links, menus, tables
+  --widget-text-size-small: var(--font-size-xs);  // hints and secondary text inside widgets
 }
 
 // =====================================================

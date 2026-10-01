@@ -4,6 +4,7 @@
     class="canvas-viewport"
     appViewportControls
     [class.is-preview]="previewMode()"
+    [style]="backdropGrid()"
     (panBy)="onPanBy($event)"
     (zoomAt)="onZoomAt($event)"
     (command)="onCommand($event)"

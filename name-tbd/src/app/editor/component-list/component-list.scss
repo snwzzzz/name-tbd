@@ -155,7 +155,8 @@
         display: flex;
         align-items: center;
 
-        svg {
+        // Created by ngComponentOutlet, so out of reach of scoped styles without ::ng-deep
+        ::ng-deep svg {
           width: 0.875rem;
           height: 0.875rem;
           color: var(--color-primary);
