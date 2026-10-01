@@ -1,0 +1,9 @@
+// The exported app's global styles: the editor's design tokens and the widgets' shared pieces
+// (form fields and modals of workflow actions), without the editor's own.
+@use '../app/_styles/tokens';
+@use '../app/_styles/base';
+@use '../app/_styles/fields';
+@use '../app/_styles/modal';
+@use '../app/_styles/spinner';
+
+@import '@angular/cdk/overlay-prebuilt.css';

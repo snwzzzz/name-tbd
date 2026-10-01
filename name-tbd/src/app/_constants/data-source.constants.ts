@@ -1,8 +1,5 @@
 import { DataSourceFormat } from '../_types/data-source.types';
 
-/** The branch data sources are stored in (the one the welcome screen creates pages in). */
-export const DATA_SOURCE_BRANCH_ID = -1;
-
 /**
  * The file formats that can be imported. `format` must match a parser registered in the backend
  * (TabularDataParser); a new format is supported by adding an entry here.

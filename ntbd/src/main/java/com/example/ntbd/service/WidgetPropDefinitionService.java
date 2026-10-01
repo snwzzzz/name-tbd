@@ -1,34 +1,47 @@
 package com.example.ntbd.service;
 
-import com.example.ntbd.domain.WidgetPropDefinition;
-import com.example.ntbd.persistence.WidgetPropDefinitionRepository;
+import com.example.ntbd.catalog.WidgetCatalog;
+import com.example.ntbd.catalog.WidgetCatalogDocument;
+import com.example.ntbd.dto.WidgetPropDefinitionDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+/** The settings of each widget type, from the widget catalog. */
 @RequiredArgsConstructor
-
 @Service
 public class WidgetPropDefinitionService {
 
-    private final WidgetPropDefinitionRepository repository;
+    /** The props that apply to every widget are listed under this type. */
+    static final String GLOBAL_TYPE = "global";
 
-    public Map<String, List<WidgetPropDefinition>> getAllDefinitions() {
-        List<WidgetPropDefinition> allProps = repository.findAll();
+    private final WidgetCatalog catalog;
 
-        // Group properties by widget type so the frontend can easily consume them
-
-        return allProps.stream()
-                .collect(Collectors.groupingBy(WidgetPropDefinition::getWidgetType));
+    /** All definitions by widget type, 'global' first. */
+    public Map<String, List<WidgetPropDefinitionDto>> getAllDefinitions() {
+        Map<String, List<WidgetPropDefinitionDto>> all = new LinkedHashMap<>();
+        all.put(GLOBAL_TYPE, getDefinitionsByType(GLOBAL_TYPE));
+        catalog.widgets().forEach(w -> all.put(w.type(), getDefinitionsByType(w.type())));
+        return all;
     }
 
-    public List<WidgetPropDefinition> getDefinitionsByType(String widgetType) {
-        return repository.findByWidgetType(widgetType);
-    }
+    public List<WidgetPropDefinitionDto> getDefinitionsByType(String widgetType) {
+        List<WidgetCatalogDocument.Prop> props = GLOBAL_TYPE.equals(widgetType)
+                ? catalog.globalProps()
+                : catalog.widget(widgetType).map(WidgetCatalogDocument.Widget::props).orElse(List.of());
 
+        List<WidgetPropDefinitionDto> definitions = new ArrayList<>();
+        for (int i = 0; i < props.size(); i++) {
+            WidgetCatalogDocument.Prop p = props.get(i);
+            // The catalog has no ids; a stable one per (type, position) is enough for clients
+            long id = (long) widgetType.hashCode() * 1000 + i;
+            definitions.add(new WidgetPropDefinitionDto(id, widgetType, p.key(), p.type(), p.defaultValue(),
+                    p.label(), p.group(), p.options() != null ? p.options() : List.of()));
+        }
+        return definitions;
+    }
 }

@@ -50,6 +50,13 @@ public class PageService {
     }
 
     @Transactional
+    public List<PageDto> findByBranchId(Long branchId) {
+        return pageRepository.findByBranch_Id(new Branch.BranchId(branchId)).stream()
+                .map(PageMapper::toDto)
+                .toList();
+    }
+
+    @Transactional
     public PageDto findById(Long id) {
         return pageRepository.findById(new Page.PageId(id))
                 .map(PageMapper::toDto)

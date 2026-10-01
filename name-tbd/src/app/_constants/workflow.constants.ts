@@ -1,13 +1,8 @@
-import { LucideMousePointerClick, LucideSheet } from '@lucide/angular';
-import { ActionType, ConditionOperator, WidgetTrigger } from '../_types/workflow.types';
-import { CLICK_EVENT, ROW_DOUBLE_CLICK_EVENT } from './widget-events.constants';
+import { ActionType, ConditionOperator } from '../_types/workflow.types';
 import { Rect } from '../_types/viewport.types';
-import { SetTextEditor } from '../workflow-actions/set-text/set-text-editor';
-import { SetTextHandler } from '../workflow-actions/set-text/set-text.handler';
-import { TableActionEditor } from '../workflow-actions/table/table-action-editor';
-import { TableActionHandler } from '../workflow-actions/table/table-action.handler';
-import { ShowDetailEditor } from '../workflow-actions/show-detail/show-detail-editor';
-import { ShowDetailHandler } from '../workflow-actions/show-detail/show-detail.handler';
+import { SetTextEditor } from '../editor/action-editors/set-text-editor';
+import { TableActionEditor } from '../editor/action-editors/table-action-editor';
+import { ShowDetailEditor } from '../editor/action-editors/show-detail-editor';
 
 export const CONDITION_OPERATORS: ConditionOperator[] = [
   { id: 'equals', label: 'Equals', requiresValue: true },
@@ -20,8 +15,9 @@ export const CONDITION_OPERATORS: ConditionOperator[] = [
 ];
 
 /**
- * The actions workflow nodes can perform: each brings its settings editor and its handler, which
- * the preview runtime (workflow-runtime.service.ts) runs. A new action is added by adding an entry.
+ * The actions workflow nodes can perform, as the editor offers them: label, default settings and
+ * settings editor. What each one does is its handler in the runtime core (ACTION_HANDLERS, by the
+ * same id). A new action: an entry here and its handler there.
  */
 export const ACTION_TYPES: ActionType[] = [
   {
@@ -29,52 +25,25 @@ export const ACTION_TYPES: ActionType[] = [
     label: 'Change text',
     defaultConfig: { targetId: '', text: '', resetEnabled: false, resetAfterSeconds: 5 },
     editor: SetTextEditor,
-    handler: SetTextHandler,
   },
   {
     id: 'table',
     label: 'Table action',
     defaultConfig: { tableId: '', operation: 'add_row' },
     editor: TableActionEditor,
-    handler: TableActionHandler,
   },
   {
     id: 'show_detail',
     label: 'Show row in detail',
     defaultConfig: { tableId: '', detailId: '', detailPageId: '' },
     editor: ShowDetailEditor,
-    handler: ShowDetailHandler,
   },
 ];
 
 export { CLICK_EVENT, ROW_DOUBLE_CLICK_EVENT } from './widget-events.constants';
 
-/**
- * The widget events that can start a flow: they're offered in the trigger node and in the
- * canvas's "Add action" menu. A new one is added by adding an entry (and firing it from its widget).
- */
-export const WIDGET_TRIGGERS: WidgetTrigger[] = [
-  {
-    widgetType: 'button',
-    event: CLICK_EVENT,
-    title: 'On click',
-    icon: LucideMousePointerClick,
-    nameProp: 'label',
-    describe: (name) => `button ${name} is clicked`,
-  },
-  {
-    widgetType: 'table',
-    event: ROW_DOUBLE_CLICK_EVENT,
-    title: 'On row double-click',
-    icon: LucideSheet,
-    nameProp: 'title',
-    describe: (name) => `a row in table ${name} is double-clicked`,
-  },
-];
-
-/** The trigger a widget type offers, if any. */
-export const widgetTrigger = (widgetType: string | undefined): WidgetTrigger | undefined =>
-  WIDGET_TRIGGERS.find((trigger) => trigger.widgetType === widgetType);
+// Widget triggers live in the runtime core; re-exported for the editor
+export { WIDGET_TRIGGERS, widgetTrigger } from '../core/workflow/widget-triggers';
 
 // ─── Workflow editor viewport ─────────────────────────────────────────────────
 /** The area nodes live in (world coordinates). Nodes can't be dropped outside it. */

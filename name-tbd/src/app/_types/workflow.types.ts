@@ -107,14 +107,13 @@ export interface ActionHandler {
   reset?(pageId: string): void;
 }
 
-/** An action nodes can perform: its settings editor and what it does when run. */
+/** An action as the editor offers it (what it does is its handler, see ACTION_HANDLERS). */
 export interface ActionType {
   id: string;
   label: string;
   defaultConfig: ActionConfig;
   /** A component extending BaseActionEditor for this action's config (typed loosely: inputs are invariant). */
   editor: Type<unknown>;
-  handler: Type<ActionHandler>;
 }
 
 /** An event a widget type fires on the page that can start a flow (see WIDGET_TRIGGERS). */

@@ -1,0 +1,8 @@
+<div
+  class="artboard"
+  [style.width.px]="width"
+  [style.height.px]="height"
+  [style.transform]="'translate(-50%, -50%) scale(' + scale() + ')'">
+  <app-widget-grid class="layout" [items]="layoutItems()" />
+  <router-outlet />
+</div>

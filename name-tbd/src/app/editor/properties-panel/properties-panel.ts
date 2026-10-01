@@ -7,7 +7,7 @@ import { PropsAutosaveService } from '../../_services/props-autosave.service';
 import { TabsService } from '../../_services/tabs.service';
 import { WidgetRegistryService } from '../../_services/widget-registry.service';
 import { widgetDefinition } from '../../_constants/widget-registry.constants';
-import { DynamicSettings } from '../../widgets/dynamic-settings/dynamic-settings';
+import { DynamicSettings } from '../dynamic-settings/dynamic-settings';
 import { findInTree } from '../../_utils/layout-tree.utils';
 
 /** Edits the props of the widget selected on the canvas; edits are saved by themselves. */

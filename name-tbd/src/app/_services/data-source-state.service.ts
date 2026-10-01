@@ -3,7 +3,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { DataSourceControllerService } from '../api/services/dataSourceController.service';
 import { DataSourceDto, DataSourceSummaryDto } from '../api/models';
-import { DATA_SOURCE_BRANCH_ID, DATA_SOURCE_FORMATS } from '../_constants/data-source.constants';
+import { DATA_SOURCE_FORMATS } from '../_constants/data-source.constants';
+import { EDITOR_BRANCH_ID } from '../_constants/api.constants';
 import { DataSourceFormat } from '../_types/data-source.types';
 
 /**
@@ -30,7 +31,7 @@ export class DataSourceStateService {
     if (this.requested) return;
     this.requested = true;
     this.loading.set(true);
-    this.api.getDataSources(DATA_SOURCE_BRANCH_ID).subscribe({
+    this.api.getDataSources(EDITOR_BRANCH_ID).subscribe({
       next: (sources) => {
         this.sources.set(sources);
         this.loaded.set(true);
@@ -74,7 +75,7 @@ export class DataSourceStateService {
     try {
       const content = await file.text();
       const created = await firstValueFrom(
-        this.api.importDataSource({ branchId: DATA_SOURCE_BRANCH_ID, name: baseName(file.name), format: format.format, content }),
+        this.api.importDataSource({ branchId: EDITOR_BRANCH_ID, name: baseName(file.name), format: format.format, content }),
       );
       this.sources.update((all) => [...all, summaryOf(created)].sort(byName));
       this.cache(created);

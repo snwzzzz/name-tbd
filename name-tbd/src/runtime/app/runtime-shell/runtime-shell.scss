@@ -1,0 +1,21 @@
+:host {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--color-bg-canvas);
+}
+
+// Drawn at its real size (like the canvas), scaled to fit the window and centered
+.artboard {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center;
+  background: var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.layout {
+  position: absolute;
+  inset: 0;
+}

@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Exported app runtime (built by name-tbd: npm run build:runtime) ###
+src/main/resources/export-runtime/

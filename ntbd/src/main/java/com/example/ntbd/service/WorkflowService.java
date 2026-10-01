@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
@@ -42,6 +43,12 @@ public class WorkflowService {
                         .build()));
 
         return WorkflowMapper.toDto(workflow);
+    }
+
+    /** The workflow holding the page's UI logic, if it has one yet (never creates it). */
+    @Transactional
+    public Optional<WorkflowDto> findForPage(Long pageId) {
+        return workflowRepository.findFirstByPage_Id(new Page.PageId(pageId)).map(WorkflowMapper::toDto);
     }
 
     @Transactional

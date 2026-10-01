@@ -1,22 +1,20 @@
 import { Component, computed, effect, inject } from '@angular/core';
 import { BaseWidget } from '../../_directives/base-widget.directive';
-import { DataSourceStateService } from '../../_services/data-source-state.service';
-import { PreviewDataService } from '../../_services/preview-data.service';
-import { PreviewSessionService } from '../../_services/preview-session.service';
-import { TableSelectionService } from '../../_services/table-selection.service';
-import { WidgetEventsService } from '../../_services/widget-events.service';
+import { APP_DATA, APP_SESSION } from '../../core/ports/app-ports';
+import { TableSelectionService } from '../../core/services/table-selection.service';
+import { WidgetEventsService } from '../../core/services/widget-events.service';
 import { ROW_DOUBLE_CLICK_EVENT } from '../../_constants/widget-events.constants';
 import { TableData } from '../../_types/data-source.types';
 import { propBool, propNumber } from '../../_utils/widget-props.utils';
-import { parseColumnList, toTableData, visibleColumnIndexes } from '../../_utils/table.utils';
+import { parseColumnList, visibleColumnIndexes } from '../../_utils/table.utils';
 
 export const TABLE_DEFAULT_MAX_ROWS = 10;
 const MAX_ROWS_LIMIT = 1000;
 
 /**
- * Shows (some columns of) a data source's rows. While the page is previewed it shows the
- * preview's copy of the data, and rows can be selected by clicking them.
- * The export draws it the same way (TableRenderer.java).
+ * Shows (some columns of) a data source's rows. While the app runs (the editor's preview, or an
+ * exported app), rows can be selected by clicking them and double-clicking one fires the table's
+ * trigger (see WIDGET_TRIGGERS).
  */
 @Component({
   selector: 'app-table-widget',
@@ -24,12 +22,11 @@ const MAX_ROWS_LIMIT = 1000;
   styleUrl: './table-widget.scss',
 })
 export class TableWidget extends BaseWidget {
-  private readonly state = inject(DataSourceStateService);
-  private readonly previewData = inject(PreviewDataService);
+  private readonly appData = inject(APP_DATA);
   private readonly selection = inject(TableSelectionService);
   private readonly widgetEvents = inject(WidgetEventsService);
-  private readonly session = inject(PreviewSessionService);
-  readonly previewing = this.session.active;
+  private readonly session = inject(APP_SESSION);
+  readonly previewing = this.session.live;
 
   readonly title = computed(() => this.text('title'));
   readonly showHeader = computed(() => propBool(this.props(), 'showHeader', true));
@@ -43,18 +40,15 @@ export class TableWidget extends BaseWidget {
     const id = propNumber(this.props(), 'dataSourceId', NaN);
     return Number.isInteger(id) ? id : null;
   });
-  /** The rows to show: the preview's copy while previewing, else the real data; null until loaded. */
+  /** The rows to show; null until loaded. */
   readonly data = computed<TableData | null>(() => {
     const id = this.dataSourceId();
-    if (id === null) return null;
-    if (this.previewing()) return this.previewData.table(id);
-    const source = this.state.details()[id];
-    return source ? toTableData(source) : null;
+    return id === null ? null : this.appData.table(id);
   });
   /** Whether the data source can't be shown (deleted, or failed to load). */
   readonly missing = computed(() => {
     const id = this.dataSourceId();
-    return id !== null && !this.data() && this.state.loaded() && !this.state.sources().some((s) => s.id === id);
+    return id !== null && !this.data() && this.appData.loaded() && !this.appData.sources().some((s) => s.id === id);
   });
 
   private readonly columnIndexes = computed(() =>
@@ -72,20 +66,19 @@ export class TableWidget extends BaseWidget {
 
   constructor() {
     super();
-    this.state.ensureLoaded();
     effect(() => {
       const id = this.dataSourceId();
-      if (id !== null && this.state.sources().some((s) => s.id === id)) this.state.ensureDetails(id);
+      if (id !== null) this.appData.ensureTable(id);
     });
   }
 
-  /** Rows are only selectable while the page is previewed (when editing, clicks select the widget). */
+  /** Rows are only selectable while the app runs (when editing, clicks select the widget). */
   onRowClick(rowId: string): void {
     if (this.previewing()) this.selection.toggle(this.id(), rowId, this.multiSelect());
   }
 
   /**
-   * Double-clicking a row (while previewing) selects it and runs the flows triggered by it, so
+   * Double-clicking a row (while the app runs) selects it and runs the flows triggered by it, so
    * their actions work on that row. Its two clicks toggled the row first; this settles it as selected.
    */
   onRowDoubleClick(rowId: string): void {

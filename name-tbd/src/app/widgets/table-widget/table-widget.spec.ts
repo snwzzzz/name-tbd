@@ -1,15 +1,12 @@
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { TableWidget } from './table-widget';
-import { DataSourceStateService } from '../../_services/data-source-state.service';
-import { DataSourceDto, DataSourceSummaryDto } from '../../api/models';
 import { WidgetProps } from '../../_types/layout.types';
-import { PreviewSessionService } from '../../_services/preview-session.service';
-import { PreviewDataService } from '../../_services/preview-data.service';
-import { WidgetEvent, WidgetEventsService } from '../../_services/widget-events.service';
-import { TableSelectionService } from '../../_services/table-selection.service';
+import { WidgetEvent, WidgetEventsService } from '../../core/services/widget-events.service';
+import { TableSelectionService } from '../../core/services/table-selection.service';
+import { DataSourceSnapshot } from '../../core/ports/memory-app-data';
+import { fakeApp, provideFakeApp } from '../../core/testing/fake-app';
 
-const PEOPLE: DataSourceDto = {
+const PEOPLE: DataSourceSnapshot = {
   id: 5,
   name: 'People',
   columns: ['name', 'age', 'city'],
@@ -21,16 +18,8 @@ const PEOPLE: DataSourceDto = {
 };
 
 describe('TableWidget', () => {
-  const state = {
-    sources: signal<DataSourceSummaryDto[]>([{ id: 5, name: 'People', columns: PEOPLE.columns, rowCount: 3 }]),
-    details: signal<Record<number, DataSourceDto>>({ 5: PEOPLE }),
-    loaded: signal(true),
-    ensureLoaded: () => {},
-    ensureDetails: () => {},
-  };
-
   const mount = (props: WidgetProps) => {
-    TestBed.configureTestingModule({ providers: [{ provide: DataSourceStateService, useValue: state }] });
+    TestBed.configureTestingModule({ providers: provideFakeApp({ data: [PEOPLE] }) });
     const fixture = TestBed.createComponent(TableWidget);
     fixture.componentRef.setInput('id', '1');
     fixture.componentRef.setInput('props', props);
@@ -64,7 +53,7 @@ describe('TableWidget', () => {
     expect(render({ dataSourceId: '9' }).textContent).toContain('Data source not found');
   });
 
-  it('selects rows by clicking them only while previewing, and shows the preview copy', () => {
+  it('selects rows by clicking them only while the app runs, and shows changed data', () => {
     const fixture = mount({ dataSourceId: '5', multiSelect: 'true' });
     const el: HTMLElement = fixture.nativeElement;
     const click = (i: number) => {
@@ -75,21 +64,16 @@ describe('TableWidget', () => {
     click(0);
     expect(el.querySelectorAll('tr.selected').length).toBe(0);
 
-    TestBed.inject(PreviewSessionService).start('page');
-    TestBed.inject(PreviewDataService).addRow(5, ['Dave', '50', 'Aarau']);
+    fakeApp().session.start('page');
+    fakeApp().data.addRow(5, ['Dave', '50', 'Aarau']);
     fixture.detectChanges();
     click(0);
     click(2);
     expect(el.querySelectorAll('tr.selected').length).toBe(2);
     expect(el.querySelectorAll('tbody tr').length).toBe(4);
-
-    TestBed.inject(PreviewSessionService).stop();
-    fixture.detectChanges();
-    expect(el.querySelectorAll('tr.selected').length).toBe(0);
-    expect(el.querySelectorAll('tbody tr').length).toBe(3);
   });
 
-  it('fires its row double-click trigger with that row selected, only while previewing', () => {
+  it('fires its row double-click trigger with that row selected, only while the app runs', () => {
     const fixture = mount({ dataSourceId: '5' });
     const el: HTMLElement = fixture.nativeElement;
     const fired: WidgetEvent[] = [];
@@ -102,7 +86,7 @@ describe('TableWidget', () => {
     doubleClick();
     expect(fired).toEqual([]);
 
-    TestBed.inject(PreviewSessionService).start('page');
+    fakeApp().session.start('page');
     fixture.detectChanges();
     doubleClick();
     expect(fired).toEqual([{ pageId: 'page', elementId: '1', event: 'row_dblclick' }]);

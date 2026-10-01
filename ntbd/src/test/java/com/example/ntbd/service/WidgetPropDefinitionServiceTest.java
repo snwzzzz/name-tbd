@@ -1,47 +1,34 @@
 package com.example.ntbd.service;
 
-import com.example.ntbd.domain.WidgetPropDefinition;
-import com.example.ntbd.persistence.WidgetPropDefinitionRepository;
+import com.example.ntbd.catalog.WidgetCatalog;
+import com.example.ntbd.dto.WidgetPropDefinitionDto;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(MockitoExtension.class)
 class WidgetPropDefinitionServiceTest {
 
-    @Mock
-    private WidgetPropDefinitionRepository repository;
-
-    @InjectMocks
-    private WidgetPropDefinitionService service;
+    private final WidgetPropDefinitionService service = new WidgetPropDefinitionService(new WidgetCatalog());
 
     @Test
-    void getAllDefinitions_groupsByWidgetType() {
-        WidgetPropDefinition btnDef = new WidgetPropDefinition(1L, "button", "label", "string", "Click");
-        WidgetPropDefinition lblDef = new WidgetPropDefinition(2L, "label", "text", "string", "Label");
+    void definitionsOfATypeComeFromTheCatalog() {
+        List<WidgetPropDefinitionDto> defs = service.getDefinitionsByType("button");
 
-        when(repository.findAll()).thenReturn(List.of(btnDef, lblDef));
-
-        Map<String, List<WidgetPropDefinition>> result = service.getAllDefinitions();
-
-        assertEquals(List.of(btnDef), result.get("button"));
-        assertEquals(List.of(lblDef), result.get("label"));
+        assertThat(defs).extracting(WidgetPropDefinitionDto::propKey).containsExactly("label", "color");
+        assertThat(defs.get(0).label()).isEqualTo("Label");
+        assertThat(defs.get(0).defaultValue()).isEqualTo("Click Me");
+        assertThat(defs).allMatch(d -> d.widgetType().equals("button"));
     }
 
     @Test
-    void getDefinitionsByType() {
-        WidgetPropDefinition btnDef = new WidgetPropDefinition(1L, "button", "label", "string", "Click");
+    void globalPropsAndAllTypes() {
+        Map<String, List<WidgetPropDefinitionDto>> all = service.getAllDefinitions();
 
-        when(repository.findByWidgetType("button")).thenReturn(List.of(btnDef));
-
-        assertEquals(List.of(btnDef), service.getDefinitionsByType("button"));
+        assertThat(all.keySet()).startsWith("global").contains("button", "table");
+        assertThat(all.get("global")).extracting(WidgetPropDefinitionDto::propKey).containsExactly("x", "y", "w", "h");
+        assertThat(service.getDefinitionsByType("unknown")).isEmpty();
     }
 }

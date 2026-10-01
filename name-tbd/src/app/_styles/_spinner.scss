@@ -1,0 +1,28 @@
+// Shared by the editor (src/styles.scss) and the exported app (src/runtime/styles.scss).
+
+// =====================================================
+// SPINNER — a small ring, for "working on it" states
+// =====================================================
+
+.ui-spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: ui-spin 0.7s linear infinite;
+}
+
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-spinner {
+    animation-duration: 2s;
+  }
+}

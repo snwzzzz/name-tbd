@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { PreviewDataService } from './preview-data.service';
-import { TableSelectionService } from './table-selection.service';
-import { DetailRecordsService } from './detail-records.service';
+import { TableSelectionService } from '../core/services/table-selection.service';
+import { DetailRecordsService } from '../core/services/detail-records.service';
 
 /**
  * Whether (and which) page is being previewed on the canvas. Widgets use it to become

@@ -7,10 +7,9 @@ import { LucideZap } from '@lucide/angular';
 import { LayoutStateService } from '../../_services/layout-state.service';
 import { SelectionService } from '../../_services/selection.service';
 import { TabsService } from '../../_services/tabs.service';
-import { WidgetRegistryService } from '../../_services/widget-registry.service';
-import { WorkflowRuntimeService } from '../../_services/workflow-runtime.service';
+import { WorkflowRuntimeService } from '../../core/workflow/workflow-runtime.service';
 import { PreviewSessionService } from '../../_services/preview-session.service';
-import { WidgetEventsService } from '../../_services/widget-events.service';
+import { WidgetEventsService } from '../../core/services/widget-events.service';
 import { LayoutOverlay } from './layout-overlay/layout-overlay';
 import { WorkflowStateService } from '../../_services/workflow-state.service';
 import { ViewportCommand, ViewportControls, ZoomAtEvent } from '../../_directives/viewport-controls.directive';
@@ -24,7 +23,7 @@ import {
   ARTBOARD_HEIGHT, ARTBOARD_WIDTH, CANVAS_FIT_PADDING, CANVAS_MAX_ZOOM, CANVAS_MIN_ZOOM, ROOT_GRID_OPTIONS,
   subGridOptions,
 } from '../../_constants/artboard.constants';
-import { CLICK_EVENT, widgetTrigger } from '../../_constants/workflow.constants';
+import { widgetTrigger } from '../../_constants/workflow.constants';
 import { CanvasContextMenu } from '../../_types/canvas.types';
 import { ComponentId, GridGeometry, LayoutItem, WidgetProps } from '../../_types/layout.types';
 import { UiComponentDto } from '../../api/models';
@@ -45,7 +44,7 @@ const BUTTON_ZOOM_STEP = 1.25;
 /**
  * The page editor: a 16:9 artboard with a GridStack grid (containers get nested grids).
  * Widgets are Angular components mounted into the grid items; GridStack owns the layout,
- * and every move/resize/drop is persisted. In preview, clicking buttons runs the workflow.
+ * and every move/resize/drop is persisted. In preview, widgets fire their events (WidgetEventsService) and the workflows run.
  */
 @Component({
   selector: 'app-canvas',
@@ -57,7 +56,6 @@ export class Canvas implements AfterViewInit {
   private readonly tabs = inject(TabsService);
   private readonly layoutState = inject(LayoutStateService);
   private readonly selection = inject(SelectionService);
-  private readonly widgetRegistry = inject(WidgetRegistryService);
   private readonly workflowState = inject(WorkflowStateService);
   private readonly workflowRuntime = inject(WorkflowRuntimeService);
   private readonly previewSession = inject(PreviewSessionService);
@@ -243,16 +241,7 @@ export class Canvas implements AfterViewInit {
     this.previewPageId = tabId;
     this.previewMode.set(true);
     this.previewSession.start(tabId);
-  }
-
-  /** In preview, clicking a button runs the workflows triggered by it. */
-  onViewportClick(event: MouseEvent): void {
-    if (!this.previewMode() || !this.previewPageId) return;
-    const item = (event.target as HTMLElement).closest('.grid-stack-item');
-    const id = item?.getAttribute('data-gs-id');
-    if (id && widgetType(item as HTMLElement) === 'button') {
-      this.workflowRuntime.handleEvent(this.previewPageId, id, CLICK_EVENT);
-    }
+    this.workflowRuntime.handlePageLoad(tabId);
   }
 
   private stopPreview(): void {
@@ -483,8 +472,6 @@ export class Canvas implements AfterViewInit {
   /** Create the widget's Angular component inside a grid item. */
   private mountWidget(id: string, type: string, content: HTMLElement, props?: WidgetProps): void {
     const definition = widgetDefinition(type);
-    // Make sure the properties panel has the prop definitions for this widget type
-    this.widgetRegistry.loadDefinitionsForType(type);
     // A widget may already be mounted for this id (the grid's 'added' event) — replace it,
     // so a hidden duplicate doesn't receive the prop updates
     this.widgetRefs.get(id)?.destroy();

@@ -1,9 +1,7 @@
 import { Component, computed, effect, inject } from '@angular/core';
 import { BaseWidget } from '../../_directives/base-widget.directive';
-import { DataSourceStateService } from '../../_services/data-source-state.service';
-import { DetailRecordsService } from '../../_services/detail-records.service';
-import { PreviewDataService } from '../../_services/preview-data.service';
-import { PreviewSessionService } from '../../_services/preview-session.service';
+import { DetailRecordsService } from '../../core/services/detail-records.service';
+import { APP_DATA, APP_SESSION } from '../../core/ports/app-ports';
 import { propNumber } from '../../_utils/widget-props.utils';
 import { parseColumnList, visibleColumnIndexes } from '../../_utils/table.utils';
 
@@ -24,10 +22,9 @@ interface DetailField {
   styleUrl: './detail-widget.scss',
 })
 export class DetailWidget extends BaseWidget {
-  private readonly dataSources = inject(DataSourceStateService);
-  private readonly previewData = inject(PreviewDataService);
+  private readonly appData = inject(APP_DATA);
   private readonly records = inject(DetailRecordsService);
-  readonly previewing = inject(PreviewSessionService).active;
+  readonly previewing = inject(APP_SESSION).live;
 
   readonly title = computed(() => this.text('title'));
   readonly emptyText = computed(() => this.text('emptyText') ?? DETAIL_DEFAULT_EMPTY_TEXT);
@@ -37,14 +34,14 @@ export class DetailWidget extends BaseWidget {
   private readonly configuredColumns = computed(() => {
     const id = propNumber(this.props(), 'dataSourceId', NaN);
     if (!Number.isInteger(id)) return null;
-    return this.dataSources.sources().find((s) => s.id === id)?.columns ?? null;
+    return this.appData.sources().find((s) => s.id === id)?.columns ?? null;
   });
 
-  /** The row sent here in the preview, with its data source's columns (null: none, or it was deleted). */
+  /** The row sent here while the app runs, with its data source's columns (null: none, or it was deleted). */
   private readonly shownRow = computed(() => {
     const ref = this.records.record(this.id());
     if (!ref) return null;
-    const table = this.previewData.table(ref.dataSourceId);
+    const table = this.appData.table(ref.dataSourceId);
     const row = table?.rows.find((r) => r.id === ref.rowId);
     return table && row ? { columns: table.columns, values: row.values } : null;
   });
@@ -62,11 +59,10 @@ export class DetailWidget extends BaseWidget {
 
   constructor() {
     super();
-    this.dataSources.ensureLoaded();
     // The shown row's data, if it isn't loaded yet (e.g. after going on to another page)
     effect(() => {
       const ref = this.records.record(this.id());
-      if (ref) this.dataSources.ensureDetails(ref.dataSourceId);
+      if (ref) this.appData.ensureTable(ref.dataSourceId);
     });
   }
 }

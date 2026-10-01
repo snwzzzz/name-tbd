@@ -6,11 +6,10 @@ import com.example.ntbd.commands.NewUiComponentCommand;
 import com.example.ntbd.domain.Page;
 import com.example.ntbd.domain.UiComponent;
 import com.example.ntbd.domain.UiComponentProperty;
-import com.example.ntbd.domain.WidgetPropDefinition;
 import com.example.ntbd.dto.UiComponentDto;
 import com.example.ntbd.persistence.PageRepository;
 import com.example.ntbd.persistence.UiComponentRepository;
-import com.example.ntbd.persistence.WidgetPropDefinitionRepository;
+import com.example.ntbd.catalog.WidgetCatalog;
 import com.example.ntbd.persistence.WorkflowRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +37,7 @@ class UiComponentServiceTest {
     private WorkflowRepository workflowRepository;
 
     @Mock
-    private WidgetPropDefinitionRepository widgetPropDefinitionRepository;
+    private WidgetCatalog widgetCatalog;
 
     @InjectMocks
     private UiComponentService uiComponentService;
@@ -106,9 +105,7 @@ class UiComponentServiceTest {
         component.getProperties().add(new UiComponentProperty(1L, component, "label", "Save"));
 
         when(uiComponentRepository.findById(new UiComponent.UiComponentId(1L))).thenReturn(Optional.of(component));
-        when(widgetPropDefinitionRepository.findByWidgetType("button")).thenReturn(java.util.List.of(
-                new WidgetPropDefinition(1L, "button", "label", "string", "Click Me"),
-                new WidgetPropDefinition(2L, "button", "color", "color", "#3b82f6")));
+        when(widgetCatalog.defaultsOf("button")).thenReturn(Map.of("label", "Click Me", "color", "#3b82f6"));
 
         Map<String, String> props = uiComponentService.findPropsById(1L);
 

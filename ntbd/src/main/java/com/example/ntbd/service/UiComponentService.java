@@ -1,6 +1,7 @@
 package com.example.ntbd.service;
 
 import com.example.ntbd.Exception.PageNotFoundException;
+import com.example.ntbd.catalog.WidgetCatalog;
 import com.example.ntbd.Exception.UiComponentNotFoundException;
 import com.example.ntbd.commands.NewUiComponentCommand;
 import com.example.ntbd.domain.Page;
@@ -10,7 +11,6 @@ import com.example.ntbd.dto.UiComponentDto;
 import com.example.ntbd.mapper.UiComponentMapper;
 import com.example.ntbd.persistence.PageRepository;
 import com.example.ntbd.persistence.UiComponentRepository;
-import com.example.ntbd.persistence.WidgetPropDefinitionRepository;
 import com.example.ntbd.persistence.WorkflowRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class UiComponentService {
     private final UiComponentRepository uiComponentRepository;
     private final PageRepository pageRepository;
     private final WorkflowRepository workflowRepository;
-    private final WidgetPropDefinitionRepository widgetPropDefinitionRepository;
+    private final WidgetCatalog widgetCatalog;
 
     @Transactional
     public UiComponentDto createComponent(NewUiComponentCommand command) {
@@ -148,10 +148,8 @@ public class UiComponentService {
         UiComponent component = uiComponentRepository.findById(new UiComponent.UiComponentId(id))
                 .orElseThrow(() -> new UiComponentNotFoundException("UI Component not found with id " + id));
 
-        // Start from the defaults registered for the widget type, then overlay the values stored for this component
-        Map<String, String> props = new LinkedHashMap<>();
-        widgetPropDefinitionRepository.findByWidgetType(component.getType())
-                .forEach(def -> props.put(def.getPropKey(), def.getDefaultValue()));
+        // Start from the widget type's defaults (from the widget catalog), then overlay the values stored for this component
+        Map<String, String> props = new LinkedHashMap<>(widgetCatalog.defaultsOf(component.getType()));
         component.getProperties()
                 .forEach(prop -> props.put(prop.getPropKey(), prop.getPropValue()));
         return props;

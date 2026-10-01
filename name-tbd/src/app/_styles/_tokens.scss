@@ -1,0 +1,128 @@
+// Shared by the editor (src/styles.scss) and the exported app (src/runtime/styles.scss).
+
+// =====================================================
+// COLOR TOKENS
+// =====================================================
+
+:root {
+  // Brand
+  --color-primary: #2f89ff;
+  --color-primary-light: #dbebff;
+  --color-primary-dark: #1769d1;
+
+  --color-secondary: #6b7280;
+  --color-secondary-light: #e5e7eb;
+  --color-secondary-dark: #374151;
+
+  // Semantic
+  --color-neutral: #9ca3af;
+  --color-neutral-light: #f3f4f6;
+  --color-neutral-dark: #4b5563;
+
+  --color-success: #22c55e;
+  --color-success-light: #dcfce7;
+  --color-success-dark: #15803d;
+
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --color-warning-dark: #b45309;
+
+  --color-danger: #ef4444;
+  --color-danger-light: #fee2e2;
+  --color-danger-dark: #b91c1c;
+
+  --color-info: #3b82f6;
+  --color-info-light: #dbeafe;
+  --color-info-dark: #1d4ed8;
+
+  // Backgrounds
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f5f5f5;
+  --color-bg-canvas: #e0e0e0;
+
+  // Surfaces
+  --color-surface: #ffffff;
+  --color-surface-secondary: #e6e6e6;
+  --color-surface-hover: #d9d9d9;
+
+  // Borders
+  --color-border: #d9d9d9;
+  --color-border-strong: #979797;
+
+  // Text
+  --color-text-primary: #1f1f1f;
+  --color-text-secondary: #666666;
+  --color-text-disabled: #999999;
+
+  // =====================================================
+  // TYPOGRAPHY TOKENS
+  // =====================================================
+  --font-size-2xs: 0.6875rem; // 11px
+  --font-size-xs:  0.75rem;   // 12px
+  --font-size-sm:  0.875rem;  // 14px
+  --font-size-base: 1rem;     // 16px (Standard text)
+  --font-size-md:  1.125rem;  // 18px
+  --font-size-lg:  1.25rem;   // 20px
+  --font-size-xl:  1.5rem;    // 24px
+  --font-size-2xl: 1.75rem;   // 28px
+  --font-size-3xl: 2rem;      // 32px
+
+  // Text of the widgets on the canvas, so they read as one design
+  --widget-text-size: var(--font-size-sm);        // labels, buttons, links, menus, tables
+  --widget-text-size-small: var(--font-size-xs);  // hints and secondary text inside widgets
+}
+
+// =====================================================
+// DARK THEME
+// =====================================================
+
+[data-theme='dark'] {
+  // Brand
+  --color-primary: #2f89ff;
+  --color-primary-light: #17365f;
+  --color-primary-dark: #75b1ff;
+
+  --color-secondary: #9ca3af;
+  --color-secondary-light: #2d2d2d;
+  --color-secondary-dark: #d1d5db;
+
+  // Semantic
+  --color-neutral: #6b7280;
+  --color-neutral-light: #262626;
+  --color-neutral-dark: #a3a3a3;
+
+  --color-success: #22c55e;
+  --color-success-light: #123b24;
+  --color-success-dark: #4ade80;
+
+  --color-warning: #f59e0b;
+  --color-warning-light: #3d2d0b;
+  --color-warning-dark: #fbbf24;
+
+  --color-danger: #ef4444;
+  --color-danger-light: #401b1b;
+  --color-danger-dark: #f87171;
+
+  --color-info: #3b82f6;
+  --color-info-light: #172e52;
+  --color-info-dark: #60a5fa;
+
+  // Backgrounds
+  --color-bg: #181818;
+  --color-bg-subtle: #202020;
+  --color-bg-canvas: #252525;
+
+  // Surfaces
+  --color-surface: #1c1c1c;
+  --color-surface-secondary: #292929;
+  --color-surface-hover: #333333;
+
+  // Borders
+  --color-border: #3a3a3a;
+  --color-border-strong: #666666;
+
+  // Text
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #b5b5b5;
+  --color-text-disabled: #707070;
+}

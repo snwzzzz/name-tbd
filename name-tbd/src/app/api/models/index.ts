@@ -192,7 +192,7 @@ export interface NewApplicationCommand {
     description?: string;
 }
 
-export interface WidgetPropDefinition {
+export interface WidgetPropDefinitionDto {
     id?: number;
     widgetType?: string;
     propKey?: string;
@@ -200,6 +200,7 @@ export interface WidgetPropDefinition {
     defaultValue?: string;
     label?: string;
     group?: string;
+    options?: Array<string>;
 }
 
 export interface DataSourceSummaryDto {
@@ -209,6 +210,16 @@ export interface DataSourceSummaryDto {
     branchId?: number;
     columns?: Array<string>;
     rowCount?: number;
+}
+
+export interface App {
+    id?: number;
+    name?: string;
+}
+
+export interface AppDefinition {
+    version?: number;
+    app?: App;
 }
 
 /** Request Options for Angular HttpClient requests */

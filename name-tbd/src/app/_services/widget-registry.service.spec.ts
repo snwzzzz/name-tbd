@@ -1,72 +1,15 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { WidgetRegistryService } from './widget-registry.service';
-import { WidgetPropDefinition } from '../_types/widget.types';
 
 describe('WidgetRegistryService', () => {
-  let service: WidgetRegistryService;
-  let httpMock: HttpTestingController;
+  it('lists the global settings, then the widget type\'s own, from the catalog', () => {
+    const props = TestBed.inject(WidgetRegistryService).getPropsForWidget('button');
 
-  const mockDefinitions: Record<string, WidgetPropDefinition[]> = {
-    button: [
-      { id: 1, widgetType: 'button', propKey: 'label', propType: 'string', defaultValue: 'Click Me' }
-    ],
-    global: [
-      { id: 2, widgetType: 'global', propKey: 'x', propType: 'number', defaultValue: '0' }
-    ]
-  };
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [WidgetRegistryService]
-    });
-    service = TestBed.inject(WidgetRegistryService);
-    httpMock = TestBed.inject(HttpTestingController);
+    expect(props.map((p) => p.propKey)).toEqual(['x', 'y', 'w', 'h', 'label', 'color']);
+    expect(props.find((p) => p.propKey === 'label')).toMatchObject({ widgetType: 'button', label: 'Label', defaultValue: 'Click Me' });
   });
 
-  afterEach(() => {
-    httpMock.verify();
-  });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
-  it('should load the definitions of a widget type from API', () => {
-    service.loadDefinitionsForType('button');
-
-    const req = httpMock.expectOne(r => r.url.endsWith('/api/widget-props/button'));
-    expect(req.request.method).toBe('GET');
-
-    req.flush(mockDefinitions['button']);
-
-    expect(service.propDefinitions()).toEqual({ button: mockDefinitions['button'] });
-  });
-
-  it('should request the definitions of a widget type only once', () => {
-    service.loadDefinitionsForType('button');
-    service.loadDefinitionsForType('button');
-
-    httpMock.expectOne(r => r.url.endsWith('/api/widget-props/button')).flush(mockDefinitions['button']);
-  });
-
-  it('should return combined props for a widget type', () => {
-    service.propDefinitions.set(mockDefinitions);
-    
-    const buttonProps = service.getPropsForWidget('button');
-    
-    expect(buttonProps.length).toBe(2);
-    expect(buttonProps.find(p => p.propKey === 'label')).toBeTruthy();
-    expect(buttonProps.find(p => p.propKey === 'x')).toBeTruthy();
-  });
-  
-  it('should return only global props if widget type is unknown', () => {
-    service.propDefinitions.set(mockDefinitions);
-    
-    const unknownProps = service.getPropsForWidget('unknown');
-    
-    expect(unknownProps.length).toBe(1);
-    expect(unknownProps[0].propKey).toBe('x');
+  it('has only the global settings for unknown types', () => {
+    expect(TestBed.inject(WidgetRegistryService).getPropsForWidget('nope').map((p) => p.propKey)).toEqual(['x', 'y', 'w', 'h']);
   });
 });

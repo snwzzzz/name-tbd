@@ -1,0 +1,10 @@
+// Over the layout page's widgets, in the same cells: the gaps let clicks through to them
+:host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+:host ::ng-deep .widget {
+  pointer-events: auto;
+}

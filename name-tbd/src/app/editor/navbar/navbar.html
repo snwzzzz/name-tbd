@@ -32,9 +32,8 @@
     <button
       type="button"
       class="export-btn"
-      [disabled]="!activeTabId()"
-      [title]="activeTabId() ? 'Download this page as HTML' : 'Open a page to export it'"
-      (click)="exportPage()">
+      title="Download the app as one HTML file that runs on its own"
+      (click)="exportApp()">
       <svg lucideDownload></svg>
       Export
     </button>

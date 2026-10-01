@@ -1,12 +1,9 @@
 import { Component, computed, effect, inject, untracked } from '@angular/core';
-import { NgComponentOutlet, NgTemplateOutlet } from '@angular/common';
 import { LayoutStateService } from '../../../_services/layout-state.service';
 import { PagesStateService } from '../../../_services/pages-state.service';
 import { PreviewSessionService } from '../../../_services/preview-session.service';
 import { TabsService } from '../../../_services/tabs.service';
-import { widgetDefinition } from '../../../_constants/widget-registry.constants';
-import { GRID_COLUMNS, GRID_ROWS } from '../../../_constants/artboard.constants';
-import { LayoutItem, WidgetProps } from '../../../_types/layout.types';
+import { WidgetGrid } from '../../../core/rendering/widget-grid/widget-grid';
 
 /**
  * The layout page's widgets (navbar, sidebar, ...), drawn under the open page's own grid in the
@@ -15,8 +12,8 @@ import { LayoutItem, WidgetProps } from '../../../_types/layout.types';
  */
 @Component({
   selector: 'app-layout-overlay',
-  imports: [NgComponentOutlet, NgTemplateOutlet],
-  templateUrl: './layout-overlay.html',
+  imports: [WidgetGrid],
+  template: `<app-widget-grid [items]="items()" />`,
   styleUrl: './layout-overlay.scss',
   host: { '[class.interactive]': 'previewing()', '[class.hidden]': '!layoutPageId()' },
 })
@@ -25,9 +22,6 @@ export class LayoutOverlay {
   private readonly pages = inject(PagesStateService);
   private readonly tabs = inject(TabsService);
   readonly previewing = inject(PreviewSessionService).active;
-
-  readonly columns = GRID_COLUMNS;
-  readonly rows = GRID_ROWS;
 
   /** The layout page's id, unless it's the page being edited. */
   readonly layoutPageId = computed(() => {
@@ -47,21 +41,5 @@ export class LayoutOverlay {
         error: (err) => console.error('Failed to load the layout page', err),
       }));
     });
-  }
-
-  key(item: LayoutItem): string {
-    return String(item.id);
-  }
-
-  isContainer(item: LayoutItem): boolean {
-    return item.type === 'container' || !!item.children?.length;
-  }
-
-  component(item: LayoutItem) {
-    return widgetDefinition(item.type).component;
-  }
-
-  props(item: LayoutItem): WidgetProps {
-    return { ...widgetDefinition(item.type).defaultProps, ...item.props };
   }
 }

@@ -1,11 +1,7 @@
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { NavWidget } from './nav-widget';
-import { PagesStateService } from '../../_services/pages-state.service';
-import { PageNavigationService } from '../../_services/page-navigation.service';
-import { PreviewSessionService } from '../../_services/preview-session.service';
-import { TabsService } from '../../_services/tabs.service';
 import { WidgetProps } from '../../_types/layout.types';
+import { fakeApp, provideFakeApp } from '../../core/testing/fake-app';
 
 const PAGES = [
   { id: 1, name: 'Home', path: '/' },
@@ -14,18 +10,9 @@ const PAGES = [
 ];
 
 describe('NavWidget', () => {
-  let opened: number[];
-
-  const mount = (props: WidgetProps, previewing = false) => {
-    opened = [];
-    TestBed.configureTestingModule({
-      providers: [
-        { provide: PagesStateService, useValue: { ensureLoaded: () => {}, page: (id: number) => PAGES.find((p) => p.id === id) } },
-        { provide: PageNavigationService, useValue: { openPage: (id: number) => opened.push(id) } },
-        { provide: PreviewSessionService, useValue: { active: signal(previewing) } },
-        { provide: TabsService, useValue: { activeTabId: signal('2') } },
-      ],
-    });
+  const mount = (props: WidgetProps) => {
+    TestBed.configureTestingModule({ providers: provideFakeApp({ pages: PAGES }) });
+    fakeApp().navigation.currentPageId.set('2');
     const fixture = TestBed.createComponent(NavWidget);
     fixture.componentRef.setInput('id', '1');
     fixture.componentRef.setInput('props', props);
@@ -42,15 +29,14 @@ describe('NavWidget', () => {
     expect(links[0].getAttribute('aria-current')).toBeNull();
   });
 
-  it('follows links only in a preview', () => {
-    let el = mount({ pages: '["1"]' });
+  it('follows links only while the app runs', () => {
+    const el = mount({ pages: '["1"]' });
     el.querySelector('a')!.click();
-    expect(opened).toEqual([]);
+    expect(fakeApp().navigation.opened).toEqual([]);
 
-    TestBed.resetTestingModule();
-    el = mount({ pages: '["1"]' }, true);
+    fakeApp().session.start('2');
     el.querySelector('a')!.click();
-    expect(opened).toEqual([1]);
+    expect(fakeApp().navigation.opened).toEqual([1]);
   });
 
   it('asks for pages when none are chosen', () => {
