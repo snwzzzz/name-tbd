@@ -16,4 +16,11 @@ export interface SidebarTabDefinition {
   defaultSide: SidebarSide;
   /** Width (px) the sidebar grows to when this tab is opened, for panels that need more room. */
   preferredWidth?: number;
+  /** Whether the panel can also be opened as a tab of its own (e.g. to manage data on a big screen). */
+  openInTab?: boolean;
+  /**
+   * What its tab shows instead of the panel, when that has room for a different design. Loaded
+   * when the tab is first opened, so it doesn't weigh on the editor's start.
+   */
+  loadTabComponent?: () => Promise<Type<unknown>>;
 }

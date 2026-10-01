@@ -1,5 +1,4 @@
 @use 'sass:math';
-@use '../../_styles/blueprint-grid' as *;
 
 // ─── Artboard dimensions (keep in sync with _constants/artboard.constants.ts) ─
 $aw: 90rem;
@@ -26,9 +25,8 @@ $ah: 50.625rem;
   position: relative;
   overflow: hidden;
 
-  // A blueprint grid in the canvas color, following pan and zoom (see backdropGrid in canvas.ts)
+  // Plus the global .blueprint-grid, following pan and zoom (see backdropGrid in canvas.ts)
   background-color: var(--color-bg-canvas);
-  @include blueprint-grid;
 
   cursor: default;
   outline: none;

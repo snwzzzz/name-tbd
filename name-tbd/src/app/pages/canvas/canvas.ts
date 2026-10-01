@@ -10,6 +10,7 @@ import { TabsService } from '../../_services/tabs.service';
 import { WidgetRegistryService } from '../../_services/widget-registry.service';
 import { WorkflowRuntimeService } from '../../_services/workflow-runtime.service';
 import { PreviewSessionService } from '../../_services/preview-session.service';
+import { WidgetEventsService } from '../../_services/widget-events.service';
 import { LayoutOverlay } from './layout-overlay/layout-overlay';
 import { WorkflowStateService } from '../../_services/workflow-state.service';
 import { ViewportCommand, ViewportControls, ZoomAtEvent } from '../../_directives/viewport-controls.directive';
@@ -23,7 +24,7 @@ import {
   ARTBOARD_HEIGHT, ARTBOARD_WIDTH, CANVAS_FIT_PADDING, CANVAS_MAX_ZOOM, CANVAS_MIN_ZOOM, ROOT_GRID_OPTIONS,
   subGridOptions,
 } from '../../_constants/artboard.constants';
-import { CLICK_EVENT } from '../../_constants/workflow.constants';
+import { CLICK_EVENT, widgetTrigger } from '../../_constants/workflow.constants';
 import { CanvasContextMenu } from '../../_types/canvas.types';
 import { ComponentId, GridGeometry, LayoutItem, WidgetProps } from '../../_types/layout.types';
 import { UiComponentDto } from '../../api/models';
@@ -34,11 +35,12 @@ import {
   parentIdOf, sameGeometry, syncSubGridRows, toLayoutItems, widgetType,
 } from '../../_utils/grid.utils';
 import { blueprintGridStyle, clamp, zoomAround } from '../../_utils/viewport.utils';
+import { isTyping, matchesShortcut } from '../../_utils/keyboard.utils';
+import { shortcutKeys } from '../../_constants/keyboard-shortcuts.constants';
 import { flattenTree } from '../../_utils/layout-tree.utils';
 
 const BUTTON_ZOOM_STEP = 1.25;
 
-const isTyping = () => /INPUT|TEXTAREA|SELECT/.test((document.activeElement as HTMLElement | null)?.tagName ?? '');
 
 /**
  * The page editor: a 16:9 artboard with a GridStack grid (containers get nested grids).
@@ -59,6 +61,7 @@ export class Canvas implements AfterViewInit {
   private readonly workflowState = inject(WorkflowStateService);
   private readonly workflowRuntime = inject(WorkflowRuntimeService);
   private readonly previewSession = inject(PreviewSessionService);
+  private readonly widgetEvents = inject(WidgetEventsService);
   private readonly vcr = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -92,6 +95,7 @@ export class Canvas implements AfterViewInit {
 
   // ─── Preview: widgets are locked and clicks run the page's workflows ─────
   readonly previewMode = signal(false);
+  readonly previewKeys = shortcutKeys('preview');
   private previewPageId: string | null = null;
 
   constructor() {
@@ -126,9 +130,15 @@ export class Canvas implements AfterViewInit {
       if (id) document.querySelector(`.grid-stack-item[data-gs-id="${CSS.escape(id)}"]`)?.classList.add('selected');
     });
 
+    // Widgets' own events (e.g. a table row double-click) run the flows they trigger
+    const widgetEvents = this.widgetEvents.events$.subscribe(({ pageId, elementId, event }) => {
+      if (this.previewMode()) this.workflowRuntime.handleEvent(pageId, elementId, event);
+    });
+
     this.destroyRef.onDestroy(() => {
       this.stopPreview();
       propPatches.unsubscribe();
+      widgetEvents.unsubscribe();
       this.grid?.destroy(false);
       this.grid = null;
     });
@@ -180,7 +190,13 @@ export class Canvas implements AfterViewInit {
 
   @HostListener('window:keydown', ['$event'])
   onKeyDown(event: KeyboardEvent): void {
-    if ((event.key !== 'Delete' && event.key !== 'Backspace') || isTyping()) return;
+    if (isTyping()) return;
+    if (matchesShortcut(event, 'preview')) {
+      event.preventDefault();
+      this.togglePreview();
+      return;
+    }
+    if (event.key !== 'Delete' && event.key !== 'Backspace') return;
     // The deepest selected widget (a widget inside a selected container wins)
     const selected = document.querySelectorAll<GridItemHTMLElement>('.grid-stack-item.selected');
     const el = selected[selected.length - 1];
@@ -194,19 +210,20 @@ export class Canvas implements AfterViewInit {
   }
 
   /** "Add action": a new action on the button's click flow (trigger created if missing), then the workflow editor. */
-  addActionToItem(id: ComponentId): void {
+  addActionToItem(id: ComponentId, type: string): void {
     this.closeContextMenu();
     const tabId = this.tabs.activeTabId();
-    if (!tabId) return;
+    const trigger = widgetTrigger(type);
+    if (!tabId || !trigger) return;
 
     // Switch right away; the new nodes show up in the workflow editor as soon as they're saved
     this.tabs.setMode('workflow');
     // A widget that isn't saved yet has a temporary id a trigger couldn't point to
     if (!isSavedId(toComponentId(id))) {
-      console.warn('This button is not saved yet, so no trigger could be created for it.');
+      console.warn('This widget is not saved yet, so no trigger could be created for it.');
       return;
     }
-    this.workflowState.addActionForElement(tabId, id.toString(), CLICK_EVENT).subscribe({
+    this.workflowState.addActionForElement(tabId, id.toString(), trigger.event).subscribe({
       error: (err) => console.error('Failed to update the page workflow', err),
     });
   }
@@ -361,8 +378,8 @@ export class Canvas implements AfterViewInit {
     content.addEventListener('contextmenu', (event: MouseEvent) => {
       event.preventDefault();
       event.stopPropagation();
-      // Actions can only be attached to buttons for now, and not while previewing
-      if (type !== 'button' || this.previewMode()) return;
+      // Actions can be attached to widgets that fire a trigger (see WIDGET_TRIGGERS), not while previewing
+      if (!widgetTrigger(type) || this.previewMode()) return;
       // Read the id now: it changes from the temporary one once the backend has saved the widget
       const currentId = content.closest('.grid-stack-item')?.getAttribute('data-gs-id') ?? id;
       this.contextMenu.set({ x: event.clientX, y: event.clientY, item: { id: currentId, type } });

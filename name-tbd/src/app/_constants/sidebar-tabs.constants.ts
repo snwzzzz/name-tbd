@@ -12,7 +12,12 @@ import { LayersPanel } from '../editor/layers-panel/layers-panel';
  */
 export const SIDEBAR_TABS: SidebarTabDefinition[] = [
   { id: 'components', label: 'Components', icon: LucideLayoutList, component: ComponentList, defaultSide: 'left' },
-  { id: 'data', label: 'Data', icon: LucideDatabase, component: DataSourcePanel, defaultSide: 'left', preferredWidth: 420 },
+  { id: 'data', label: 'Data', icon: LucideDatabase, component: DataSourcePanel, defaultSide: 'left', preferredWidth: 420,
+    openInTab: true, loadTabComponent: () => import('../editor/data-manager/data-manager').then((m) => m.DataManager) },
   { id: PROPERTIES_TAB_ID, label: 'Properties', icon: LucideSettings, component: PropertiesPanel, defaultSide: 'right' },
   { id: 'layers', label: 'Layers', icon: LucideLayers, component: LayersPanel, defaultSide: 'right' },
 ];
+
+/** A sidebar tab that can be opened as a tab of its own (see openInTab), if there's one with this id. */
+export const panelTab = (id: string): SidebarTabDefinition | undefined =>
+  SIDEBAR_TABS.find((tab) => tab.id === id && tab.openInTab);

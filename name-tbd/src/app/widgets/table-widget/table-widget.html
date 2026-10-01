@@ -23,7 +23,7 @@
         }
         <tbody>
           @for (row of rows(); track row.id) {
-            <tr [class.selected]="selectedIds().has(row.id)" (click)="onRowClick(row.id)">
+            <tr [class.selected]="selectedIds().has(row.id)" (click)="onRowClick(row.id)" (dblclick)="onRowDoubleClick(row.id)">
               @for (value of row.values; track $index) {
                 <td>{{ value }}</td>
               }

@@ -17,7 +17,7 @@
     <!-- Stop mousedown so editing a field doesn't start dragging the node -->
     <div class="node-fields" (mousedown)="$event.stopPropagation()">
       <label class="field-label">When</label>
-      <app-select size="sm" [options]="triggerOptions()" [ngModel]="trigger.elementId ?? ''" (ngModelChange)="setTriggerElement($event)" />
+      <app-select size="sm" [options]="triggerOptions()" [ngModel]="selectedTrigger()" (ngModelChange)="setTrigger($event)" />
 
       @if (triggerButton(); as button) {
         <!-- The button this flow starts from, drawn like it looks on the page -->

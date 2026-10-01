@@ -22,6 +22,13 @@ export class TableSelectionService {
     this.selections.update((all) => ({ ...all, [tableId]: next }));
   }
 
+  /** Makes sure the row is selected (the only one, without multi-select); e.g. for a double-click. */
+  ensureSelected(tableId: string, rowId: string, multiSelect: boolean): void {
+    const current = this.selected(tableId);
+    const next = multiSelect ? (current.includes(rowId) ? current : [...current, rowId]) : [rowId];
+    this.selections.update((all) => ({ ...all, [tableId]: next }));
+  }
+
   /** Forget rows that no longer exist (e.g. after deleting them). */
   deselect(tableId: string, rowIds: string[]): void {
     this.selections.update((all) => ({ ...all, [tableId]: this.selected(tableId).filter((id) => !rowIds.includes(id)) }));

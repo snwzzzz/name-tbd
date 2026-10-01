@@ -1,8 +1,21 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { ComponentList } from './component-list';
+import { TabsService } from '../../_services/tabs.service';
+import { EditorMode } from '../../_types/tab.types';
 
 describe('ComponentList', () => {
-  beforeEach(() => localStorage.clear());
+  const activeMode = signal<EditorMode>('edit');
+  let modeSet: EditorMode[];
+
+  beforeEach(() => {
+    localStorage.clear();
+    activeMode.set('edit');
+    modeSet = [];
+    TestBed.configureTestingModule({
+      providers: [{ provide: TabsService, useValue: { activeMode, setMode: (m: EditorMode) => modeSet.push(m) } }],
+    });
+  });
 
   const mount = () => {
     const fixture = TestBed.createComponent(ComponentList);
@@ -42,6 +55,22 @@ describe('ComponentList', () => {
 
     TestBed.tick();
     TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [{ provide: TabsService, useValue: { activeMode, setMode: () => {} } }] });
     expect(labels(mount().nativeElement)).not.toContain('Nav Menu');
+  });
+
+  it('explains outside Edit mode that components can only be placed there', () => {
+    activeMode.set('workflow');
+    const fixture = mount();
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelector('.mode-note')?.textContent).toContain('only be placed in Edit mode');
+    expect(el.querySelector('.sections')?.classList).toContain('locked');
+    (el.querySelector('.link-btn') as HTMLElement).click();
+    expect(modeSet).toEqual(['edit']);
+
+    activeMode.set('edit');
+    fixture.detectChanges();
+    expect(el.querySelector('.mode-note')).toBeNull();
   });
 });

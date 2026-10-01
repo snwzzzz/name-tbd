@@ -3,6 +3,21 @@
     <span class="list-title">Components</span>
   </div>
 
+  @if (!canPlace()) {
+    <div class="mode-note" role="note">
+      <svg lucideInfo></svg>
+      @if (onWelcome()) {
+        <span>Open or create a page to place components on it.</span>
+      } @else {
+        <span>
+          Components can only be placed in Edit mode.
+          <button type="button" class="link-btn" (click)="switchToEditMode()">Switch to Edit mode</button>
+          <span class="keys">({{ editModeKeys }})</span>
+        </span>
+      }
+    </div>
+  }
+
   <label class="search">
     <svg lucideSearch></svg>
     <input
@@ -14,7 +29,7 @@
       (keydown.escape)="query.set('')" />
   </label>
 
-  <div class="sections">
+  <div class="sections" [class.locked]="!canPlace()">
     @if (searching()) {
       <ul class="item-list">
         @for (item of results(); track item.type) {

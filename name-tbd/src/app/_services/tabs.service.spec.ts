@@ -26,4 +26,22 @@ describe('TabsService', () => {
       [['/editor', 'welcome-0', 'welcome'], { queryParamsHandling: 'preserve' }],
     ]);
   });
+
+  it('calls the start tab "Start", also when it was saved as "Welcome"', () => {
+    sessionStorage.setItem('editor-tabs', JSON.stringify([{ id: 'welcome-0', title: 'Welcome', mode: 'welcome' }, { id: '4', title: 'Home', mode: 'edit' }]));
+    const tabs = TestBed.inject(TabsService);
+
+    expect(tabs.tabs().map((t) => t.title)).toEqual(['Start', 'Home']);
+    tabs.addTab();
+    expect(tabs.tabs().at(-1)?.title).toBe('Start');
+  });
+
+  it('opens a sidebar panel as a tab of its own, only once', () => {
+    const tabs = TestBed.inject(TabsService);
+    tabs.openPanel('data', 'Data');
+    tabs.openPanel('data', 'Data');
+
+    expect(tabs.tabs().filter((t) => t.id === 'panel-data')).toEqual([{ id: 'panel-data', title: 'Data', mode: 'panel' }]);
+    expect(navigated.at(-1)).toEqual([['/editor', 'panel-data', 'panel'], { queryParamsHandling: 'preserve' }]);
+  });
 });

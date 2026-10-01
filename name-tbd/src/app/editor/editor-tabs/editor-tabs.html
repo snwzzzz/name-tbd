@@ -9,7 +9,7 @@
     <div class="tab" cdkDrag [class.active]="activeTabId() === tab.id" (click)="selectTab(tab.id)">
       <div class="content">
         <span class="title">{{ tab.title }}</span>
-        <span class="mode">{{ tab.mode || 'edit' }}</span>
+        <span class="mode">{{ tab.mode === 'welcome' ? 'start' : (tab.mode || 'edit') }}</span>
       </div>
       <button type="button" class="close-btn" title="Close tab" aria-label="Close tab" (click)="closeTab(tab.id, $event)">×</button>
     </div>

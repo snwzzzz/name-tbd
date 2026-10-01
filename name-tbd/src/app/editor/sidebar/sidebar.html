@@ -21,6 +21,17 @@
         (cdkDragEnded)="onDragEnded()"
         (click)="select(tab.id)" />
     }
+    @if (activeDefinition()?.openInTab) {
+      <!-- Outside the drop list's items, at the bottom of the bar -->
+      <button
+        type="button"
+        class="open-in-tab"
+        [title]="'Open ' + activeDefinition()!.label + ' in a tab'"
+        [attr.aria-label]="'Open ' + activeDefinition()!.label + ' in a tab'"
+        (click)="openInTab(activeDefinition()!)">
+        <svg lucideMaximize2></svg>
+      </button>
+    }
   </div>
 
   <div class="content">

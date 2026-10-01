@@ -1,7 +1,7 @@
 <div class="canvas-area">
   <div
     #viewport
-    class="canvas-viewport"
+    class="canvas-viewport blueprint-grid"
     appViewportControls
     [class.is-preview]="previewMode()"
     [style]="backdropGrid()"
@@ -19,7 +19,7 @@
       <button
         app-zoom-button
         [active]="previewMode()"
-        [title]="previewMode() ? 'Back to editing' : 'Try the page: clicking buttons runs their actions'"
+        [title]="(previewMode() ? 'Back to editing' : 'Try the page: clicking buttons runs their actions') + ' (' + previewKeys + ')'"
         (click)="togglePreview()">
         {{ previewMode() ? '■ Stop preview' : '▶ Preview' }}
       </button>
@@ -36,6 +36,6 @@
 
 @if (contextMenu(); as menu) {
   <app-context-menu [x]="menu.x" [y]="menu.y" (closed)="closeContextMenu()">
-    <button app-context-menu-item [icon]="addActionIcon" (click)="addActionToItem(menu.item.id)">Add action</button>
+    <button app-context-menu-item [icon]="addActionIcon" (click)="addActionToItem(menu.item.id, menu.item.type)">Add action</button>
   </app-context-menu>
 }

@@ -4,6 +4,8 @@ import { DataSourceStateService } from '../../_services/data-source-state.servic
 import { PreviewDataService } from '../../_services/preview-data.service';
 import { PreviewSessionService } from '../../_services/preview-session.service';
 import { TableSelectionService } from '../../_services/table-selection.service';
+import { WidgetEventsService } from '../../_services/widget-events.service';
+import { ROW_DOUBLE_CLICK_EVENT } from '../../_constants/widget-events.constants';
 import { TableData } from '../../_types/data-source.types';
 import { propBool, propNumber } from '../../_utils/widget-props.utils';
 import { parseColumnList, toTableData, visibleColumnIndexes } from '../../_utils/table.utils';
@@ -25,7 +27,9 @@ export class TableWidget extends BaseWidget {
   private readonly state = inject(DataSourceStateService);
   private readonly previewData = inject(PreviewDataService);
   private readonly selection = inject(TableSelectionService);
-  readonly previewing = inject(PreviewSessionService).active;
+  private readonly widgetEvents = inject(WidgetEventsService);
+  private readonly session = inject(PreviewSessionService);
+  readonly previewing = this.session.active;
 
   readonly title = computed(() => this.text('title'));
   readonly showHeader = computed(() => propBool(this.props(), 'showHeader', true));
@@ -78,5 +82,16 @@ export class TableWidget extends BaseWidget {
   /** Rows are only selectable while the page is previewed (when editing, clicks select the widget). */
   onRowClick(rowId: string): void {
     if (this.previewing()) this.selection.toggle(this.id(), rowId, this.multiSelect());
+  }
+
+  /**
+   * Double-clicking a row (while previewing) selects it and runs the flows triggered by it, so
+   * their actions work on that row. Its two clicks toggled the row first; this settles it as selected.
+   */
+  onRowDoubleClick(rowId: string): void {
+    const pageId = this.session.pageId();
+    if (!pageId) return;
+    this.selection.ensureSelected(this.id(), rowId, this.multiSelect());
+    this.widgetEvents.fire({ pageId, elementId: this.id(), event: ROW_DOUBLE_CLICK_EVENT });
   }
 }

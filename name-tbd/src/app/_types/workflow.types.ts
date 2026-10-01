@@ -1,4 +1,5 @@
 import { Type } from '@angular/core';
+import { LucideIcon } from '@lucide/angular';
 import { Point } from './viewport.types';
 
 export type FlowNodeType = 'Trigger' | 'Condition' | 'Action';
@@ -114,6 +115,19 @@ export interface ActionType {
   /** A component extending BaseActionEditor for this action's config (typed loosely: inputs are invariant). */
   editor: Type<unknown>;
   handler: Type<ActionHandler>;
+}
+
+/** An event a widget type fires on the page that can start a flow (see WIDGET_TRIGGERS). */
+export interface WidgetTrigger {
+  widgetType: string;
+  event: string;
+  /** The trigger node's title, e.g. "On click". */
+  title: string;
+  icon: LucideIcon;
+  /** The prop that names the widget in the trigger picker (e.g. a button's label). */
+  nameProp: string;
+  /** e.g. `button “Save” (#4) is clicked`, for the trigger picker. */
+  describe(name: string): string;
 }
 
 /** The right-click menu of the workflow editor. */

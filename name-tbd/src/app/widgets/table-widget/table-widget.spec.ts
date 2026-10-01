@@ -6,6 +6,8 @@ import { DataSourceDto, DataSourceSummaryDto } from '../../api/models';
 import { WidgetProps } from '../../_types/layout.types';
 import { PreviewSessionService } from '../../_services/preview-session.service';
 import { PreviewDataService } from '../../_services/preview-data.service';
+import { WidgetEvent, WidgetEventsService } from '../../_services/widget-events.service';
+import { TableSelectionService } from '../../_services/table-selection.service';
 
 const PEOPLE: DataSourceDto = {
   id: 5,
@@ -85,5 +87,25 @@ describe('TableWidget', () => {
     fixture.detectChanges();
     expect(el.querySelectorAll('tr.selected').length).toBe(0);
     expect(el.querySelectorAll('tbody tr').length).toBe(3);
+  });
+
+  it('fires its row double-click trigger with that row selected, only while previewing', () => {
+    const fixture = mount({ dataSourceId: '5' });
+    const el: HTMLElement = fixture.nativeElement;
+    const fired: WidgetEvent[] = [];
+    TestBed.inject(WidgetEventsService).events$.subscribe((e) => fired.push(e));
+    const doubleClick = () => {
+      el.querySelectorAll('tbody tr')[1].dispatchEvent(new MouseEvent('dblclick'));
+      fixture.detectChanges();
+    };
+
+    doubleClick();
+    expect(fired).toEqual([]);
+
+    TestBed.inject(PreviewSessionService).start('page');
+    fixture.detectChanges();
+    doubleClick();
+    expect(fired).toEqual([{ pageId: 'page', elementId: '1', event: 'row_dblclick' }]);
+    expect(TestBed.inject(TableSelectionService).selected('1')).toEqual(['1']);
   });
 });

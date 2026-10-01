@@ -1,5 +1,7 @@
 @use '../../_styles/scrollbar' as *;
 
+// Styles are encapsulated, so class names alone are specific enough (kept flat to stay small)
+
 :host {
   display: block;
   height: 100%;
@@ -10,180 +12,191 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  background-color: var(--color-surface);
   padding: 0.5rem;
+  background-color: var(--color-surface);
+}
 
-  .list-header {
-    background: var(--color-surface);
-    flex-shrink: 0;
+.list-header {
+  flex-shrink: 0;
+  color: var(--color-text-primary);
+}
 
-    .list-title {
-      color: var(--color-text-primary);
-    }
+.search {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  padding: 0 0.625rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  background: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
+
+  &:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
   }
 
-  .search {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0 0.625rem;
-    min-height: 2rem;
-    border: 1px solid transparent;
-    border-radius: 0.375rem;
-    background: var(--color-surface-secondary);
-    color: var(--color-text-secondary);
-
-    &:focus-within {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px var(--color-primary-light);
-    }
-
-    svg {
-      width: 0.875rem;
-      height: 0.875rem;
-      flex-shrink: 0;
-    }
-
-    input {
-      flex: 1;
-      min-width: 0;
-      border: none;
-      outline: none;
-      background: none;
-      color: var(--color-text-primary);
-      font: inherit;
-      font-size: var(--font-size-sm);
-    }
-  }
-
-  // Everything below the search scrolls together
-  .sections {
+  input {
     flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    @include thin-scrollbar;
-  }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.375rem 0.25rem 0.25rem;
+    min-width: 0;
     border: none;
+    outline: none;
     background: none;
-    color: var(--color-text-secondary);
+    color: var(--color-text-primary);
     font: inherit;
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-
-    &:hover {
-      color: var(--color-text-primary);
-    }
-
-    svg {
-      width: 0.875rem;
-      height: 0.875rem;
-    }
-
-    .section-count {
-      margin-left: auto;
-      font-weight: 400;
-      color: var(--color-text-disabled);
-    }
-  }
-
-  .empty-state {
-    padding: 0.5rem 0.25rem;
     font-size: var(--font-size-sm);
-    color: var(--color-text-secondary);
+  }
+}
+
+.search svg,
+.mode-note svg,
+.section-header svg,
+.grab-handle-icon svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.mode-note {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.375rem;
+  background: var(--color-info-light);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+
+  svg {
+    margin-top: 0.125rem;
+    color: var(--color-info);
+  }
+}
+
+.link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.keys,
+.empty-state {
+  color: var(--color-text-secondary);
+}
+
+// Everything below the search scrolls together
+.sections {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  @include thin-scrollbar;
+}
+
+// Outside Edit mode the cards can't be dragged (there's no canvas to drop them on)
+.locked .gs-drag-item {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.25rem 0.25rem;
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+.section-count {
+  margin-left: auto;
+  font-weight: 400;
+  color: var(--color-text-disabled);
+}
+
+.empty-state {
+  padding: 0.5rem 0.25rem;
+  font-size: var(--font-size-sm);
+}
+
+.item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.gs-drag-item {
+  display: block;
+  cursor: grab;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.palette-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3125rem 0.75rem;
+  border-radius: 0.375rem;
+  background: var(--color-surface-secondary);
+  transition: background 0.12s ease, transform 0.12s ease;
+
+  .gs-drag-item:hover & {
+    background: var(--color-primary-light);
+    transform: translateY(-0.0625rem);
   }
 
-  .item-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-
-    .gs-drag-item {
-      display: block;
-      cursor: grab;
-      user-select: none;
-
-      &:active {
-        cursor: grabbing;
-      }
-    }
-
-    .palette-card {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.3125rem 0.75rem;
-      background: var(--color-surface-secondary);
-      border-radius: 0.375rem;
-      transition: background 0.12s ease;
-
-      &:hover {
-        background: var(--color-surface-hover);
-      }
-
-      .gs-drag-item:hover & {
-        background: #f0f5ff;
-        border-color: #aac4f7;
-        box-shadow: 0 0.125rem 0.375rem rgba(26, 86, 219, 0.1);
-        transform: translateY(-0.0625rem);
-      }
-
-      .gs-drag-item:active & {
-        transform: translateY(0);
-        box-shadow: none;
-      }
-
-      .item-icon {
-        font-size: 1rem;
-        line-height: 1;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-
-        // Created by ngComponentOutlet, so out of reach of scoped styles without ::ng-deep
-        ::ng-deep svg {
-          width: 0.875rem;
-          height: 0.875rem;
-          color: var(--color-primary);
-        }
-      }
-
-      .grab-handle-icon {
-        font-size: 1rem;
-        line-height: 1;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-
-        svg {
-          width: 0.875rem;
-          height: 0.875rem;
-          color: var(--color-text-secondary);
-        }
-      }
-
-      .item-label {
-        flex: 1;
-        color: var(--color-primary);
-        font-size: var(--font-size-sm);
-        display: flex;
-        align-items: center;
-      }
-    }
+  .gs-drag-item:active & {
+    transform: none;
   }
+}
+
+.item-icon,
+.grab-handle-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+// Created by ngComponentOutlet, so out of reach of scoped styles without ::ng-deep
+.item-icon ::ng-deep svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--color-primary);
+}
+
+.grab-handle-icon svg {
+  color: var(--color-text-secondary);
+}
+
+.item-label {
+  flex: 1;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
 }

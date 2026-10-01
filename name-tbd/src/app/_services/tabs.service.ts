@@ -4,8 +4,10 @@ import { filter } from 'rxjs';
 import { EditorMode, TabItem } from '../_types/tab.types';
 
 const STORAGE_KEY = 'editor-tabs';
-const EDITOR_MODES: EditorMode[] = ['welcome', 'edit', 'workflow', 'data'];
-const WELCOME_TAB: TabItem = { id: 'welcome-0', title: 'Welcome', mode: 'welcome' };
+const EDITOR_MODES: EditorMode[] = ['welcome', 'edit', 'workflow', 'data', 'panel'];
+/** What the Start tab is called (its mode is 'welcome'). */
+export const START_TAB_TITLE = 'Start';
+const WELCOME_TAB: TabItem = { id: 'welcome-0', title: START_TAB_TITLE, mode: 'welcome' };
 
 /**
  * Every navigation within the editor keeps the URL's query parameters: they hold editor-wide
@@ -44,8 +46,17 @@ export class TabsService {
 
   addTab(): void {
     const id = `new-${this.nextTabNumber()}`;
-    this.tabs.update((tabs) => [...tabs, { id, title: 'Welcome', mode: 'welcome' }]);
+    this.tabs.update((tabs) => [...tabs, { id, title: START_TAB_TITLE, mode: 'welcome' }]);
     this.selectTab(id);
+  }
+
+  /** Opens a sidebar panel (e.g. Data) as a tab of its own, or switches to it if it's open. */
+  openPanel(panelId: string, title: string): void {
+    const id = `panel-${panelId}`;
+    if (!this.tabs().some((tab) => tab.id === id)) {
+      this.tabs.update((tabs) => [...tabs, { id, title, mode: 'panel' }]);
+    }
+    this.router.navigate(['/editor', id, 'panel'], EDITOR_NAVIGATION);
   }
 
   updateTabState(id: string, updates: Partial<TabItem>): void {
@@ -88,7 +99,10 @@ export class TabsService {
   private restoreTabs(): TabItem[] {
     try {
       const saved: unknown = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? 'null');
-      if (Array.isArray(saved) && saved.length > 0) return saved as TabItem[];
+      if (Array.isArray(saved) && saved.length > 0) {
+        // Start tabs saved when they were still called "Welcome"
+        return (saved as TabItem[]).map((tab) => (tab.mode === 'welcome' ? { ...tab, title: START_TAB_TITLE } : tab));
+      }
     } catch {
       // Corrupted storage: start over
     }

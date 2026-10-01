@@ -1,3 +1,5 @@
+@use 'app/_styles/blueprint-grid' as *;
+
 // GridStack core styles — required for grid lines, drag placeholder, and item positioning.
 
 @import 'gridstack/dist/gridstack.min.css';
@@ -389,4 +391,37 @@ body.modal-open-scroll-locked {
     transition: none !important;
     animation: none !important;
   }
+}
+
+// =====================================================
+// SPINNER — a small ring, for "working on it" states
+// =====================================================
+
+.ui-spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: ui-spin 0.7s linear infinite;
+}
+
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-spinner {
+    animation-duration: 2s;
+  }
+}
+
+// The canvas's and the workflow editor's backdrop (sizes and positions set inline, see
+// blueprintGridStyle() in viewport.utils.ts)
+.blueprint-grid {
+  @include blueprint-grid;
 }

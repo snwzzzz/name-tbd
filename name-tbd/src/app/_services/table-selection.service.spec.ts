@@ -33,4 +33,16 @@ describe('TableSelectionService', () => {
     selection.reset();
     expect(selection.selected('t')).toEqual([]);
   });
+
+  it('keeps a double-clicked row selected, whatever its two clicks did', () => {
+    selection.toggle('t', 'a', false);
+    selection.toggle('t', 'a', false); // the second click of the double-click deselected it
+    selection.ensureSelected('t', 'a', false);
+    expect(selection.selected('t')).toEqual(['a']);
+
+    selection.toggle('m', 'x', true);
+    selection.ensureSelected('m', 'y', true);
+    selection.ensureSelected('m', 'y', true);
+    expect(selection.selected('m')).toEqual(['x', 'y']);
+  });
 });

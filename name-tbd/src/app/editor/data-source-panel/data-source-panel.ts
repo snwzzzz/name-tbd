@@ -1,11 +1,8 @@
-import { Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
-import { map } from 'rxjs';
+import { Component, inject } from '@angular/core';
 import { DataSourceStateService } from '../../_services/data-source-state.service';
 import { ModalService } from '../../_services/modal/modal.service';
 import { DataSourceSummaryDto } from '../../api/models';
-import { DATA_SOURCE_QUERY_PARAM } from '../../_constants/data-source.constants';
+import { OpenDataSourceService } from '../../_services/open-data-source.service';
 import { DataSourceList } from '../data-source-list/data-source-list';
 import { DataSourceDetail } from '../data-source-detail/data-source-detail';
 
@@ -27,20 +24,12 @@ import { DataSourceDetail } from '../data-source-detail/data-source-detail';
   styles: ':host { display: block; height: 100%; }',
 })
 export class DataSourcePanel {
-  private readonly router = inject(Router);
+  private readonly openDataSource = inject(OpenDataSourceService);
   private readonly state = inject(DataSourceStateService);
   private readonly modal = inject(ModalService);
 
   /** The id of the open data source, or null for the list. */
-  readonly openId = toSignal(
-    inject(ActivatedRoute).queryParamMap.pipe(
-      map((params) => {
-        const id = Number(params.get(DATA_SOURCE_QUERY_PARAM));
-        return Number.isInteger(id) && params.has(DATA_SOURCE_QUERY_PARAM) ? id : null;
-      }),
-    ),
-    { initialValue: null },
-  );
+  readonly openId = this.openDataSource.id;
 
   open(id: number): void {
     this.setOpenId(id);
@@ -62,8 +51,7 @@ export class DataSourcePanel {
     if (deleted && this.openId() === source.id) this.close();
   }
 
-  /** Changes only the query parameter, keeping the current tab and mode. */
   private setOpenId(id: number | null): void {
-    this.router.navigate([], { queryParams: { [DATA_SOURCE_QUERY_PARAM]: id }, queryParamsHandling: 'merge' });
+    this.openDataSource.open(id);
   }
 }

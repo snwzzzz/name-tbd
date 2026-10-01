@@ -1,5 +1,3 @@
-@use '../../_styles/blueprint-grid' as *;
-
 :host {
   display: block;
   height: 100%;
@@ -87,9 +85,8 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  // Transparent, so the world border shows through; the grid lines run across both
+  // Transparent, so the world border shows through; the global .blueprint-grid lines run across both
   background-color: transparent;
-  @include blueprint-grid;
 
   &.is-panning {
     cursor: grab;

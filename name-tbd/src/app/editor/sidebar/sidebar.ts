@@ -2,6 +2,8 @@ import { Component, HostAttributeToken, computed, effect, inject, signal, untrac
 import { NgComponentOutlet } from '@angular/common';
 import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 import { IconButton } from '../../components/icon-button/icon-button';
+import { TabsService } from '../../_services/tabs.service';
+import { LucideMaximize2 } from '@lucide/angular';
 import { ResizeHandle } from '../../_directives/resize-handle.directive';
 import { SidebarStateService } from '../../_services/sidebar-state.service';
 import { SIDEBAR_TABS } from '../../_constants/sidebar-tabs.constants';
@@ -21,13 +23,14 @@ const SIZES: Record<SidebarSide, { default: number; min: number }> = {
  */
 @Component({
   selector: 'app-sidebar',
-  imports: [NgComponentOutlet, CdkDropList, CdkDrag, IconButton, ResizeHandle],
+  imports: [NgComponentOutlet, CdkDropList, CdkDrag, IconButton, ResizeHandle, LucideMaximize2],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
   host: { '[class]': "'side-' + side" },
 })
 export class Sidebar {
   private readonly state = inject(SidebarStateService);
+  private readonly editorTabs = inject(TabsService);
 
   /** Static attribute, so the saved width can be set up while constructing. */
   readonly side = inject(new HostAttributeToken('side')) as SidebarSide;
@@ -78,6 +81,11 @@ export class Sidebar {
   onDragEnded(): void {
     // The click event comes right after the drop
     setTimeout(() => (this.dragging = false));
+  }
+
+  /** Opens the open panel as a tab of its own (for panels that allow it, see openInTab). */
+  openInTab(tab: SidebarTabDefinition): void {
+    this.editorTabs.openPanel(tab.id, tab.label);
   }
 
   drop(event: CdkDragDrop<SidebarSide>): void {

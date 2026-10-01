@@ -6,5 +6,3 @@ export interface CanvasContextMenu {
   y: number;
   item: { id: ComponentId; type: string };
 }
-
-export type SaveState = 'idle' | 'saving' | 'saved' | 'error';

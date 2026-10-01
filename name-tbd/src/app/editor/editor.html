@@ -5,7 +5,9 @@
     <div class="editor-content-area">
       <div class="editor-top-bar">
         <app-editor-tabs class="tabs-area" />
-        <app-mode-dropdown />
+        @if (hasModes()) {
+          <app-mode-dropdown />
+        }
       </div>
       <main class="editor-main">
         <router-outlet />
