@@ -7,3 +7,14 @@
 @use '../app/_styles/spinner';
 
 @import '@angular/cdk/overlay-prebuilt.css';
+
+// The page zooms to the window's width (see RuntimeShell): a scrollbar that came and went with
+// the page's height would change that width, and the zoom with it, back and forth
+html {
+  scrollbar-gutter: stable;
+}
+
+html,
+body {
+  background-color: var(--color-bg);
+}

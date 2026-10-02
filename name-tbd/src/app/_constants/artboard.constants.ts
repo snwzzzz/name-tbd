@@ -1,11 +1,14 @@
 import { GridStackOptions } from 'gridstack';
 
-// The artboard is a desktop browser window's page area (2:1, like a 1920 × 1080 screen minus the
-// taskbar and the browser's toolbars): 72 × 36 square cells of 20px = 1440 × 720px.
+// The artboard is the page area of a maximized desktop browser on the most common screen
+// (1920 × 1080 minus the taskbar and the browser's toolbars): 96 × 47 square cells of 20px =
+// 1920 × 940px. The exported app shows it zoomed to the window's width, so on such a screen it
+// appears at its real size. The only definition of the grid: the canvas, the layout overlay and
+// the exported app all draw from these.
 // Widget margins are 2px, so a typical button (w:5, h:2) has 96 × 36px of content.
 export const CELL_SIZE = 20;
-export const GRID_COLUMNS = 72;
-export const GRID_ROWS = 36;
+export const GRID_COLUMNS = 96;
+export const GRID_ROWS = 47;
 export const ARTBOARD_WIDTH = GRID_COLUMNS * CELL_SIZE;
 export const ARTBOARD_HEIGHT = GRID_ROWS * CELL_SIZE;
 /** Inset of a widget in its cells (each side), so neighbours keep a 4px gap. */
@@ -14,8 +17,8 @@ export const WIDGET_MARGIN = 2;
 export const CANVAS_MIN_ZOOM = 0.05;
 export const CANVAS_MAX_ZOOM = 4;
 /**
- * The blueprint grid behind the artboard, in artboard px: both sizes divide the artboard
- * (1440 × 720) evenly, so its edges sit on major lines. Minor lines fade out below this on-screen size.
+ * The blueprint grid behind the artboard, in artboard px, anchored at its top-left corner: minor
+ * lines are cells, major lines every 6 cells. Minor lines fade out below this on-screen size.
  */
 export const BACKDROP_GRID_MINOR = CELL_SIZE;
 export const BACKDROP_GRID_MAJOR = CELL_SIZE * 6;

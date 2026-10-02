@@ -5,7 +5,7 @@ import { LayoutItem } from '../../../_types/layout.types';
 import { isContainer, widgetComponent, widgetProps } from '../widget-components';
 
 /**
- * Placed widgets drawn in their grid cells (72 × 36 over the artboard, like the canvas), with
+ * Placed widgets drawn in their grid cells (the artboard's, like the canvas), with
  * containers as nested grids. Draws the exported app's pages and the editor's layout overlay.
  */
 @Component({

@@ -10,6 +10,7 @@ import com.example.ntbd.controller.ExportController;
 import com.example.ntbd.dto.NodeDto;
 import com.example.ntbd.dto.PageDto;
 import com.example.ntbd.dto.UiComponentDto;
+import com.example.ntbd.export.definition.AppDefinition;
 import com.example.ntbd.export.definition.AppDefinitionService;
 import com.example.ntbd.service.DataSourceService;
 import com.example.ntbd.service.EdgeService;
@@ -93,7 +94,7 @@ class AppExportIntegrationTest {
     void holdsTheBranchsPagesWithTheirWidgetsAndWorkflows() {
         JsonNode definition = definition();
 
-        assertEquals(2, definition.get("version").asInt());
+        assertEquals(AppDefinition.VERSION, definition.get("version").asInt());
         assertEquals("Test Application", definition.get("app").get("name").asString());
 
         JsonNode page = find(definition.get("pages"), "name", "About");

@@ -34,9 +34,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PagesContributor implements AppDefinitionContributor {
 
-    private static final int CELL_SIZE = 20;
-    private static final int GRID_COLUMNS = 72;
-
     private final PageService pageService;
     private final UiComponentService uiComponentService;
     private final WorkflowService workflowService;
@@ -56,18 +53,12 @@ public class PagesContributor implements AppDefinitionContributor {
     }
 
     private PageDefinition page(PageDto page) {
-        List<ComponentDefinition> comps = components(page.id());
-        int contentHeight = comps.stream()
-                .mapToInt(c -> (int) ((c.y() != null ? c.y() : 0) + (c.h() != null ? c.h() : 0)) * CELL_SIZE)
-                .max().orElse(0);
-
         return new PageDefinition(
                 page.id(),
                 Objects.requireNonNullElse(page.name(), ""),
                 Objects.requireNonNullElse(page.path(), ""),
                 page.layout(),
-                contentHeight,
-                comps,
+                components(page.id()),
                 workflow(page.id()));
     }
 
@@ -79,55 +70,20 @@ public class PagesContributor implements AppDefinitionContributor {
         return all.stream()
                 .filter(c -> c.parentId() == null)
                 .sorted(Comparator.comparing(UiComponentDto::id))
-                .map(c -> component(c, byParent, (double) GRID_COLUMNS, null))
+                .map(c -> component(c, byParent))
                 .toList();
     }
 
-    private ComponentDefinition component(UiComponentDto c, Map<Long, List<UiComponentDto>> byParent, Double parentW, Double parentH) {
+    private ComponentDefinition component(UiComponentDto c, Map<Long, List<UiComponentDto>> byParent) {
         Map<String, Object> props = new LinkedHashMap<>(widgetCatalog.defaultsOf(c.type()));
         if (c.props() != null) props.putAll(c.props());
 
-        Double x = c.x() != null ? c.x() : 0.0;
-        Double y = c.y() != null ? c.y() : 0.0;
-        Double w = c.w() != null ? c.w() : 1.0;
-        Double h = c.h() != null ? c.h() : 1.0;
-
-        Map<String, String> layout;
-        if (parentH == null) {
-            // Root component
-            layout = Map.of(
-                "left", formatPct(x / parentW * 100),
-                "top", formatPx(y * CELL_SIZE),
-                "width", formatPct(w / parentW * 100),
-                "height", formatPx(h * CELL_SIZE)
-            );
-        } else {
-            // Nested component
-            layout = Map.of(
-                "left", formatPct(x / parentW * 100),
-                "top", formatPct(y / parentH * 100),
-                "width", formatPct(w / parentW * 100),
-                "height", formatPct(h / parentH * 100)
-            );
-        }
-
         List<ComponentDefinition> children = byParent.getOrDefault(c.id(), List.of()).stream()
                 .sorted(Comparator.comparing(UiComponentDto::id))
-                .map(child -> component(child, byParent, w, h))
+                .map(child -> component(child, byParent))
                 .toList();
-        return new ComponentDefinition(c.id(), c.parentId(), c.type(), c.x(), c.y(), c.w(), c.h(), layout, props,
+        return new ComponentDefinition(c.id(), c.parentId(), c.type(), c.x(), c.y(), c.w(), c.h(), props,
                 children.isEmpty() ? null : children);
-    }
-
-    private String formatPct(double value) {
-        if (value == Math.floor(value)) {
-            return String.format("%.0f%%", value);
-        }
-        return String.format("%.2f%%", value).replace(",", "."); // prevent locale issues
-    }
-
-    private String formatPx(double value) {
-        return String.format("%.0fpx", value);
     }
 
     private WorkflowDefinition workflow(Long pageId) {
@@ -147,13 +103,12 @@ public class PagesContributor implements AppDefinitionContributor {
     }
 
     public record PageDefinition(Long id, String name, String path, boolean layout,
-                                 int contentHeight,
                                  List<ComponentDefinition> components, WorkflowDefinition workflow) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record ComponentDefinition(Long id, Long parentId, String type, Double x, Double y, Double w, Double h,
-                                      Map<String, String> layout, Map<String, Object> props, List<ComponentDefinition> children) {
+                                      Map<String, Object> props, List<ComponentDefinition> children) {
     }
 
     public record WorkflowDefinition(List<NodeDefinition> nodes, List<EdgeDefinition> edges) {

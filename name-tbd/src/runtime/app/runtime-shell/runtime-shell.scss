@@ -1,18 +1,17 @@
+// As wide as the window; scrolls down when the zoomed page is taller than the window
 :host {
   display: block;
-  min-height: 100vh;
+  min-height: 100%;
   background: var(--color-bg);
 }
 
-.page-container {
+// Drawn at its real size (like the canvas) and zoomed to the window's width
+.artboard {
   position: relative;
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-  min-height: 100vh;
+  background: var(--color-bg);
 }
 
-.layout-layer {
+.layout {
   position: absolute;
   inset: 0;
 }

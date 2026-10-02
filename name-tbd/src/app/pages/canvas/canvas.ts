@@ -20,8 +20,8 @@ import { ZoomControls } from '../../components/zoom-controls/zoom-controls';
 import { ZoomButton } from '../../components/zoom-controls/zoom-button';
 import { DEFAULT_WIDGET_TYPE, widgetDefinition } from '../../_constants/widget-registry.constants';
 import {
-  ARTBOARD_HEIGHT, ARTBOARD_WIDTH, CANVAS_FIT_PADDING, CANVAS_MAX_ZOOM, CANVAS_MIN_ZOOM, ROOT_GRID_OPTIONS,
-  subGridOptions,
+  ARTBOARD_HEIGHT, ARTBOARD_WIDTH, CANVAS_FIT_PADDING, CANVAS_MAX_ZOOM, CANVAS_MIN_ZOOM, GRID_COLUMNS, GRID_ROWS,
+  ROOT_GRID_OPTIONS, subGridOptions,
 } from '../../_constants/artboard.constants';
 import { widgetTrigger } from '../../_constants/workflow.constants';
 import { CanvasContextMenu } from '../../_types/canvas.types';
@@ -42,7 +42,7 @@ const BUTTON_ZOOM_STEP = 1.25;
 
 
 /**
- * The page editor: a 2:1 artboard (a desktop browser window's page area) with a GridStack grid (containers get nested grids).
+ * The page editor: an artboard (a desktop browser window's page area) with a GridStack grid (containers get nested grids).
  * Widgets are Angular components mounted into the grid items; GridStack owns the layout,
  * and every move/resize/drop is persisted. In preview, widgets fire their events (WidgetEventsService) and the workflows run.
  */
@@ -74,6 +74,14 @@ export class Canvas implements AfterViewInit {
   private readonly widgetRefs = new Map<string, ComponentRef<BaseWidget>>();
   /** The last persisted geometry of each saved widget, to only send what changed. */
   private readonly savedGeometry = new Map<string, GridGeometry>();
+
+  /** The artboard's size and cell lines (see canvas.scss). */
+  readonly artboardSize = {
+    '--artboard-width': `${ARTBOARD_WIDTH}px`,
+    '--artboard-height': `${ARTBOARD_HEIGHT}px`,
+    '--grid-columns': String(GRID_COLUMNS),
+    '--grid-rows': String(GRID_ROWS),
+  };
 
   // ─── Zoom / pan (the artboard is centered; pan moves it from there) ──────
   readonly zoom = signal(1);

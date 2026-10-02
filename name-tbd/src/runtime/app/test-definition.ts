@@ -1,4 +1,4 @@
-import { AppDefinition } from '../../app/core/definition/app-definition';
+import { APP_DEFINITION_VERSION, AppDefinition } from '../../app/core/definition/app-definition';
 import { CLICK_EVENT } from '../../app/_constants/widget-events.constants';
 
 /**
@@ -7,7 +7,7 @@ import { CLICK_EVENT } from '../../app/_constants/widget-events.constants';
  */
 export function testDefinition(): AppDefinition {
   return {
-    version: 1,
+    version: APP_DEFINITION_VERSION,
     app: { id: 7, name: 'Shop' },
     dataRevision: 'r1',
     homePageId: 1,

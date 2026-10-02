@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import { vi } from 'vitest';
 import { RuntimeShell } from './runtime-shell';
 import { runtimeConfig } from '../runtime.config';
 import { testDefinition } from '../test-definition';
 import { APP_DATA } from '../../../app/core/ports/app-ports';
 import { AppDefinition } from '../../../app/core/definition/app-definition';
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH } from '../../../app/_constants/artboard.constants';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve));
 
@@ -28,7 +30,7 @@ describe('RuntimeShell', () => {
     const fixture = await start();
     let el = await settle(fixture);
 
-    expect([...el.querySelectorAll('.layout-layer nav a')].map((a) => a.textContent)).toEqual(['Home', 'About']);
+    expect([...el.querySelectorAll('.layout nav a')].map((a) => a.textContent)).toEqual(['Home', 'About']);
     expect(el.querySelector('app-runtime-page')?.textContent).toContain('Hello');
 
     (el.querySelector('app-runtime-page button') as HTMLButtonElement).click();
@@ -45,8 +47,22 @@ describe('RuntimeShell', () => {
 
     expect(TestBed.inject(Router).url).toBe('/about');
     expect(el.querySelector('app-runtime-page')?.textContent).toContain('Alice');
-    expect(el.querySelector('.layout-layer nav a[aria-current="page"]')?.textContent).toBe('About');
-    expect(el.querySelector('.layout-layer nav a')?.getAttribute('href')).toBe('#/');
+    expect(el.querySelector('.layout nav a[aria-current="page"]')?.textContent).toBe('About');
+    expect(el.querySelector('.layout nav a')?.getAttribute('href')).toBe('#/');
+  });
+
+  it('draws the artboard at its real size, zoomed to the window width', async () => {
+    const clientWidth = vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(ARTBOARD_WIDTH / 2);
+    try {
+      const el = await settle(await start());
+      const artboard = el.querySelector<HTMLElement>('.artboard')!;
+
+      expect(artboard.style.width).toBe(`${ARTBOARD_WIDTH}px`);
+      expect(artboard.style.height).toBe(`${ARTBOARD_HEIGHT}px`);
+      expect(artboard.style.zoom).toBe('0.5');
+    } finally {
+      clientWidth.mockRestore();
+    }
   });
 
   it('keeps data changes in the browser for the next visit', async () => {
