@@ -28,6 +28,21 @@ describe('SidebarStateService', () => {
     expect(state.activeTab('right')()).toBe('p');
   });
 
+  it('toggles a sidebar closed and open again on the tab it showed last (Ctrl+B)', () => {
+    const state = create();
+    state.select('left', 'b');
+
+    state.toggle('left');
+    expect(state.activeTab('left')()).toBeNull();
+    state.toggle('left');
+    expect(state.activeTab('left')()).toBe('b');
+
+    // Collapsed by clicking its open tab: reopens that one too
+    state.select('left', 'b');
+    state.toggle('left');
+    expect(state.activeTab('left')()).toBe('b');
+  });
+
   it('reorders within a sidebar and moves tabs across, opening the moved one', () => {
     const state = create();
 

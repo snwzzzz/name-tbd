@@ -3,6 +3,8 @@ import { Rect } from '../_types/viewport.types';
 import { SetTextEditor } from '../editor/action-editors/set-text-editor';
 import { TableActionEditor } from '../editor/action-editors/table-action-editor';
 import { ShowDetailEditor } from '../editor/action-editors/show-detail-editor';
+import { SearchEditor } from '../editor/action-editors/search-editor';
+import { SEARCH_ALL_TABLES } from '../core/workflow/actions/search/search.handler';
 
 export const CONDITION_OPERATORS: ConditionOperator[] = [
   { id: 'equals', label: 'Equals', requiresValue: true },
@@ -38,9 +40,15 @@ export const ACTION_TYPES: ActionType[] = [
     defaultConfig: { tableId: '', detailId: '', detailPageId: '' },
     editor: ShowDetailEditor,
   },
+  {
+    id: 'search',
+    label: 'Search table',
+    defaultConfig: { inputId: '', tableId: SEARCH_ALL_TABLES },
+    editor: SearchEditor,
+  },
 ];
 
-export { CLICK_EVENT, ROW_DOUBLE_CLICK_EVENT } from './widget-events.constants';
+export { CLICK_EVENT, INPUT_EVENT, ROW_DOUBLE_CLICK_EVENT } from './widget-events.constants';
 
 // Widget triggers live in the runtime core; re-exported for the editor
 export { WIDGET_TRIGGERS, widgetTrigger } from '../core/workflow/widget-triggers';

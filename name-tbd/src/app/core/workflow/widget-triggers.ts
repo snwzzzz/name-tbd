@@ -1,6 +1,6 @@
-import { LucideMousePointerClick, LucideSheet } from '@lucide/angular';
+import { LucideMousePointerClick, LucideSheet, LucideTextCursorInput } from '@lucide/angular';
 import { WidgetTrigger } from '../../_types/workflow.types';
-import { CLICK_EVENT, ROW_DOUBLE_CLICK_EVENT } from '../../_constants/widget-events.constants';
+import { CLICK_EVENT, INPUT_EVENT, ROW_DOUBLE_CLICK_EVENT } from '../../_constants/widget-events.constants';
 
 /**
  * The widget events that can start a flow: they're offered in the trigger node and in the
@@ -22,6 +22,14 @@ export const WIDGET_TRIGGERS: WidgetTrigger[] = [
     icon: LucideSheet,
     nameProp: 'title',
     describe: (name) => `a row in table ${name} is double-clicked`,
+  },
+  {
+    widgetType: 'input',
+    event: INPUT_EVENT,
+    title: 'On input',
+    icon: LucideTextCursorInput,
+    nameProp: 'placeholder',
+    describe: (name) => `something is typed into input ${name}`,
   },
 ];
 

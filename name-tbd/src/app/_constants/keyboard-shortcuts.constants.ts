@@ -17,6 +17,7 @@ export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   { id: 'save', keys: 'Ctrl+S', description: 'Save property changes now' },
   { id: 'new-tab', keys: 'Alt+N', description: 'New tab' },
   { id: 'close-tab', keys: 'Alt+W', description: 'Close the tab' },
+  { id: 'toggle-left-sidebar', keys: 'Ctrl+B', description: 'Show or hide the left sidebar' },
   { id: 'delete', keys: 'Delete', description: 'Delete the selected widget (Edit mode)' },
   { id: 'help', keys: '?', description: 'Show these shortcuts' },
 ];

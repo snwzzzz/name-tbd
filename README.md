@@ -406,7 +406,7 @@ The editor works with **tabs**, like an IDE. A tab id's kind is decided by `tabK
 - **Pan and zoom**: viewport controls, zoom buttons, fit to screen.
 - **Drag from the palette** to create a widget (size from the catalog). Containers get nested grids.
 - **Moving and resizing** updates geometry (cells). Only types marked `resizable` resize.
-- **Selection** feeds the properties panel and the Layers panel.
+- **Selection** feeds the properties panel and the Layers panel. **Double-clicking** a widget (here or in the Layers panel) selects it and opens the Properties tab.
 - A **context menu** includes "Add action", which adds a flow for the widget's trigger and jumps to the workflow editor.
 - The **layout overlay** (`pages/canvas/layout-overlay`) draws the layout page's widgets under the current page: faded while editing, live while previewing. It reuses the core's `WidgetGrid`.
 
@@ -430,14 +430,14 @@ Each widget is created with `ViewContainerRef.createComponent(WIDGET_COMPONENTS[
 2. The canvas becomes static (no dragging). Widget events are forwarded to `WorkflowRuntimeService`, and **page-load** workflows run.
 3. Data changes go to **`PreviewDataService`**, which makes a copy of a data source on the first change. The real data is never touched.
 4. Following a link to another page keeps the preview going on that page (`continueOn`). The copied data, table selections and the rows shown in detail sections stay.
-5. Stopping the preview throws everything away. Workflow changes such as `set_text` are undone (`WorkflowRuntimeService.reset`), and the preview data, selections and detail records are reset.
+5. Stopping the preview throws everything away. Workflow changes such as `set_text` are undone (`WorkflowRuntimeService.reset`), and the preview data, selections, detail records, typed input and table searches are reset.
 
 ### 7.7 The workflow editor (Workflow mode)
 
 `pages/workflow-editor` shows the page's workflow as a node graph (Foblex Flow):
 
 - **Trigger** nodes start a flow:
-  - a widget event from `WIDGET_TRIGGERS` (button click, table row double-click);
+  - a widget event from `WIDGET_TRIGGERS` (button click, table row double-click, input typed into), of a widget on the page or on the layout page (a layout widget's events run the open page's flows, e.g. a search bar in the header);
   - or page load (a trigger without an element).
 - **Action** nodes do something. Their type comes from `ACTION_TYPES`, and their settings are edited by the action's editor component (`editor/action-editors/*`).
 - **Condition** nodes exist in the model but are **not executed** by the browser runtime yet.
@@ -455,6 +455,7 @@ You import CSV files as data sources, browse their rows (`editor/data-source-*`,
 | `Alt+P` | Start or stop the preview |
 | `Ctrl+S` | Save property changes now |
 | `Alt+N` / `Alt+W` | New tab / close tab |
+| `Ctrl+B` | Show or hide the left sidebar (reopens the tab it showed last; also works while typing) |
 | `Delete` | Delete the selected widget |
 | `?` | Show the shortcuts |
 
@@ -493,10 +494,11 @@ The widgets:
 | Widget | Ports used | Behavior while live |
 |---|---|---|
 | `label` | none | Shows text in the chosen color and size. |
+| `input` | `APP_SESSION` | A text field (optionally a search field with an icon). What's typed is kept in `InputValuesService` for actions to read. Fires `input_change` once typing pauses for its `debounceMs` (default 300), or at once on Enter. Read-only while editing, so clicking it selects the widget. |
 | `button` | `APP_SESSION` | Click fires `element_click` through `WidgetEventsService`. Shows hover and press states. |
 | `link` | `APP_PAGES`, `APP_NAVIGATION`, `APP_SESSION` | Opens its page, or its URL in a new browser tab. |
 | `nav` | `APP_PAGES`, `APP_NAVIGATION`, `APP_SESSION` | Links to chosen pages and marks the current one. |
-| `table` | `APP_DATA`, `APP_SESSION` | Shows rows (chosen columns, max rows, striped). Click selects (single or multi); double-click fires `row_dblclick`. |
+| `table` | `APP_DATA`, `APP_SESSION` | Shows rows (chosen columns, max rows, striped). Click selects (single or multi); double-click fires `row_dblclick`. Shows only the rows matching its search (`TableFilterService`, set by the search action). |
 | `detail` | `APP_DATA`, `APP_SESSION` | Shows the row a workflow sent to it, with current values. While editing, shows its fields empty. |
 | `container` | none | Draws nothing itself: grids give it a nested grid. |
 | `form` | none | Legacy (`palette: false`); still drawn on old pages. |
@@ -535,9 +537,12 @@ The **actions**:
 | `table` / `edit_row` | `EditRowHandler` | Needs exactly one selected row; edits it in the form modal. |
 | `table` / `delete_rows` | `DeleteRowsHandler` | Deletes all selected rows after one confirmation. |
 | `show_detail` | `ShowDetailHandler` | Sends the selected row to a detail section (`DetailRecordsService`), opening the detail's page if it's another one. |
+| `search` | `SearchHandler` | Filters one table, or every table on the page (`tableId: "all"`, a global search), by an input's text: every word must appear in one of the shown columns, ignoring case; empty shows all rows. Rows it hides are deselected. Start it **on type** with the input's "On input" trigger (debounced), or **on a button press** with a button's "On click". |
 
 Shared runtime state lives in `core/services`:
 - `TableSelectionService`: selected rows per table
+- `TableFilterService`: the search each table is filtered by
+- `InputValuesService`: what's typed into each input
 - `DetailRecordsService`: which row each detail section shows
 - `WidgetEventsService`: the event bus
 

@@ -50,8 +50,14 @@ export interface ShowDetailConfig {
   detailPageId: string;      // the page the detail section is on (opened if it isn't this one)
 }
 
+/** Config of `search`: filters a table (or every table on the page) by what's typed into an input. */
+export interface SearchConfig {
+  inputId: string;           // id of the input whose text is searched for
+  tableId: string;           // id of a data table on this page, or 'all' (see SEARCH_ALL_TABLES)
+}
+
 /** Config of any action. */
-export type ActionConfig = SetTextConfig | TableActionConfig | ShowDetailConfig;
+export type ActionConfig = SetTextConfig | TableActionConfig | ShowDetailConfig | SearchConfig;
 
 export interface ActionNode extends FlowNodeBase {
   type: 'Action';

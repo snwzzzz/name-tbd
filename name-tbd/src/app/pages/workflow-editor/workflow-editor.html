@@ -36,6 +36,7 @@
             [attr.data-node-id]="node.id"
             [node]="node"
             [pageItems]="pageItems()"
+            [triggerItems]="triggerItems()"
             (fNodePositionChange)="onNodePositionChange(node, $event)"
             (changed)="updateNode($event)"
             (deleted)="deleteNode(node.id)"

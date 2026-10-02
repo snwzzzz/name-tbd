@@ -1,0 +1,18 @@
+<label class="input-widget">
+  @if (label(); as label) {
+    <span class="input-label">{{ label }}</span>
+  }
+  <span class="field">
+    @if (searchIcon()) {
+      <svg lucideSearch class="field-icon" aria-hidden="true"></svg>
+    }
+    <input
+      [attr.type]="searchIcon() ? 'search' : 'text'"
+      [placeholder]="placeholder()"
+      [value]="value()"
+      [readOnly]="!session.live()"
+      [attr.tabindex]="session.live() ? null : -1"
+      (input)="onInput($any($event.target).value)"
+      (keydown.enter)="onEnter()" />
+  </span>
+</label>

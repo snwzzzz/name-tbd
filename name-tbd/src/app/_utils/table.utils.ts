@@ -20,3 +20,11 @@ export function toTableData(source: { columns?: string[]; rows?: string[][] }): 
     rows: (source.rows ?? []).map((values, index) => ({ id: String(index), values })),
   };
 }
+
+/** Whether a row matches a search: every word of it appears in one of the values, ignoring case. An empty search matches all. */
+export function rowMatches(values: string[], query: string): boolean {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const text = values.map((v) => v.toLowerCase());
+  return words.every((word) => text.some((value) => value.includes(word)));
+}

@@ -35,8 +35,13 @@ const prop = (item: LayoutItem, key: string) => propText(item.props, key);
 })
 export class WorkflowNode {
   readonly node = input.required<FlowNode>();
-  /** The page's widgets, for the button picker and the actions' pickers. */
+  /** The page's widgets, for the actions' pickers. */
   readonly pageItems = input.required<LayoutItem[]>();
+  /**
+   * The widgets whose events can start this page's flows: its own, and the layout page's (shown
+   * around it, e.g. a search bar in the header; their events run the open page's flows).
+   */
+  readonly triggerItems = input<LayoutItem[]>([]);
 
   readonly changed = output<FlowNode>();
   readonly deleted = output<void>();
@@ -47,7 +52,7 @@ export class WorkflowNode {
   readonly title = computed(() => {
     const node = this.node();
     if (node.type === 'Trigger') {
-      const widget = node.elementId ? this.pageItems().find((i) => i.id?.toString() === node.elementId) : undefined;
+      const widget = node.elementId ? this.triggerItems().find((i) => i.id?.toString() === node.elementId) : undefined;
       return widgetTrigger(widget?.type)?.title ?? (node.elementId ? 'Trigger' : 'On page load');
     }
     return node.type;
@@ -56,7 +61,7 @@ export class WorkflowNode {
   /** Page load, then every widget event that can start a flow (see WIDGET_TRIGGERS). */
   readonly triggerOptions = computed<SelectOption[]>(() => [
     { value: '', label: 'the page loads', icon: LucideFileText },
-    ...this.pageItems().flatMap((i) => {
+    ...this.triggerItems().flatMap((i) => {
       const trigger = widgetTrigger(i.type);
       if (!trigger || typeof i.id !== 'number') return [];
       const name = `“${prop(i, trigger.nameProp) ?? trigger.widgetType}” (#${i.id})`;
@@ -74,7 +79,7 @@ export class WorkflowNode {
   private readonly triggerElement = computed(() => {
     const node = this.node();
     const elementId = node.type === 'Trigger' ? node.elementId : undefined;
-    return elementId ? this.pageItems().find((i) => i.id?.toString() === elementId) ?? null : null;
+    return elementId ? this.triggerItems().find((i) => i.id?.toString() === elementId) ?? null : null;
   });
 
   /** Label and color of the trigger's button, to draw it like it looks on the page. */

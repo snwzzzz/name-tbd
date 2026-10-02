@@ -3,6 +3,7 @@ import { ActionHandler } from '../../_types/workflow.types';
 import { SetTextHandler } from './actions/set-text/set-text.handler';
 import { TableActionHandler } from './actions/table/table-action.handler';
 import { ShowDetailHandler } from './actions/show-detail/show-detail.handler';
+import { SearchHandler } from './actions/search/search.handler';
 
 /**
  * What each workflow action does, by action id: the editor's preview and the exported app run
@@ -12,4 +13,5 @@ export const ACTION_HANDLERS: Record<string, Type<ActionHandler>> = {
   set_text: SetTextHandler,
   table: TableActionHandler,
   show_detail: ShowDetailHandler,
+  search: SearchHandler,
 };

@@ -24,6 +24,22 @@
       ]
     },
     {
+      "type": "input",
+      "name": "Input",
+      "icon": "text-cursor-input",
+      "category": "basic",
+      "keywords": ["text", "search", "field", "filter"],
+      "size": { "w": 16, "h": 3, "minW": 5, "minH": 2 },
+      "resizable": true,
+      "props": [
+        { "key": "label", "type": "string", "label": "Label", "default": "", "group": "Content" },
+        { "key": "placeholder", "type": "string", "label": "Placeholder", "default": "Search…", "group": "Content" },
+        { "key": "debounceMs", "type": "number", "label": "Wait after typing (ms)", "default": "300", "group": "Behavior" },
+        { "key": "searchIcon", "type": "boolean", "label": "Search icon", "default": "true", "group": "Style" },
+        { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
+      ]
+    },
+    {
       "type": "button",
       "name": "Button",
       "icon": "mouse-pointer-click",

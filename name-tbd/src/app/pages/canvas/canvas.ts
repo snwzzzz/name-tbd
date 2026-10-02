@@ -6,6 +6,8 @@ import { GridItemHTMLElement, GridStack, GridStackNode } from 'gridstack';
 import { LucideZap } from '@lucide/angular';
 import { LayoutStateService } from '../../_services/layout-state.service';
 import { SelectionService } from '../../_services/selection.service';
+import { SidebarStateService } from '../../_services/sidebar-state.service';
+import { PROPERTIES_TAB_ID } from '../../_constants/sidebar.constants';
 import { TabsService } from '../../_services/tabs.service';
 import { WorkflowRuntimeService } from '../../core/workflow/workflow-runtime.service';
 import { PreviewSessionService } from '../../_services/preview-session.service';
@@ -56,6 +58,7 @@ export class Canvas implements AfterViewInit {
   private readonly tabs = inject(TabsService);
   private readonly layoutState = inject(LayoutStateService);
   private readonly selection = inject(SelectionService);
+  private readonly sidebars = inject(SidebarStateService);
   private readonly workflowState = inject(WorkflowStateService);
   private readonly workflowRuntime = inject(WorkflowRuntimeService);
   private readonly previewSession = inject(PreviewSessionService);
@@ -192,6 +195,17 @@ export class Canvas implements AfterViewInit {
     } else {
       this.selection.clear();
     }
+  }
+
+  /** Double-clicking a widget selects it and shows its properties, in whichever sidebar that tab is. */
+  @HostListener('dblclick', ['$event'])
+  onDoubleClick(event: MouseEvent): void {
+    if (this.previewMode()) return;
+    // The innermost widget under the pointer (a widget inside a container wins)
+    const id = (event.target as HTMLElement).closest('.grid-stack-item')?.getAttribute('data-gs-id');
+    if (!id) return;
+    this.selection.select(id);
+    this.sidebars.open(PROPERTIES_TAB_ID);
   }
 
   @HostListener('window:keydown', ['$event'])

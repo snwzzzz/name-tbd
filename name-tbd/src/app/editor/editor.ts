@@ -5,6 +5,7 @@ import { Navbar } from './navbar/navbar';
 import { EditorTabs } from './editor-tabs/editor-tabs';
 import { ModeDropdown } from './mode-dropdown/mode-dropdown';
 import { TabsService } from '../_services/tabs.service';
+import { SidebarStateService } from '../_services/sidebar-state.service';
 import { PropsAutosaveService } from '../_services/props-autosave.service';
 import { RecentPagesService } from '../_services/recent-pages.service';
 import { ModalService } from '../_services/modal/modal.service';
@@ -23,6 +24,7 @@ export class Editor {
   private readonly tabs = inject(TabsService);
   private readonly autosave = inject(PropsAutosaveService);
   private readonly modal = inject(ModalService);
+  private readonly sidebars = inject(SidebarStateService);
 
   constructor() {
     // Starts noticing which pages are opened, for the Start tab's recent pages
@@ -43,16 +45,19 @@ export class Editor {
       const id = this.tabs.activeTabId();
       if (id) this.tabs.closeTab(id);
     },
+    'toggle-left-sidebar': () => this.sidebars.toggle('left'),
     'help': () => this.modal.open(ShortcutsModal, { width: '440px', ariaLabel: 'Keyboard shortcuts' }),
   };
+  /** Shortcuts that also work while typing in a field (they don't type anything). */
+  private readonly whileTyping = new Set(['save', 'toggle-left-sidebar']);
 
   @HostListener('document:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
     if (event.repeat) return;
     for (const [id, run] of Object.entries(this.shortcuts)) {
       if (!matchesShortcut(event, id)) continue;
-      // While typing only Ctrl+S counts; "?" and the others are just typed
-      if (isTyping() && id !== 'save') return;
+      // While typing only Ctrl+S and Ctrl+B count; "?" and the others are just typed
+      if (isTyping() && !this.whileTyping.has(id)) return;
       event.preventDefault();
       run();
       return;

@@ -3,6 +3,7 @@ import { TableWidget } from './table-widget';
 import { WidgetProps } from '../../_types/layout.types';
 import { WidgetEvent, WidgetEventsService } from '../../core/services/widget-events.service';
 import { TableSelectionService } from '../../core/services/table-selection.service';
+import { TableFilterService } from '../../core/services/table-filter.service';
 import { DataSourceSnapshot } from '../../core/ports/memory-app-data';
 import { fakeApp, provideFakeApp } from '../../core/testing/fake-app';
 
@@ -64,6 +65,24 @@ describe('TableWidget', () => {
     expect(render({ dataSourceId: '' }).textContent).toContain('Pick a data source');
     TestBed.resetTestingModule();
     expect(render({ dataSourceId: '9' }).textContent).toContain('Data source not found');
+  });
+
+  it('shows only the rows matching its search while the app runs, or says none do', () => {
+    const fixture = mount({ dataSourceId: '5' });
+    const el = fixture.nativeElement as HTMLElement;
+    const names = () => [...el.querySelectorAll('tbody tr')].map((tr) => tr.querySelector('td')?.textContent);
+    TestBed.inject(TableFilterService).set('1', 'b');
+    fixture.detectChanges();
+    expect(names()).toEqual(['Alice', 'Bob', 'Carol']); // editing: no filter
+
+    fakeApp().session.start('page');
+    fixture.detectChanges();
+    expect(names()).toEqual(['Alice', 'Bob']); // "b": Alice in Bern, Bob
+
+    TestBed.inject(TableFilterService).set('1', 'zurich');
+    fixture.detectChanges();
+    expect(names()).toEqual([]);
+    expect(el.textContent).toContain('No rows match “zurich”');
   });
 
   it('keeps the editor hint out of the running app', () => {

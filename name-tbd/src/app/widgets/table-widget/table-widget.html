@@ -39,6 +39,9 @@
         </tbody>
       </table>
     </div>
+    @if (query() && rows().length === 0) {
+      <div class="table-message">No rows match “{{ query() }}”.</div>
+    }
     @if (hiddenRowCount() > 0) {
       <div class="table-message">+ {{ hiddenRowCount() }} more rows</div>
     }

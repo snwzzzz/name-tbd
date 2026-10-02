@@ -10,6 +10,7 @@ import {
 } from '@lucide/angular';
 import { WorkflowStateService } from '../../_services/workflow-state.service';
 import { LayoutStateService } from '../../_services/layout-state.service';
+import { PagesStateService } from '../../_services/pages-state.service';
 import { ContextMenu } from '../../components/context-menu/context-menu';
 import { ContextMenuItem } from '../../components/context-menu/context-menu-item';
 import { ContextMenuDivider } from '../../components/context-menu/context-menu-divider';
@@ -40,6 +41,7 @@ const BUTTON_ZOOM_STEP = 1.25;
 export class WorkflowEditor {
   private readonly workflowState = inject(WorkflowStateService);
   private readonly layoutState = inject(LayoutStateService);
+  private readonly pages = inject(PagesStateService);
   private readonly flowEl = viewChild.required<string, ElementRef<HTMLElement>>('flowEl', { read: ElementRef });
   private readonly controls = viewChild.required(ViewportControls);
 
@@ -52,6 +54,16 @@ export class WorkflowEditor {
   readonly connections = computed(() => this.workflowState.getGraphForTab(this.tabId()).connections);
   /** The page's widgets, for the nodes' button and label pickers. */
   readonly pageItems = computed(() => flattenTree(this.layoutState.getLayout(this.tabId())));
+  /** The layout page's id, unless it's the page being edited. */
+  private readonly layoutPageId = computed(() => {
+    const id = this.pages.layoutPage()?.id;
+    return id != null && String(id) !== this.tabId() ? String(id) : null;
+  });
+  /** Widgets whose events can start this page's flows: its own and the layout page's (they run the open page's flows). */
+  readonly triggerItems = computed(() => {
+    const layoutId = this.layoutPageId();
+    return layoutId ? [...this.pageItems(), ...flattenTree(this.layoutState.getLayout(layoutId))] : this.pageItems();
+  });
 
   // ─── Viewport (screen = pan + world × zoom) ──────────────────────────────
   readonly zoom = signal(1);
@@ -88,6 +100,14 @@ export class WorkflowEditor {
     effect(() => {
       const tabId = this.tabId();
       if (tabId) untracked(() => this.load(tabId));
+    });
+    // The layout page's widgets too, for the trigger picker
+    this.pages.ensureLoaded();
+    effect(() => {
+      const layoutId = this.layoutPageId();
+      if (layoutId) untracked(() => this.layoutState.loadLayoutForTab(layoutId).subscribe({
+        error: (err) => console.error('Failed to load the layout page widgets', err),
+      }));
     });
   }
 

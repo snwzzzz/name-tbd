@@ -10,6 +10,7 @@ import { TableWidget } from '../../widgets/table-widget/table-widget';
 import { LinkWidget } from '../../widgets/link-widget/link-widget';
 import { NavWidget } from '../../widgets/nav-widget/nav-widget';
 import { DetailWidget } from '../../widgets/detail-widget/detail-widget';
+import { InputWidget } from '../../widgets/input-widget/input-widget';
 
 // Widget types and their settings live in the widget catalog (shared with the backend, see
 // core/catalog). Here each type gets the component that draws it, in the editor and in the
@@ -19,6 +20,7 @@ import { DetailWidget } from '../../widgets/detail-widget/detail-widget';
 export const WIDGET_COMPONENTS: Record<string, Type<BaseWidget>> = {
   button: ButtonWidget,
   label: LabelWidget,
+  input: InputWidget,
   form: FormWidget,
   table: TableWidget,
   link: LinkWidget,

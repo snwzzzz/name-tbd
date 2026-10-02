@@ -2,11 +2,12 @@ import { Component, computed, effect, inject } from '@angular/core';
 import { BaseWidget } from '../../_directives/base-widget.directive';
 import { APP_DATA, APP_SESSION } from '../../core/ports/app-ports';
 import { TableSelectionService } from '../../core/services/table-selection.service';
+import { TableFilterService } from '../../core/services/table-filter.service';
 import { WidgetEventsService } from '../../core/services/widget-events.service';
 import { ROW_DOUBLE_CLICK_EVENT } from '../../_constants/widget-events.constants';
 import { TableData } from '../../_types/data-source.types';
 import { propBool, propNumber } from '../../_utils/widget-props.utils';
-import { parseColumnList, visibleColumnIndexes } from '../../_utils/table.utils';
+import { parseColumnList, rowMatches, visibleColumnIndexes } from '../../_utils/table.utils';
 
 export const TABLE_DEFAULT_MAX_ROWS = 10;
 const MAX_ROWS_LIMIT = 1000;
@@ -14,7 +15,7 @@ const MAX_ROWS_LIMIT = 1000;
 /**
  * Shows (some columns of) a data source's rows. While the app runs (the editor's preview, or an
  * exported app), rows can be selected by clicking them and double-clicking one fires the table's
- * trigger (see WIDGET_TRIGGERS).
+ * trigger (see WIDGET_TRIGGERS); a search action can filter them (TableFilterService).
  */
 @Component({
   selector: 'app-table-widget',
@@ -24,6 +25,7 @@ const MAX_ROWS_LIMIT = 1000;
 export class TableWidget extends BaseWidget {
   private readonly appData = inject(APP_DATA);
   private readonly selection = inject(TableSelectionService);
+  private readonly filter = inject(TableFilterService);
   private readonly widgetEvents = inject(WidgetEventsService);
   private readonly session = inject(APP_SESSION);
   readonly previewing = this.session.live;
@@ -59,13 +61,17 @@ export class TableWidget extends BaseWidget {
     visibleColumnIndexes(this.data()?.columns ?? [], parseColumnList(this.props()['columns'])),
   );
   readonly headers = computed(() => this.columnIndexes().map((i) => this.data()?.columns[i] ?? ''));
-  readonly rows = computed(() =>
-    (this.data()?.rows ?? []).slice(0, this.maxRows()).map((row) => ({
-      id: row.id,
-      values: this.columnIndexes().map((i) => row.values[i] ?? ''),
-    })),
-  );
-  readonly hiddenRowCount = computed(() => (this.data()?.rows.length ?? 0) - this.rows().length);
+  /** The search the rows are filtered by ('' while editing, or when there's none). */
+  readonly query = computed(() => (this.previewing() ? this.filter.query(this.id()) : ''));
+  /** The rows (their shown columns) that match the search. */
+  private readonly matchingRows = computed(() => {
+    const query = this.query();
+    return (this.data()?.rows ?? [])
+      .map((row) => ({ id: row.id, values: this.columnIndexes().map((i) => row.values[i] ?? '') }))
+      .filter((row) => rowMatches(row.values, query));
+  });
+  readonly rows = computed(() => this.matchingRows().slice(0, this.maxRows()));
+  readonly hiddenRowCount = computed(() => this.matchingRows().length - this.rows().length);
   readonly selectedIds = computed(() => new Set(this.selection.selected(this.id())));
 
   constructor() {
