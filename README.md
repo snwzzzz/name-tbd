@@ -139,7 +139,7 @@ npm install
 npm start            # builds the runtime once, then serves the editor
 ```
 
-Open `http://localhost:4200/editor`. The editor talks to the backend at `http://localhost:8080` (`API_BASE_URL` in `_constants/api.constants.ts`).
+Open `http://localhost:4200/editor`. The editor calls the API on its own origin (`API_BASE_URL` in `_constants/api.constants.ts` is empty); `ng serve` proxies `/api` and the login paths to `http://localhost:8080` (`name-tbd/proxy.conf.json`). A deploy does the same with one reverse proxy in front of both.
 
 ### npm scripts
 
@@ -287,7 +287,7 @@ User (creator of branches)
 
 ### Database migrations
 
-Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). `V1_0_16` turns saved nav menus' old default colors into Auto; `V1_0_17` gives saved buttons and links the new brand color. Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. `V1_0_3__add_test_data.sql` seeds application `-1`, user `-1`, branch `-1` and page `-1`.
+Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). `V1_0_16` turns saved nav menus' old default colors into Auto; `V1_0_17` gives saved buttons and links the new brand color. Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. The sample data (application `-1`, user `-1`, branch `-1`, page `-1`) is in `ntbd/src/test/resources/db/devdata/V1_0_3__add_test_data.sql`. Only dev runs and tests add that location (`spring.flyway.locations` in the test `application.properties`), so a real deploy starts with an empty database.
 
 ---
 
