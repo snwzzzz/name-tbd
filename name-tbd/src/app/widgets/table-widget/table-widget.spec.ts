@@ -66,6 +66,16 @@ describe('TableWidget', () => {
     expect(render({ dataSourceId: '9' }).textContent).toContain('Data source not found');
   });
 
+  it('keeps the editor hint out of the running app', () => {
+    TestBed.configureTestingModule({ providers: provideFakeApp({ data: [PEOPLE] }) });
+    fakeApp().session.start('1');
+    const fixture = TestBed.createComponent(TableWidget);
+    fixture.componentRef.setInput('id', '1');
+    fixture.componentRef.setInput('props', { dataSourceId: '' });
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Pick a data source');
+  });
+
   it('selects rows by clicking them only while the app runs, and shows changed data', () => {
     const fixture = mount({ dataSourceId: '5', multiSelect: 'true' });
     const el: HTMLElement = fixture.nativeElement;

@@ -53,7 +53,16 @@ describe('NavWidget', () => {
     expect(filled.style.background).toBe('rgb(245, 245, 245)');
   });
 
-  it('asks for pages when none are chosen', () => {
+  it('asks for pages when none are chosen, only in the editor', () => {
     expect(mount({ pages: '[]' }).textContent).toContain('Pick pages');
+    TestBed.resetTestingModule();
+
+    TestBed.configureTestingModule({ providers: provideFakeApp({ pages: PAGES }) });
+    fakeApp().session.start('2');
+    const fixture = TestBed.createComponent(NavWidget);
+    fixture.componentRef.setInput('id', '1');
+    fixture.componentRef.setInput('props', { pages: '[]' });
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Pick pages');
   });
 });

@@ -18,7 +18,8 @@
         </li>
       }
     </ul>
-  } @else {
+  } @else if (!previewing()) {
+    <!-- A hint for the editor; the running app shows an empty menu -->
     <span class="empty">Pick pages in the properties panel</span>
   }
 </nav>

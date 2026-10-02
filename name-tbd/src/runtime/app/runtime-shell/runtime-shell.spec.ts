@@ -1,12 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { vi } from 'vitest';
 import { RuntimeShell } from './runtime-shell';
 import { runtimeConfig } from '../runtime.config';
 import { testDefinition } from '../test-definition';
 import { APP_DATA } from '../../../app/core/ports/app-ports';
 import { AppDefinition } from '../../../app/core/definition/app-definition';
-import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH } from '../../../app/_constants/artboard.constants';
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, EXPORT_MIN_WIDTH } from '../../../app/_constants/artboard.constants';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve));
 
@@ -51,18 +50,14 @@ describe('RuntimeShell', () => {
     expect(el.querySelector('.layout nav a')?.getAttribute('href')).toBe('#/');
   });
 
-  it('draws the artboard at its real size, zoomed to the window width', async () => {
-    const clientWidth = vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(ARTBOARD_WIDTH / 2);
-    try {
-      const el = await settle(await start());
-      const artboard = el.querySelector<HTMLElement>('.artboard')!;
+  it('draws the page in real px (so the browser zooms it): window-wide down to half the artboard, artboard-high', async () => {
+    const el = await settle(await start());
+    const artboard = el.querySelector<HTMLElement>('.artboard')!;
 
-      expect(artboard.style.width).toBe(`${ARTBOARD_WIDTH}px`);
-      expect(artboard.style.height).toBe(`${ARTBOARD_HEIGHT}px`);
-      expect(artboard.style.zoom).toBe('0.5');
-    } finally {
-      clientWidth.mockRestore();
-    }
+    expect(artboard.style.minWidth).toContain(`${EXPORT_MIN_WIDTH}px`);
+    expect(EXPORT_MIN_WIDTH).toBe(ARTBOARD_WIDTH / 2);
+    expect(artboard.style.height).toBe(`${ARTBOARD_HEIGHT}px`);
+    expect(artboard.style.zoom).toBe('');
   });
 
   it('keeps data changes in the browser for the next visit', async () => {

@@ -283,11 +283,11 @@ User (creator of branches)
 - **Workflow**: each page has (at most) one workflow, created on first access. Its **nodes** have a `type` (`Trigger`, `Condition`, `Action`), a position in the workflow editor, and their settings as a JSON `props` map. **Edges** connect a node's output port to another node.
 - **DataSource**: imported tabular data (CSV), stored normalized as columns, rows and cells. The editor works with it as `columns: string[]` plus `rows: string[][]`.
 
-**The grid.** Every page is an artboard of **1920 × 940 px**: the page area of a maximized desktop browser on a 1920 × 1080 screen (minus the taskbar and the browser's toolbars). It is divided into **96 columns × 47 rows** of square 20 px cells. Widget geometry is stored in cells, never in pixels. Containers have a nested grid with as many cells as the container is big. The grid is defined once, in `_constants/artboard.constants.ts`; the canvas, the layout overlay and the exported app all draw from it, and the backend never needs to know it.
+**The grid.** Every page is an artboard of **1920 × 945 px**: exactly the page area of a maximized desktop browser on a 1920 × 1080 screen (minus the taskbar and the browser's toolbars). It is divided into **128 columns × 63 rows** of square 15 px cells, so the artboard's edges are the window's edges. Widget geometry is stored in cells, never in pixels. Containers have a nested grid with as many cells as the container is big. The grid is defined once, in `_constants/artboard.constants.ts`; the canvas, the layout overlay and the exported app all draw from it, and the backend never needs to know it.
 
 ### Database migrations
 
-Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`). Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. `V1_0_3__add_test_data.sql` seeds application `-1`, user `-1`, branch `-1` and page `-1`.
+Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. `V1_0_3__add_test_data.sql` seeds application `-1`, user `-1`, branch `-1` and page `-1`.
 
 ---
 
@@ -401,7 +401,7 @@ The editor works with **tabs**, like an IDE. A tab id's kind is decided by `tabK
 
 ### 7.4 The canvas (Edit mode)
 
-`pages/canvas/canvas.ts` hosts a **GridStack** grid on the 1920 × 940 artboard (its size comes from the constants, in px like GridStack's cells):
+`pages/canvas/canvas.ts` hosts a **GridStack** grid on the 1920 × 945 artboard (its size comes from the constants, in px like GridStack's cells):
 
 - **Pan and zoom**: viewport controls, zoom buttons, fit to screen.
 - **Drag from the palette** to create a widget (size from the catalog). Containers get nested grids.
@@ -505,7 +505,7 @@ The widgets:
 
 ### 8.3 Rendering: `WidgetGrid`
 
-`core/rendering/widget-grid` draws a list of `LayoutItem`s on a 96 × 47 CSS grid:
+`core/rendering/widget-grid` draws a list of `LayoutItem`s on a 128 × 63 CSS grid (`minmax(0, 1fr)` tracks, so cells share the space evenly whatever their content):
 
 - Each item is placed by `grid-column` and `grid-row` from its cells.
 - Each top-level widget is inset by 2 px, matching GridStack's margin.
@@ -595,14 +595,15 @@ If anything fails, the page shows the reason instead of staying blank.
 ### 9.3 Shell and pages
 
 ```
-<app-root> RuntimeShell            as wide as the window, scrolls vertically
-  └─ .artboard (1920×940, CSS zoom = window width / 1920)
+<app-root> RuntimeShell
+  └─ .artboard (window-wide, min 960 px; 945 px high; real CSS px, no zoom)
        ├─ <app-widget-grid class="layout">   the layout page's widgets
        └─ <router-outlet> → RuntimePage      the current page's widgets, on top
 ```
 
-- **Exactly the canvas.** The artboard is drawn at its real size with the same `WidgetGrid` as the editor's layout overlay, then zoomed as a whole to the window's width (measured with a `ResizeObserver`, without the scrollbar). It is never squeezed or stretched: every window shows the same design, and on a 1080p screen it appears at about its real size. It scrolls when it's taller than the window.
-- **Stable width.** `scrollbar-gutter: stable` (runtime `styles.scss`) keeps a scrollbar that comes and goes from changing the width, and so the zoom, back and forth.
+- **Exactly the canvas on a 1080p screen.** The artboard is drawn with the same `WidgetGrid` as the editor's layout overlay. In a 1920 × 945 window every widget sits where it sits on the canvas, edges included.
+- **A real website: zoomable.** Everything is in real CSS px, so the browser's zoom (Ctrl + / −, pinch) works as on any site.
+- **A bit responsive.** Rows keep the canvas's height in px; columns share the window's width. A narrower window (or zooming in) narrows the columns down to `EXPORT_MIN_WIDTH`, half the artboard (960 px, i.e. 200% zoom on a 1080p screen); below that the page scrolls sideways instead of squeezing further. A wider window (or zooming out) widens them.
 - **Layering.** The page layer lets clicks through its gaps (`pointer-events: none`, widgets `auto`), so the layout page's widgets underneath stay clickable.
 - **Page load.** `RuntimePage` sets the current page (`RuntimeLocation`) and runs the page's page-load workflows whenever its `pageId` changes.
 - **Events.** `RuntimeShell` passes every widget event to `WorkflowRuntimeService.handleEvent`.
@@ -997,7 +998,7 @@ The whole folder is regenerated each time. Commit it together with the backend c
 - Condition nodes are stored and editable but not executed by the browser runtime.
 - There is no home-page setting: the export starts on the page at `/`, or else the first page.
 - Exported data lives in the export and in each visitor's browser. There's no shared live data yet.
-- Pages are designed for one desktop window size and zoomed to fit others. On small screens (phones) that makes them small; responsive layouts would need per-breakpoint geometry.
+- Pages are designed for one desktop window size. They adapt to windows down to half its width; on smaller screens (phones) they scroll sideways. Real mobile layouts would need per-breakpoint geometry.
 - Security is wide open (all requests permitted, CORS `*`). Fine for local development only.
 
 **Planned, and prepared for by the architecture:**

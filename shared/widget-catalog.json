@@ -15,7 +15,7 @@
       "icon": "type",
       "category": "basic",
       "keywords": ["text", "heading", "paragraph"],
-      "size": { "w": 6, "h": 2, "minW": 2, "minH": 1 },
+      "size": { "w": 8, "h": 3, "minW": 3, "minH": 1 },
       "resizable": true,
       "props": [
         { "key": "text", "type": "string", "label": "Text", "default": "New Label", "group": "Content" },
@@ -29,7 +29,7 @@
       "icon": "mouse-pointer-click",
       "category": "actions",
       "keywords": ["click", "trigger", "workflow"],
-      "size": { "w": 5, "h": 2, "minW": 2, "minH": 1 },
+      "size": { "w": 7, "h": 3, "minW": 3, "minH": 1 },
       "resizable": true,
       "props": [
         { "key": "label", "type": "string", "label": "Label", "default": "Click Me", "group": "Content" },
@@ -43,7 +43,7 @@
       "icon": "link",
       "category": "navigation",
       "keywords": ["a", "href", "url", "hyperlink", "anchor"],
-      "size": { "w": 4, "h": 2, "minW": 2, "minH": 1 },
+      "size": { "w": 5, "h": 3, "minW": 3, "minH": 1 },
       "resizable": true,
       "props": [
         { "key": "text", "type": "string", "label": "Text", "group": "Content", "default": "Link" },
@@ -60,7 +60,7 @@
       "icon": "navigation",
       "category": "navigation",
       "keywords": ["navbar", "menu", "navigation", "header", "sidebar"],
-      "size": { "w": 24, "h": 2, "minW": 4, "minH": 2 },
+      "size": { "w": 32, "h": 3, "minW": 5, "minH": 3 },
       "resizable": true,
       "props": [
         { "key": "pages", "type": "pages", "label": "Pages", "group": "Links", "default": "[]" },
@@ -79,7 +79,7 @@
       "icon": "sheet",
       "category": "data",
       "keywords": ["grid", "rows", "csv", "list"],
-      "size": { "w": 18, "h": 9, "minW": 9, "minH": 5 },
+      "size": { "w": 24, "h": 12, "minW": 12, "minH": 7 },
       "resizable": true,
       "props": [
         { "key": "dataSourceId", "type": "dataSource", "label": "Data source", "group": "Data", "default": "" },
@@ -101,7 +101,7 @@
       "icon": "panels-top-left",
       "category": "data",
       "keywords": ["record", "row", "details", "fields", "view"],
-      "size": { "w": 18, "h": 9, "minW": 9, "minH": 5 },
+      "size": { "w": 24, "h": 12, "minW": 12, "minH": 7 },
       "resizable": true,
       "props": [
         { "key": "dataSourceId", "type": "dataSource", "label": "Data source (for its fields)", "group": "Data", "default": "" },
@@ -117,7 +117,7 @@
       "icon": "square-dashed",
       "category": "layout",
       "keywords": ["group", "box", "section"],
-      "size": { "w": 12, "h": 7, "minW": 6, "minH": 4 },
+      "size": { "w": 16, "h": 9, "minW": 8, "minH": 5 },
       "resizable": true,
       "container": true,
       "props": []
@@ -128,7 +128,7 @@
       "icon": "text-cursor-input",
       "category": "basic",
       "palette": false,
-      "size": { "w": 12, "h": 7, "minH": 7 },
+      "size": { "w": 16, "h": 9, "minH": 9 },
       "resizable": false,
       "props": []
     }

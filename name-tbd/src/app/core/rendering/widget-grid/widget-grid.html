@@ -1,13 +1,14 @@
 <ng-container *ngTemplateOutlet="grid; context: { $implicit: items(), columns: columns, rows: rows, root: true }" />
 
 <!-- One grid of cells; containers nest their own grid (as many cells as they're big, no margins).
-     Like on the canvas, only the root grid's widgets are inset, and containers fill their cells. -->
+     Like on the canvas, only the root grid's widgets are inset, and containers fill their cells.
+     minmax(0, 1fr): cells always share the space evenly, however wide their content (narrow windows). -->
 <ng-template #grid let-items let-columns="columns" let-rows="rows" let-root="root">
   <div
     class="layout-grid"
     [class.root]="root"
-    [style.grid-template-columns]="'repeat(' + columns + ', 1fr)'"
-    [style.grid-template-rows]="'repeat(' + rows + ', 1fr)'">
+    [style.grid-template-columns]="'repeat(' + columns + ', minmax(0, 1fr))'"
+    [style.grid-template-rows]="'repeat(' + rows + ', minmax(0, 1fr))'">
     @for (item of items; track key(item)) {
       <div
         class="cell"

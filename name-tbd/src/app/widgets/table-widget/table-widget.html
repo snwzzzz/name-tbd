@@ -8,7 +8,10 @@
   }
 
   @if (dataSourceId() === null) {
-    <div class="table-message">Pick a data source in the properties panel.</div>
+    <!-- A hint for the editor; the running app shows an empty table -->
+    @if (!previewing()) {
+      <div class="table-message">Pick a data source in the properties panel.</div>
+    }
   } @else if (missing()) {
     <div class="table-message">Data source not found.</div>
   } @else if (!data()) {
