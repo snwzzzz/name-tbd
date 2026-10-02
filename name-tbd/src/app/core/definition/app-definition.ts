@@ -7,7 +7,7 @@ import { DataSourceSnapshot } from '../ports/memory-app-data';
 // runs it: pages with their widgets and workflows, and the data. Changes to its shape bump
 // APP_DEFINITION_VERSION on both sides.
 
-export const APP_DEFINITION_VERSION = 1;
+export const APP_DEFINITION_VERSION = 2;
 
 export interface AppDefinition {
   version: number;
@@ -26,6 +26,7 @@ export interface DefinitionPage {
   path: string;
   /** The layout page: its widgets are shown around every other page. */
   layout: boolean;
+  contentHeight?: number;
   /** Placed widgets, containers with their children; props include their type's defaults. */
   components: LayoutItem[];
   workflow: DefinitionWorkflow;

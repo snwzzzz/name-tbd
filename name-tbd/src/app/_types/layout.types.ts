@@ -17,6 +17,7 @@ export interface LayoutItem {
   y?: number;
   w?: number;
   h?: number;
+  layout?: Record<string, string>;
   children?: LayoutItem[];
 }
 

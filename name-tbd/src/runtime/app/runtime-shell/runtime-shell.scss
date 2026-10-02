@@ -1,22 +1,18 @@
-// The whole window, the page centered in it. The page always fits, so it never scrolls.
 :host {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  display: block;
+  min-height: 100vh;
   background: var(--color-bg);
 }
 
-// Drawn at its real size (like the canvas) and zoomed to fit the window
-.artboard {
-  flex-shrink: 0;
+.page-container {
   position: relative;
-  background: var(--color-bg);
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  min-height: 100vh;
 }
 
-.layout {
+.layout-layer {
   position: absolute;
   inset: 0;
 }

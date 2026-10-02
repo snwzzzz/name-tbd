@@ -64,7 +64,7 @@ class SingleFileHtmlExportTest {
 
         String embedded = between(html, "id=\"app-definition\">", "</script>");
         JsonNode definition = json.readTree(embedded);
-        assertEquals(1, definition.get("version").asInt());
+        assertEquals(2, definition.get("version").asInt());
         assertEquals("Shop", definition.get("app").get("name").asString());
         assertEquals("</script><script>alert(1)</script>", definition.get("pages").get(0).get("name").asString());
     }

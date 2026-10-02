@@ -93,7 +93,7 @@ class AppExportIntegrationTest {
     void holdsTheBranchsPagesWithTheirWidgetsAndWorkflows() {
         JsonNode definition = definition();
 
-        assertEquals(1, definition.get("version").asInt());
+        assertEquals(2, definition.get("version").asInt());
         assertEquals("Test Application", definition.get("app").get("name").asString());
 
         JsonNode page = find(definition.get("pages"), "name", "About");

@@ -1,0 +1,25 @@
+.page-layer {
+  position: relative;
+  width: 100%;
+}
+
+.widget-cell {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+// Inset by the widget margin (2px each side) for root items, except containers which should not be padded inside
+.widget-cell.root:not(.container) {
+  padding: 2px;
+}
+
+.container {
+  position: absolute;
+}
+
+.widget {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--widget-radius);
+  overflow: hidden;
+}

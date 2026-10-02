@@ -1,4 +1,7 @@
-<div class="artboard" [style.width.px]="width" [style.height.px]="height" [style.zoom]="scale()">
-  <app-widget-grid class="layout" [items]="layoutItems()" />
+<div class="page-container">
+  <app-absolute-widget-renderer
+    class="layout-layer"
+    [items]="layoutItems()"
+    [contentHeight]="layoutContentHeight()" />
   <router-outlet />
 </div>

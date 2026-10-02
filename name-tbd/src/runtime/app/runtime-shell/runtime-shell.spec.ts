@@ -28,7 +28,7 @@ describe('RuntimeShell', () => {
     const fixture = await start();
     let el = await settle(fixture);
 
-    expect([...el.querySelectorAll('.layout nav a')].map((a) => a.textContent)).toEqual(['Home', 'About']);
+    expect([...el.querySelectorAll('.layout-layer nav a')].map((a) => a.textContent)).toEqual(['Home', 'About']);
     expect(el.querySelector('app-runtime-page')?.textContent).toContain('Hello');
 
     (el.querySelector('app-runtime-page button') as HTMLButtonElement).click();
@@ -45,8 +45,8 @@ describe('RuntimeShell', () => {
 
     expect(TestBed.inject(Router).url).toBe('/about');
     expect(el.querySelector('app-runtime-page')?.textContent).toContain('Alice');
-    expect(el.querySelector('.layout nav a[aria-current="page"]')?.textContent).toBe('About');
-    expect(el.querySelector('.layout nav a')?.getAttribute('href')).toBe('#/');
+    expect(el.querySelector('.layout-layer nav a[aria-current="page"]')?.textContent).toBe('About');
+    expect(el.querySelector('.layout-layer nav a')?.getAttribute('href')).toBe('#/');
   });
 
   it('keeps data changes in the browser for the next visit', async () => {
