@@ -22,14 +22,12 @@
               <input type="number" class="ui-input" [ngModel]="value(def)" (ngModelChange)="updateProp(def.propKey, $event)" />
             }
             @case ('color') {
-              <div class="ui-color">
-                <input type="color" [ngModel]="colorValue(def)" (ngModelChange)="updateProp(def.propKey, $event)" />
-                <span class="ui-color-value" [class.is-default]="!value(def)">{{ value(def) || 'Default' }}</span>
-                <!-- Colors without a default of their own can go back to the theme's -->
-                @if (!def.defaultValue && value(def)) {
-                  <button type="button" class="ui-color-reset" title="Back to default" (click)="updateProp(def.propKey, '')">×</button>
-                }
-              </div>
+              <!-- Picker or typed hex; '' (no default of its own) is the theme's color, or one fitting the widget -->
+              <app-color-field
+                [value]="colorValue(def)"
+                [defaultValue]="def.defaultValue"
+                [label]="def.label ?? def.propKey"
+                (changed)="updateProp(def.propKey, $event)" />
             }
             @case ('boolean') {
               <label class="ui-check">
@@ -42,7 +40,7 @@
             }
             @default {
               @if (editor(def); as editor) {
-                <ng-container *ngComponentOutlet="editor; inputs: { def: def, props: props() }" />
+                <ng-container *ngComponentOutlet="editor; inputs: { def: def, props: props(), itemId: itemId() }" />
               }
             }
           }

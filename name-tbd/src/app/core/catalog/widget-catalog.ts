@@ -31,6 +31,8 @@ export interface CatalogWidget {
   palette?: boolean;
   /** Holds other widgets (the canvas gives it a nested grid). */
   container?: boolean;
+  /** Fills its cells to their edges, without the gap other widgets keep (like a container): e.g. a nav bar. */
+  flush?: boolean;
   props: CatalogProp[];
 }
 

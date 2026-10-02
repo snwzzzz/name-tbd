@@ -43,7 +43,7 @@ describe('NavWidget', () => {
     const plain = mount({ pages: '["2"]' }).querySelector('nav') as HTMLElement;
     expect(plain.classList).toContain('variant-underline');
     expect(plain.style.background).toBe('');
-    expect(plain.style.getPropertyValue('--nav-accent')).toBe('#0f6cbd');
+    expect(plain.style.getPropertyValue('--nav-accent')).toBe('#2f89ff');
 
     TestBed.resetTestingModule();
     const filled = mount({ pages: '["2"]', variant: 'Filled', accentColor: '#c50f1f', background: '#f5f5f5' }).querySelector('nav') as HTMLElement;
@@ -51,6 +51,30 @@ describe('NavWidget', () => {
     expect(filled.classList).toContain('nav');
     expect(filled.style.getPropertyValue('--nav-accent')).toBe('#c50f1f');
     expect(filled.style.background).toBe('rgb(245, 245, 245)');
+  });
+
+  it('fits its text and current-page colors to its background unless they are picked', () => {
+    const dark = mount({ pages: '["1"]', background: '#1b1b1b', variant: 'Filled' }).querySelector('nav') as HTMLElement;
+    expect(dark.style.color).toBe('rgb(255, 255, 255)');
+    // Filled, no color picked: a tone of its background (lighter, as it's near-black), white text on it
+    expect(dark.style.getPropertyValue('--nav-accent')).toBe('#484848');
+    expect(dark.style.getPropertyValue('--nav-on-accent')).toBe('#ffffff');
+    TestBed.resetTestingModule();
+
+    const picked = mount({ pages: '["1"]', background: '#1b1b1b', color: '#ffd700', accentColor: '#0f6cbd' }).querySelector('nav') as HTMLElement;
+    expect(picked.style.color).toBe('rgb(255, 215, 0)');
+    expect(picked.style.getPropertyValue('--nav-on-accent')).toBe('#ffffff');
+    TestBed.resetTestingModule();
+
+    const plain = mount({ pages: '["1"]' }).querySelector('nav') as HTMLElement;
+    expect(plain.style.color).toBe('rgb(36, 36, 36)');
+    expect(plain.style.getPropertyValue('--nav-accent')).toBe('#2f89ff');
+    TestBed.resetTestingModule();
+
+    // Filled on a blue bar: a darker blue, with white text
+    const filled = mount({ pages: '["1"]', background: '#2f89ff', variant: 'Filled' }).querySelector('nav') as HTMLElement;
+    expect(filled.style.getPropertyValue('--nav-accent')).toBe('#2876db');
+    expect(filled.style.getPropertyValue('--nav-on-accent')).toBe('#ffffff');
   });
 
   it('asks for pages when none are chosen, only in the editor', () => {

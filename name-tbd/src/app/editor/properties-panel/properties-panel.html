@@ -1,26 +1,40 @@
 <div class="properties-panel">
-  @if (selectedItem(); as item) {
+  @if (sections().length) {
     <!-- An inspector header: what's selected, quietly -->
     <header class="inspector-header">
       <p class="overline">Properties</p>
-      <div class="selected">
-        <span class="item-icon"><ng-container *ngComponentOutlet="definition().icon" /></span>
-        <h2 class="item-name">{{ definition().name }}</h2>
-        @if (item.id != null) {
-          <span class="item-id">#{{ item.id }}</span>
-        }
-      </div>
+      @if (sections().length === 1) {
+        <div class="selected">
+          <span class="item-icon"><ng-container *ngComponentOutlet="sections()[0].definition.icon" /></span>
+          <h2 class="item-name">{{ sections()[0].definition.name }}</h2>
+          <span class="item-id">#{{ sections()[0].id }}</span>
+        </div>
+      } @else {
+        <h2 class="item-name">{{ sections().length }} widgets</h2>
+      }
     </header>
 
+    <!-- One section per selected widget, stacked; the body scrolls them together -->
     <div class="panel-body">
-      @if (hasDynamicSettings()) {
-        <!-- Generated from the prop definitions in the backend -->
-        <app-dynamic-settings [type]="item.type ?? ''" [props]="item.props" />
-      } @else if (definition().settingsComponent; as settings) {
-        <!-- Hand-written settings, used when the backend defines no props -->
-        <ng-container *ngComponentOutlet="settings; inputs: { props: item.props ?? {} }" />
-      } @else {
-        <p class="panel-hint">No settings available for this widget.</p>
+      @for (section of sections(); track section.id) {
+        <section class="widget-section" [class.stacked]="sections().length > 1">
+          @if (sections().length > 1) {
+            <div class="section-head">
+              <span class="item-icon"><ng-container *ngComponentOutlet="section.definition.icon" /></span>
+              <h3 class="section-name">{{ section.definition.name }}</h3>
+              <span class="item-id">#{{ section.id }}</span>
+            </div>
+          }
+          @if (section.hasDynamicSettings) {
+            <!-- Generated from the widget catalog's prop definitions -->
+            <app-dynamic-settings [type]="section.item.type ?? ''" [props]="section.item.props" [itemId]="section.id" />
+          } @else if (section.definition.settingsComponent; as settings) {
+            <!-- Hand-written settings, used when the catalog defines no props -->
+            <ng-container *ngComponentOutlet="settings; inputs: { props: section.item.props ?? {} }" />
+          } @else {
+            <p class="panel-hint">No settings available for this widget.</p>
+          }
+        </section>
       }
     </div>
 

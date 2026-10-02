@@ -3,6 +3,7 @@ import { ComponentId, GridGeometry, LayoutItem } from '../_types/layout.types';
 import { newTemporaryId, toComponentId } from './component-id.utils';
 import { subGridOptions } from '../_constants/artboard.constants';
 import { RESIZABLE_WIDGET_TYPES } from '../_constants/widget-registry.constants';
+import { isFlushType } from '../core/rendering/widget-components';
 
 // Helpers for the canvas's GridStack grids. A widget's DOM element carries its type in
 // `data-type` and its component id in `data-gs-id` (a temporary id until it's saved).
@@ -41,6 +42,8 @@ export function createGridItemElement(item: LayoutItem): GridItemHTMLElement {
 
   const content = document.createElement('div');
   content.className = 'grid-stack-item-content';
+  // Fills its cells to the edges, like a container (see canvas.scss)
+  if (isFlushType(item.type)) content.classList.add('flush-widget');
   el.appendChild(content);
   return el;
 }

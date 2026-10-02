@@ -10,13 +10,14 @@ import { PropsAutosaveService } from '../_services/props-autosave.service';
 import { RecentPagesService } from '../_services/recent-pages.service';
 import { ModalService } from '../_services/modal/modal.service';
 import { ShortcutsModal } from '../components/shortcuts-modal/shortcuts-modal';
+import { ToastHost } from '../components/toast-host/toast-host';
 import { EditorMode, isPageMode } from '../_types/tab.types';
 import { isTyping, matchesShortcut } from '../_utils/keyboard.utils';
 
 /** The editor shell: navbar, sidebars, tabs, and the active mode's view. Handles the editor-wide shortcuts. */
 @Component({
   selector: 'app-editor',
-  imports: [RouterOutlet, Sidebar, Navbar, EditorTabs, ModeDropdown],
+  imports: [RouterOutlet, Sidebar, Navbar, EditorTabs, ModeDropdown, ToastHost],
   templateUrl: './editor.html',
   styleUrl: './editor.scss',
 })

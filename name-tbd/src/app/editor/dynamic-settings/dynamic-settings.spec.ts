@@ -56,6 +56,6 @@ describe('DynamicSettings', () => {
 
   it('should call updateProps when input changes', () => {
     component.updateProp('label', 'New Value');
-    expect(mockSelection.updateProps).toHaveBeenCalledWith({ label: 'New Value' });
+    expect(mockSelection.updateProps).toHaveBeenCalledWith({ label: 'New Value' }, undefined); // no item id: the widget selected last
   });
 });

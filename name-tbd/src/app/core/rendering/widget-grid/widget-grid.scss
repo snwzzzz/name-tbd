@@ -18,6 +18,6 @@
 .widget {
   width: 100%;
   height: 100%;
-  border-radius: var(--widget-radius);
+  // Square: each widget draws its own corners (the nav has none, a button has 4px)
   overflow: hidden;
 }

@@ -10,7 +10,10 @@ import { widgetDefinition } from '../../_constants/widget-registry.constants';
 import { DynamicSettings } from '../dynamic-settings/dynamic-settings';
 import { findInTree } from '../../_utils/layout-tree.utils';
 
-/** Edits the props of the widget selected on the canvas; edits are saved by themselves. */
+/**
+ * Edits the props of the widgets selected on the canvas, one section per widget (stacked, in the
+ * order they were selected, scrolling together); edits are saved by themselves.
+ */
 @Component({
   selector: 'app-properties-panel',
   imports: [
@@ -27,16 +30,22 @@ export class PropertiesPanel {
   private readonly registry = inject(WidgetRegistryService);
   private readonly autosave = inject(PropsAutosaveService);
 
-  readonly selectedItem = computed(() => {
-    const id = this.selection.selectedId();
+  /** The selected widgets that are on the open page, each with what its section shows. */
+  readonly sections = computed(() => {
     const tabId = this.tabs.activeTabId();
-    return id && tabId ? findInTree(this.layoutState.getLayout(tabId), id) : null;
+    if (!tabId) return [];
+    const layout = this.layoutState.getLayout(tabId);
+    return this.selection.selectedIds().flatMap((id) => {
+      const item = findInTree(layout, id);
+      if (!item) return [];
+      return [{
+        id,
+        item,
+        definition: widgetDefinition(item.type),
+        hasDynamicSettings: this.registry.getPropsForWidget(item.type ?? '').length > 0,
+      }];
+    });
   });
-
-  readonly definition = computed(() => widgetDefinition(this.selectedItem()?.type));
-  readonly hasDynamicSettings = computed(
-    () => this.registry.getPropsForWidget(this.selectedItem()?.type ?? '').length > 0,
-  );
 
   /** Whether edits are waiting, being saved, saved, or failed to save. */
   readonly saveState = this.autosave.state;

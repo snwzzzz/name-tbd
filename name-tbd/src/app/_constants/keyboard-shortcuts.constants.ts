@@ -18,7 +18,10 @@ export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   { id: 'new-tab', keys: 'Alt+N', description: 'New tab' },
   { id: 'close-tab', keys: 'Alt+W', description: 'Close the tab' },
   { id: 'toggle-left-sidebar', keys: 'Ctrl+B', description: 'Show or hide the left sidebar' },
-  { id: 'delete', keys: 'Delete', description: 'Delete the selected widget (Edit mode)' },
+  { id: 'delete', keys: 'Delete', description: 'Delete the selected widgets (Edit mode)' },
+  { id: 'copy', keys: 'Ctrl+C', description: 'Copy the selected widgets (Edit mode)' },
+  { id: 'paste', keys: 'Ctrl+V', description: 'Paste copied widgets, onto any page (Edit mode)' },
+  { id: 'duplicate', keys: 'Ctrl+D', description: 'Duplicate the selected widgets (Edit mode)' },
   { id: 'help', keys: '?', description: 'Show these shortcuts' },
 ];
 

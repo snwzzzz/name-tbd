@@ -287,7 +287,7 @@ User (creator of branches)
 
 ### Database migrations
 
-Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. `V1_0_3__add_test_data.sql` seeds application `-1`, user `-1`, branch `-1` and page `-1`.
+Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). `V1_0_16` turns saved nav menus' old default colors into Auto; `V1_0_17` gives saved buttons and links the new brand color. Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. `V1_0_3__add_test_data.sql` seeds application `-1`, user `-1`, branch `-1` and page `-1`.
 
 ---
 
@@ -321,7 +321,7 @@ Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init
 ```
 
 **Prop types.**
-- Built in: `string`, `number`, `color`, `boolean`, `select`, `textarea`.
+- Built in: `string`, `number`, `color`, `boolean`, `select`, `textarea`. A `color` is edited with `ColorField`: a swatch for the browser's picker plus a hex field (`#rgb`/`#rrggbb`, `#` optional). A color whose default is `""` can go back to none ("Auto": the theme's, or one that fits the widget).
 - Custom, each with its own editor in `PROP_EDITORS`:
   - `dataSource`: pick a data source
   - `columns`: pick and order columns
@@ -406,8 +406,13 @@ The editor works with **tabs**, like an IDE. A tab id's kind is decided by `tabK
 - **Pan and zoom**: viewport controls, zoom buttons, fit to screen.
 - **Drag from the palette** to create a widget (size from the catalog). Containers get nested grids.
 - **Moving and resizing** updates geometry (cells). Only types marked `resizable` resize.
-- **Selection** feeds the properties panel and the Layers panel. **Double-clicking** a widget (here or in the Layers panel) selects it and opens the Properties tab.
-- A **context menu** includes "Add action", which adds a flow for the widget's trigger and jumps to the workflow editor.
+- **Selection** (`SelectionService`, a list of ids; `selectedId` is the one selected last) feeds the properties panel and the Layers panel. **Ctrl/⌘/Shift+click** adds a widget to the selection or takes it out, here and in Layers. The properties panel then stacks one section per widget, scrolling together. **Double-clicking** a widget (here or in the Layers panel) selects it and opens the Properties tab.
+- The **context menu** (right-click a widget; on the empty page: Paste):
+  - "Add action" (one widget with a trigger): adds a flow for it and jumps to the workflow editor;
+  - Copy, Duplicate, Paste (`ClipboardService`): widgets with their current props, containers with their children, and **the flows they start** (their triggers and everything after them). Pasted onto any page in the **nearest free place** where the whole group fits as it was (`placement.utils.ts`); nothing on the page moves, and the copies are selected. Copied triggers start from the copies, and actions pointing at a widget that was copied along point at its copy. When there's no free place, nothing is pasted and a message (`ToastService`) says why;
+  - Center horizontally / vertically / on both axes, in what the widget is in (the page, or its container);
+  - Delete.
+- **Center guides**: while a widget is dragged or resized centered in its grid (as near as its cells allow), a dashed line marks the grid's middle (`centering.utils.ts`).
 - The **layout overlay** (`pages/canvas/layout-overlay`) draws the layout page's widgets under the current page: faded while editing, live while previewing. It reuses the core's `WidgetGrid`.
 
 Each widget is created with `ViewContainerRef.createComponent(WIDGET_COMPONENTS[type])` and gets `id` and `props` inputs.
@@ -456,7 +461,8 @@ You import CSV files as data sources, browse their rows (`editor/data-source-*`,
 | `Ctrl+S` | Save property changes now |
 | `Alt+N` / `Alt+W` | New tab / close tab |
 | `Ctrl+B` | Show or hide the left sidebar (reopens the tab it showed last; also works while typing) |
-| `Delete` | Delete the selected widget |
+| `Delete` | Delete the selected widgets |
+| `Ctrl+C` / `Ctrl+V` / `Ctrl+D` | Copy / paste / duplicate the selected widgets (Edit mode) |
 | `?` | Show the shortcuts |
 
 ---
@@ -497,10 +503,10 @@ The widgets:
 | `input` | `APP_SESSION` | A text field (optionally a search field with an icon). What's typed is kept in `InputValuesService` for actions to read. Fires `input_change` once typing pauses for its `debounceMs` (default 300), or at once on Enter. Read-only while editing, so clicking it selects the widget. |
 | `button` | `APP_SESSION` | Click fires `element_click` through `WidgetEventsService`. Shows hover and press states. |
 | `link` | `APP_PAGES`, `APP_NAVIGATION`, `APP_SESSION` | Opens its page, or its URL in a new browser tab. |
-| `nav` | `APP_PAGES`, `APP_NAVIGATION`, `APP_SESSION` | Links to chosen pages and marks the current one. |
+| `nav` | `APP_PAGES`, `APP_NAVIGATION`, `APP_SESSION` | Links to chosen pages and marks the current one. A bar: square edges, filling its cells to their edges like a container (catalog `"flush": true`). Its text and current-page colors default to Auto: readable on its background; the Filled appearance marks the open page with a darker tone of the background (`color.utils.ts`). |
 | `table` | `APP_DATA`, `APP_SESSION` | Shows rows (chosen columns, max rows, striped). Click selects (single or multi); double-click fires `row_dblclick`. Shows only the rows matching its search (`TableFilterService`, set by the search action). |
 | `detail` | `APP_DATA`, `APP_SESSION` | Shows the row a workflow sent to it, with current values. While editing, shows its fields empty. |
-| `container` | none | Draws nothing itself: grids give it a nested grid. |
+| `container` | none | Draws nothing itself: grids give it a nested grid, with its `background` color. |
 | `form` | none | Legacy (`palette: false`); still drawn on old pages. |
 
 **Widgets never run workflows themselves.** They fire events through `WidgetEventsService` (`{ pageId, elementId, event }`). The host (the editor canvas, or the runtime shell) passes them to `WorkflowRuntimeService.handleEvent`. This keeps widgets independent of the workflow engine.
@@ -852,6 +858,8 @@ The editor adds GridStack's CSS, drag ghosts and the blueprint grid. The runtime
 - The scale: `--text-size-small` (12 px), `-normal` (14), `-large` (18), `-title` (24), `-headline` (32).
 - Widget text uses `--widget-text-size` (default: normal), and hints use `--widget-text-size-small`.
 - A widget's **Text size** prop sets `--widget-text-size` on that widget (`BaseWidget`).
+
+**Brand color.** The widgets' main color (buttons, links, menus, focus rings: `--widget-brand`, `BRAND_COLOR`) is the editor's primary, `#2f89ff`, in both themes.
 
 **Hover.** `--widget-hover-dim` / `--widget-active-dim` (brightness filters that work on any color) and `--widget-transition`. Hover and press states apply only while the app runs:
 - buttons darken;

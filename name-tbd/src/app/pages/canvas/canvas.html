@@ -35,6 +35,24 @@
 
 @if (contextMenu(); as menu) {
   <app-context-menu [x]="menu.x" [y]="menu.y" (closed)="closeContextMenu()">
-    <button app-context-menu-item [icon]="addActionIcon" (click)="addActionToItem(menu.item.id, menu.item.type)">Add action</button>
+    @if (menu.item; as item) {
+      @if (canAddAction()) {
+        <button app-context-menu-item [icon]="icons.addAction" (click)="addActionToItem(item.id, item.type)">Add action</button>
+        <app-context-menu-divider />
+      }
+      <button app-context-menu-item [icon]="icons.copy" (click)="closeContextMenu(); copySelection()">Copy{{ selectionCount() > 1 ? ' ' + selectionCount() + ' widgets' : '' }}</button>
+      <button app-context-menu-item [icon]="icons.duplicate" (click)="closeContextMenu(); duplicateSelection()">Duplicate</button>
+      @if (canPaste()) {
+        <button app-context-menu-item [icon]="icons.paste" (click)="closeContextMenu(); paste()">Paste</button>
+      }
+      <app-context-menu-divider />
+      <button app-context-menu-item [icon]="icons.centerX" (click)="closeContextMenu(); center('x')">Center horizontally</button>
+      <button app-context-menu-item [icon]="icons.centerY" (click)="closeContextMenu(); center('y')">Center vertically</button>
+      <button app-context-menu-item [icon]="icons.centerBoth" (click)="closeContextMenu(); center('both')">Center on both axes</button>
+      <app-context-menu-divider />
+      <button app-context-menu-item danger [icon]="icons.delete" (click)="closeContextMenu(); deleteSelection()">Delete{{ selectionCount() > 1 ? ' ' + selectionCount() + ' widgets' : '' }}</button>
+    } @else {
+      <button app-context-menu-item [icon]="icons.paste" (click)="closeContextMenu(); paste()">Paste</button>
+    }
   </app-context-menu>
 }

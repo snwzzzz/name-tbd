@@ -3,10 +3,15 @@ import {
   computed, effect, inject, signal, untracked, viewChild,
 } from '@angular/core';
 import { GridItemHTMLElement, GridStack, GridStackNode } from 'gridstack';
-import { LucideZap } from '@lucide/angular';
+import {
+  LucideAlignCenterHorizontal, LucideAlignCenterVertical, LucideClipboardPaste, LucideCopy, LucideCopyPlus,
+  LucideCrosshair, LucideTrash2, LucideZap,
+} from '@lucide/angular';
 import { LayoutStateService } from '../../_services/layout-state.service';
 import { SelectionService } from '../../_services/selection.service';
 import { SidebarStateService } from '../../_services/sidebar-state.service';
+import { ClipboardService } from '../../_services/clipboard.service';
+import { ToastService } from '../../_services/toast.service';
 import { PROPERTIES_TAB_ID } from '../../_constants/sidebar.constants';
 import { TabsService } from '../../_services/tabs.service';
 import { WorkflowRuntimeService } from '../../core/workflow/workflow-runtime.service';
@@ -18,6 +23,7 @@ import { ViewportCommand, ViewportControls, ZoomAtEvent } from '../../_directive
 import { BaseWidget } from '../../_directives/base-widget.directive';
 import { ContextMenu } from '../../components/context-menu/context-menu';
 import { ContextMenuItem } from '../../components/context-menu/context-menu-item';
+import { ContextMenuDivider } from '../../components/context-menu/context-menu-divider';
 import { ZoomControls } from '../../components/zoom-controls/zoom-controls';
 import { ZoomButton } from '../../components/zoom-controls/zoom-button';
 import { DEFAULT_WIDGET_TYPE, widgetDefinition } from '../../_constants/widget-registry.constants';
@@ -38,7 +44,10 @@ import {
 import { blueprintGridStyle, clamp, zoomAround } from '../../_utils/viewport.utils';
 import { isTyping, matchesShortcut } from '../../_utils/keyboard.utils';
 import { shortcutKeys } from '../../_constants/keyboard-shortcuts.constants';
-import { flattenTree } from '../../_utils/layout-tree.utils';
+import { findInTree, flattenTree } from '../../_utils/layout-tree.utils';
+import { propText } from '../../_utils/widget-props.utils';
+import { centeredAxes, centeredPosition, CenterAxis } from '../../_utils/centering.utils';
+import { isFlushType } from '../../core/rendering/widget-components';
 
 const BUTTON_ZOOM_STEP = 1.25;
 
@@ -50,7 +59,7 @@ const BUTTON_ZOOM_STEP = 1.25;
  */
 @Component({
   selector: 'app-canvas',
-  imports: [ViewportControls, ZoomControls, ZoomButton, ContextMenu, ContextMenuItem, LayoutOverlay],
+  imports: [ViewportControls, ZoomControls, ZoomButton, ContextMenu, ContextMenuItem, ContextMenuDivider, LayoutOverlay],
   templateUrl: './canvas.html',
   styleUrl: './canvas.scss',
 })
@@ -59,6 +68,8 @@ export class Canvas implements AfterViewInit {
   private readonly layoutState = inject(LayoutStateService);
   private readonly selection = inject(SelectionService);
   private readonly sidebars = inject(SidebarStateService);
+  private readonly clipboard = inject(ClipboardService);
+  private readonly toasts = inject(ToastService);
   private readonly workflowState = inject(WorkflowStateService);
   private readonly workflowRuntime = inject(WorkflowRuntimeService);
   private readonly previewSession = inject(PreviewSessionService);
@@ -75,6 +86,8 @@ export class Canvas implements AfterViewInit {
   private restoring = false;
   /** Live widget components by component id. */
   private readonly widgetRefs = new Map<string, ComponentRef<BaseWidget>>();
+  /** The content element of each container (by component id), which shows its background. */
+  private readonly containerContents = new Map<string, HTMLElement>();
   /** The last persisted geometry of each saved widget, to only send what changed. */
   private readonly savedGeometry = new Map<string, GridGeometry>();
 
@@ -100,7 +113,17 @@ export class Canvas implements AfterViewInit {
   });
 
   readonly contextMenu = signal<CanvasContextMenu | null>(null);
-  readonly addActionIcon = LucideZap;
+  readonly icons = {
+    addAction: LucideZap, copy: LucideCopy, duplicate: LucideCopyPlus, paste: LucideClipboardPaste,
+    centerX: LucideAlignCenterVertical, centerY: LucideAlignCenterHorizontal, centerBoth: LucideCrosshair, delete: LucideTrash2,
+  };
+  readonly canPaste = this.clipboard.hasContent;
+  /** Whether the right-clicked widget fires a trigger an action can be added to (one widget only). */
+  readonly canAddAction = computed(() => {
+    const item = this.contextMenu()?.item;
+    return !!item && !!widgetTrigger(item.type) && this.selection.selectedIds().length === 1;
+  });
+  readonly selectionCount = computed(() => this.selection.selectedIds().length);
 
   // ─── Preview: widgets are locked and clicks run the page's workflows ─────
   readonly previewMode = signal(false);
@@ -113,6 +136,7 @@ export class Canvas implements AfterViewInit {
       const ref = this.widgetRefs.get(id);
       ref?.setInput('props', props);
       ref?.changeDetectorRef.markForCheck();
+      this.paintContainer(id, props);
     });
 
     // Load the page of the active tab into the grid
@@ -130,14 +154,8 @@ export class Canvas implements AfterViewInit {
       });
     });
 
-    // Mark the selected widget, also when it's selected elsewhere (e.g. in the layers panel)
-    effect(() => {
-      const id = this.selection.selectedId();
-      document.querySelectorAll('.grid-stack-item.selected').forEach((el) => {
-        if (el.getAttribute('data-gs-id') !== id) el.classList.remove('selected');
-      });
-      if (id) document.querySelector(`.grid-stack-item[data-gs-id="${CSS.escape(id)}"]`)?.classList.add('selected');
-    });
+    // Mark the selected widgets, also when they're selected elsewhere (e.g. in the layers panel)
+    effect(() => this.markSelection(this.selection.selectedIds()));
 
     // Widgets' own events (e.g. a table row double-click) run the flows they trigger
     const widgetEvents = this.widgetEvents.events$.subscribe(({ pageId, elementId, event }) => {
@@ -172,29 +190,29 @@ export class Canvas implements AfterViewInit {
       if (el.gridstackNode) syncSubGridRows(el.gridstackNode);
       this.syncLayout();
     });
+    this.showCenterGuides(grid);
     this.gridReady.set(true);
   }
 
   // ─── Selection, delete key ───────────────────────────────────────────────
-  /** Clicking a widget selects it; clicking the empty canvas clears the selection. */
+  /**
+   * Clicking a widget selects it (Ctrl/⌘/Shift+click adds it to the selection, or takes it out);
+   * clicking the empty canvas clears the selection. A right-click keeps a selection it's part of.
+   */
   @HostListener('document:pointerdown', ['$event'])
   onDocumentPointerDown(event: PointerEvent): void {
     if (this.previewMode()) return;
     const target = event.target as HTMLElement;
-    // Clicks outside the canvas (e.g. in a sidebar) keep the selection
+    // Clicks outside the canvas (e.g. in a sidebar or the context menu) keep the selection
     if (!target.closest('.canvas-viewport')) return;
 
-    const item = target.closest<HTMLElement>('.grid-stack-item');
-    document.querySelectorAll('.grid-stack-item.selected').forEach((el) => {
-      if (el !== item) el.classList.remove('selected');
-    });
-    if (item) {
-      item.classList.add('selected');
-      const id = item.getAttribute('data-gs-id');
-      if (id) this.selection.select(id);
-    } else {
-      this.selection.clear();
+    const id = target.closest<HTMLElement>('.grid-stack-item')?.getAttribute('data-gs-id');
+    if (!id) {
+      if (event.button !== 2) this.selection.clear();
+      return;
     }
+    if (event.ctrlKey || event.metaKey || event.shiftKey) this.selection.toggle(id);
+    else if (event.button !== 2 || !this.selection.isSelected(id)) this.selection.select(id);
   }
 
   /** Double-clicking a widget selects it and shows its properties, in whichever sidebar that tab is. */
@@ -216,17 +234,97 @@ export class Canvas implements AfterViewInit {
       this.togglePreview();
       return;
     }
-    if (event.key !== 'Delete' && event.key !== 'Backspace') return;
-    // The deepest selected widget (a widget inside a selected container wins)
-    const selected = document.querySelectorAll<GridItemHTMLElement>('.grid-stack-item.selected');
-    const el = selected[selected.length - 1];
-    const grid = el?.gridstackNode?.grid;
-    if (el && grid) this.removeWidget(grid, el);
+    if (this.previewMode()) return;
+    const commands: Record<string, () => void> = {
+      copy: () => this.copySelection(),
+      paste: () => void this.paste(),
+      duplicate: () => void this.duplicateSelection(),
+    };
+    for (const [id, run] of Object.entries(commands)) {
+      if (!matchesShortcut(event, id)) continue;
+      event.preventDefault();
+      run();
+      return;
+    }
+    if (event.key === 'Delete' || event.key === 'Backspace') this.deleteSelection();
   }
 
   // ─── Context menu ────────────────────────────────────────────────────────
+  /** Right-click: the widget's menu (it's selected first, unless it's part of the selection), or paste on the empty page. */
+  @HostListener('contextmenu', ['$event'])
+  onContextMenu(event: MouseEvent): void {
+    if (this.previewMode()) return;
+    const target = event.target as HTMLElement;
+    if (!target.closest('.canvas-viewport')) return;
+    event.preventDefault();
+    const el = target.closest<HTMLElement>('.grid-stack-item');
+    const id = el?.getAttribute('data-gs-id');
+    if (id && !this.selection.isSelected(id)) this.selection.select(id);
+    const item = id ? { id, type: widgetType(el ?? undefined) } : undefined;
+    if (!item && !this.canPaste()) return;
+    this.contextMenu.set({ x: event.clientX, y: event.clientY, item });
+  }
+
   closeContextMenu(): void {
     this.contextMenu.set(null);
+  }
+
+  // ─── Copy, paste, duplicate, delete, center ──────────────────────────────
+  /** Copies the selected widgets (and the flows they start). Returns how many. */
+  copySelection(quiet = false): number {
+    const tabId = this.tabs.activeTabId();
+    const count = tabId ? this.clipboard.copy(tabId, this.savedSelection()) : 0;
+    if (count && !quiet) this.toasts.show(count === 1 ? 'Copied 1 widget' : `Copied ${count} widgets`);
+    return count;
+  }
+
+  /**
+   * Pastes the copied widgets onto this page in the nearest free place (nothing on it moves),
+   * then selects the copies; says so when there's no room for them.
+   */
+  async paste(): Promise<void> {
+    const tabId = this.tabs.activeTabId();
+    if (!tabId || !this.canPaste()) return;
+    try {
+      const result = await this.clipboard.paste(tabId);
+      if ('noRoom' in result) {
+        this.toasts.show('There is no free space for the copies here. Make some room (or make the container bigger) and paste again.', 'warning');
+        return;
+      }
+      if (this.tabs.activeTabId() !== tabId) return;
+      this.restoreLayout(tabId, this.layoutState.getLayout(tabId));
+      this.selection.selectMany(result.ids);
+    } catch (err) {
+      console.error('Failed to paste the widgets', err);
+      this.toasts.show('The widgets could not be pasted.', 'warning');
+    }
+  }
+
+  async duplicateSelection(): Promise<void> {
+    if (this.copySelection(true) > 0) await this.paste();
+  }
+
+  /** Deletes every selected widget (one inside a selected container goes with the container). */
+  deleteSelection(): void {
+    for (const id of this.selection.selectedIds()) {
+      const el = this.itemElement(id);
+      const grid = el?.gridstackNode?.grid;
+      if (el && grid && el.isConnected) this.removeWidget(grid, el);
+    }
+    this.selection.clear();
+  }
+
+  /** Moves each selected widget to the middle of what it's in (the page, or its container) on the axis. */
+  center(axis: CenterAxis): void {
+    for (const id of this.selection.selectedIds()) {
+      const el = this.itemElement(id);
+      const node = el?.gridstackNode;
+      const grid = node?.grid;
+      if (!el || !node || !grid) continue;
+      const room = { w: grid.getColumn(), h: grid.opts.row || grid.getRow() };
+      grid.update(el, centeredPosition({ x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 1, h: node.h ?? 1 }, room, axis));
+    }
+    this.syncLayout();
   }
 
   /** "Add action": a new action on the button's click flow (trigger created if missing), then the workflow editor. */
@@ -325,11 +423,13 @@ export class Canvas implements AfterViewInit {
 
     this.restoring = true;
     grid.removeAll();
+    this.containerContents.clear();
     for (const item of flattenTree(layout)) {
       if (item.id != null) this.savedGeometry.set(item.id.toString(), geometryOf(item));
     }
     this.addStoredWidgets(tabId, grid, layout);
     this.restoring = false;
+    this.markSelection(this.selection.selectedIds());
   }
 
   private addStoredWidgets(tabId: string, grid: GridStack, items: LayoutItem[]): void {
@@ -339,10 +439,15 @@ export class Canvas implements AfterViewInit {
 
       if (item.id != null && item.type !== 'container') {
         this.mountWidget(item.id.toString(), item.type ?? 'unknown', content, item.props);
-        if (isSavedId(item.id)) this.layoutState.loadComponentProps(tabId, item.id);
       }
+      if (item.id != null && item.type === 'container') {
+        this.containerContents.set(item.id.toString(), content);
+        this.paintContainer(item.id.toString(), item.props ?? {});
+      }
+      if (isSavedId(item.id)) this.layoutState.loadComponentProps(tabId, item.id);
 
       const subGrid = el.gridstackNode?.subGrid;
+      if (subGrid) this.showCenterGuides(subGrid);
       if (item.children?.length && subGrid) this.addStoredWidgets(tabId, subGrid, item.children);
     }
   }
@@ -377,24 +482,18 @@ export class Canvas implements AfterViewInit {
 
     if (type === 'container') {
       content.innerHTML = '';
-      rootGrid.makeSubGrid(node.el, subGridOptions(node.h ?? 1), undefined, false);
+      const subGrid = rootGrid.makeSubGrid(node.el, subGridOptions(node.h ?? 1), undefined, false);
+      this.showCenterGuides(subGrid);
       content.classList.add('container-widget');
+      this.containerContents.set(id, content);
       return;
     }
     // Moved into/out of a container: GridStack re-adds the same element, so the live widget is already there
     if (this.widgetRefs.get(id)?.location.nativeElement.parentElement === content) return;
 
     content.innerHTML = '';
+    content.classList.toggle('flush-widget', isFlushType(type));
     this.mountWidget(id, type, content, {});
-    content.addEventListener('contextmenu', (event: MouseEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-      // Actions can be attached to widgets that fire a trigger (see WIDGET_TRIGGERS), not while previewing
-      if (!widgetTrigger(type) || this.previewMode()) return;
-      // Read the id now: it changes from the temporary one once the backend has saved the widget
-      const currentId = content.closest('.grid-stack-item')?.getAttribute('data-gs-id') ?? id;
-      this.contextMenu.set({ x: event.clientX, y: event.clientY, item: { id: currentId, type } });
-    });
   }
 
   /** Create a new widget in the backend, or save the new place of a moved one. */
@@ -432,6 +531,12 @@ export class Canvas implements AfterViewInit {
     if (type) current.el?.setAttribute('data-type', type);
     current.id = newId;
 
+    const container = this.containerContents.get(tempId);
+    if (container && tempId !== newId) {
+      this.containerContents.delete(tempId);
+      this.containerContents.set(newId, container);
+    }
+
     const ref = this.widgetRefs.get(tempId);
     if (ref && tempId !== newId) {
       this.widgetRefs.delete(tempId);
@@ -463,6 +568,7 @@ export class Canvas implements AfterViewInit {
       if (id) {
         this.widgetRefs.get(id)?.destroy();
         this.widgetRefs.delete(id);
+        this.containerContents.delete(id);
       }
       node.subGrid?.destroy(false);
     }
@@ -506,6 +612,49 @@ export class Canvas implements AfterViewInit {
 
     content.appendChild(ref.location.nativeElement);
     this.widgetRefs.set(id, ref);
+  }
+
+  /** A container shows its background color (none: the editor's faint fill, see canvas.scss). */
+  private paintContainer(id: string, props: WidgetProps): void {
+    const content = this.containerContents.get(id);
+    if (content) content.style.background = propText(props, 'background') ?? '';
+  }
+
+  /** The grid item of a widget on the canvas. */
+  private itemElement(id: string): GridItemHTMLElement | null {
+    return document.querySelector<GridItemHTMLElement>(`.canvas-viewport .grid-stack-item[data-gs-id="${CSS.escape(id)}"]`);
+  }
+
+  private markSelection(ids: string[]): void {
+    const selected = new Set(ids);
+    document.querySelectorAll('.canvas-viewport .grid-stack-item').forEach((el) => {
+      el.classList.toggle('selected', selected.has(el.getAttribute('data-gs-id') ?? ''));
+    });
+  }
+
+  /** The selected widgets that are saved (a widget still being created can't be copied yet). */
+  private savedSelection(): string[] {
+    const tabId = this.tabs.activeTabId();
+    const layout = tabId ? this.layoutState.getLayout(tabId) : [];
+    return this.selection.selectedIds().filter((id) => isSavedId(toComponentId(id)) && findInTree(layout, id));
+  }
+
+  /**
+   * While a widget is dragged or resized in this grid, a dashed line marks the grid's middle on
+   * each axis the widget is centered on (see .guide-x / .guide-y in canvas.scss).
+   */
+  private showCenterGuides(grid: GridStack): void {
+    const update = (el: GridItemHTMLElement) => {
+      const node = el.gridstackNode;
+      if (!node) return;
+      const room = { w: grid.getColumn(), h: grid.opts.row || grid.getRow() };
+      const axes = centeredAxes({ x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 1, h: node.h ?? 1 }, room);
+      grid.el.classList.toggle('guide-x', axes.x);
+      grid.el.classList.toggle('guide-y', axes.y);
+    };
+    const clear = () => grid.el.classList.remove('guide-x', 'guide-y');
+    grid.on('dragstart drag resizestart resize', (_event: Event, el: GridItemHTMLElement) => update(el));
+    grid.on('dragstop resizestop', clear);
   }
 
   private attachRemoveButton(el: HTMLElement, grid: GridStack): void {

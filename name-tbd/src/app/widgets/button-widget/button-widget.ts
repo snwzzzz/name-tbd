@@ -3,8 +3,9 @@ import { BaseWidget } from '../../_directives/base-widget.directive';
 import { APP_SESSION } from '../../core/ports/app-ports';
 import { WidgetEventsService } from '../../core/services/widget-events.service';
 import { CLICK_EVENT } from '../../_constants/widget-events.constants';
+import { BRAND_COLOR } from '../../_utils/color.utils';
 
-export const BUTTON_DEFAULT_COLOR = '#0f6cbd';
+export const BUTTON_DEFAULT_COLOR = BRAND_COLOR;
 
 /** A button; clicking it while the app runs fires its click trigger (see WIDGET_TRIGGERS). */
 @Component({

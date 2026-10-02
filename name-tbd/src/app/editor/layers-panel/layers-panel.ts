@@ -29,7 +29,7 @@ export class LayersPanel {
   private readonly sidebars = inject(SidebarStateService);
   private readonly previewing = inject(PreviewSessionService).active;
 
-  readonly selectedId = this.selection.selectedId;
+  readonly isSelected = (id: string) => this.selection.isSelected(id);
   /** Whether a page is open (the welcome screen has no widgets). */
   readonly hasPage = computed(() => !!this.tabs.activeTabId() && this.tabs.activeMode() !== 'welcome');
   readonly layers = computed(() => {
@@ -64,9 +64,11 @@ export class LayersPanel {
     });
   }
 
-  /** Selects the widget, as clicking it on the canvas would (not while previewing). */
-  select(item: LayoutItem): void {
-    if (!this.previewing() && item.id != null) this.selection.select(this.key(item));
+  /** Selects the widget, as clicking it on the canvas would (Ctrl/⌘/Shift: adds it or takes it out; not while previewing). */
+  select(item: LayoutItem, event?: MouseEvent): void {
+    if (this.previewing() || item.id == null) return;
+    if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) this.selection.toggle(this.key(item));
+    else this.selection.select(this.key(item));
   }
 
   /** Selects the widget and shows its properties, in whichever sidebar that tab is. */

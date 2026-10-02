@@ -49,7 +49,7 @@
       "resizable": true,
       "props": [
         { "key": "label", "type": "string", "label": "Label", "default": "Click Me", "group": "Content" },
-        { "key": "color", "type": "color", "label": "Color", "default": "#0f6cbd", "group": "Style" },
+        { "key": "color", "type": "color", "label": "Color", "default": "#2f89ff", "group": "Style" },
         { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
       ]
     },
@@ -66,7 +66,7 @@
         { "key": "pageId", "type": "page", "label": "Page", "group": "Target", "default": "" },
         { "key": "url", "type": "string", "label": "URL (when no page is picked)", "group": "Target", "default": "" },
         { "key": "newTab", "type": "boolean", "label": "Open in new tab", "group": "Target", "default": "false" },
-        { "key": "color", "type": "color", "label": "Color", "group": "Style", "default": "#0f6cbd" },
+        { "key": "color", "type": "color", "label": "Color", "group": "Style", "default": "#2f89ff" },
         { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
       ]
     },
@@ -78,14 +78,15 @@
       "keywords": ["navbar", "menu", "navigation", "header", "sidebar"],
       "size": { "w": 32, "h": 3, "minW": 5, "minH": 3 },
       "resizable": true,
+      "flush": true,
       "props": [
         { "key": "pages", "type": "pages", "label": "Pages", "group": "Links", "default": "[]" },
         { "key": "vertical", "type": "boolean", "label": "Vertical", "group": "Style", "default": "false" },
         { "key": "variant", "type": "select", "label": "Appearance", "group": "Style", "default": "Underline", "options": ["Underline", "Pill", "Filled"] },
         { "key": "highlightCurrent", "type": "boolean", "label": "Highlight current page", "group": "Style", "default": "true" },
-        { "key": "color", "type": "color", "label": "Text color", "group": "Style", "default": "#242424" },
-        { "key": "accentColor", "type": "color", "label": "Current page color", "group": "Style", "default": "#0f6cbd" },
         { "key": "background", "type": "color", "label": "Background", "group": "Style", "default": "" },
+        { "key": "color", "type": "color", "label": "Text color (Auto: fits the background)", "group": "Style", "default": "" },
+        { "key": "accentColor", "type": "color", "label": "Current page color (Auto: fits the background)", "group": "Style", "default": "" },
         { "key": "textSize", "type": "select", "label": "Text size", "group": "Style", "default": "Normal", "options": ["Small", "Normal", "Large", "Title", "Headline"] }
       ]
     },
@@ -136,7 +137,9 @@
       "size": { "w": 16, "h": 9, "minW": 8, "minH": 5 },
       "resizable": true,
       "container": true,
-      "props": []
+      "props": [
+        { "key": "background", "type": "color", "label": "Background", "group": "Style", "default": "" }
+      ]
     },
     {
       "type": "form",

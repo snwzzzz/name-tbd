@@ -25,7 +25,7 @@ describe('LayersPanel', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: LayoutStateService, useValue: { getLayout: () => LAYOUT } },
-        { provide: SelectionService, useValue: { selectedId, select: (id: string) => selectedId.set(id) } },
+        { provide: SelectionService, useValue: { selectedId, select: (id: string) => selectedId.set(id), toggle: (id: string) => selectedId.set(id), isSelected: (id: string) => selectedId() === id } },
         { provide: TabsService, useValue: { activeTabId: signal('1'), activeMode: signal('edit') } },
         { provide: SidebarStateService, useValue: { open: (id: string) => opened.push(id) } },
       ],

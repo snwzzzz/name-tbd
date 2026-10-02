@@ -172,6 +172,11 @@ export class WorkflowStateService {
     return pending;
   }
 
+  /** Connect an output port of one node to the input of another; emits the connection (null if there's one already). */
+  addConnection(pageId: string, fromNode: string, fromPort: string, toNode: string): Observable<FlowConnection | null> {
+    return this.createConnection(pageId, fromNode, fromPort, toNode);
+  }
+
   private createConnection(pageId: string, fromNode: string, fromPort: string, toNode: string): Observable<FlowConnection | null> {
     const workflowId = this.graphs()[pageId]?.workflowId;
     if (workflowId == null || fromNode === toNode) return of(null);

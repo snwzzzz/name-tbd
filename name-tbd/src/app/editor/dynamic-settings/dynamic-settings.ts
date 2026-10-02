@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { WidgetRegistryService } from '../../_services/widget-registry.service';
 import { SelectionService } from '../../_services/selection.service';
 import { UiSelect } from '../../components/ui-select/ui-select';
+import { ColorField } from '../../components/color-field/color-field';
 import { WidgetProps } from '../../_types/layout.types';
 import { WidgetPropDefinition } from '../../_types/widget.types';
 import { SelectOption } from '../../_types/select.types';
@@ -20,7 +21,7 @@ const UNGROUPED = '_default';
 /** Settings form generated from the widget type's prop definitions in the backend. */
 @Component({
   selector: 'app-dynamic-settings',
-  imports: [FormsModule, NgComponentOutlet, UiSelect],
+  imports: [FormsModule, NgComponentOutlet, UiSelect, ColorField],
   templateUrl: './dynamic-settings.html',
   styleUrl: './dynamic-settings.scss',
 })
@@ -30,6 +31,8 @@ export class DynamicSettings {
 
   readonly type = input.required<string>();
   readonly props = input.required<WidgetProps | undefined>();
+  /** The widget these are the settings of (null: the one selected last). */
+  readonly itemId = input<string | null>(null);
 
   readonly ungrouped = UNGROUPED;
 
@@ -47,9 +50,8 @@ export class DynamicSettings {
     return this.props()?.[def.propKey] ?? def.defaultValue;
   }
 
-  /** What the color picker shows: the color, or white while the theme's is used (it can't show none). */
   colorValue(def: WidgetPropDefinition): string {
-    return String(this.value(def) || '#ffffff');
+    return String(this.value(def) ?? '');
   }
 
   checked(def: WidgetPropDefinition): boolean {
@@ -66,6 +68,6 @@ export class DynamicSettings {
   }
 
   updateProp(key: string, value: unknown): void {
-    this.selection.updateProps({ ...this.props(), [key]: value });
+    this.selection.updateProps({ ...this.props(), [key]: value }, this.itemId() ?? undefined);
   }
 }

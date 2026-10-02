@@ -2,8 +2,9 @@ import { Component, computed, inject } from '@angular/core';
 import { BaseWidget } from '../../_directives/base-widget.directive';
 import { APP_NAVIGATION, APP_PAGES, APP_SESSION } from '../../core/ports/app-ports';
 import { propBool, propNumber } from '../../_utils/widget-props.utils';
+import { BRAND_COLOR } from '../../_utils/color.utils';
 
-export const LINK_DEFAULT_COLOR = '#0f6cbd';
+export const LINK_DEFAULT_COLOR = BRAND_COLOR;
 
 /**
  * A hyperlink (`<a>`) to one of the project's pages, or to a URL when no page is picked.

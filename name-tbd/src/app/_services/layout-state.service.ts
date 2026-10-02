@@ -31,6 +31,30 @@ export class LayoutStateService {
     );
   }
 
+  /**
+   * Load a page's widgets again (e.g. after widgets were created for it). Props edited here and
+   * not saved yet win over the loaded ones, so nothing typed is lost.
+   */
+  refreshLayout(pageId: string): Observable<LayoutItem[]> {
+    return this.pageService.getComponents1(Number(pageId)).pipe(
+      map((dtos) => buildLayoutTree((Array.isArray(dtos) ? dtos : []).map(toLayoutItem))),
+      map((loaded) => {
+        const current = this.getLayout(pageId);
+        const withLocalProps = (items: LayoutItem[]): LayoutItem[] =>
+          items.map((item) => {
+            const local = item.id != null ? findInTree(current, item.id)?.props : undefined;
+            return {
+              ...item,
+              props: local ? { ...item.props, ...local } : item.props,
+              children: item.children ? withLocalProps(item.children) : item.children,
+            };
+          });
+        return withLocalProps(loaded);
+      }),
+      tap((layout) => this.layouts.update((all) => ({ ...all, [pageId]: layout }))),
+    );
+  }
+
   getLayout(pageId: string): LayoutItem[] {
     return this.layouts()[pageId] ?? [];
   }

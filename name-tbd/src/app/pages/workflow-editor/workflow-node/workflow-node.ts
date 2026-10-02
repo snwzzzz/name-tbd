@@ -12,8 +12,8 @@ import { SelectOption } from '../../../_types/select.types';
 import { ActionConfig, Condition, FlowNode, TriggerNode } from '../../../_types/workflow.types';
 import { propText } from '../../../_utils/widget-props.utils';
 import { inputPortId, outputPortId } from '../../../_utils/port.utils';
+import { BUTTON_DEFAULT_COLOR } from '../../../widgets/button-widget/button-widget';
 
-const DEFAULT_BUTTON_COLOR = '#3b82f6';
 
 const prop = (item: LayoutItem, key: string) => propText(item.props, key);
 
@@ -86,7 +86,7 @@ export class WorkflowNode {
   readonly triggerButton = computed(() => {
     const item = this.triggerElement();
     if (item?.type !== 'button') return null;
-    return { label: prop(item, 'label') ?? 'Click Me', color: prop(item, 'color') ?? DEFAULT_BUTTON_COLOR };
+    return { label: prop(item, 'label') ?? 'Click Me', color: prop(item, 'color') ?? BUTTON_DEFAULT_COLOR };
   });
 
   /** e.g. "Label “Hello”", for a trigger on an element that isn't a button. */

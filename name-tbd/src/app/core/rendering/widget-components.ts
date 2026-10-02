@@ -40,6 +40,12 @@ export function widgetProps(item: LayoutItem): WidgetProps {
   return { ...(widget ? catalogDefaults(widget) : {}), ...item.props };
 }
 
+/** Whether a widget type fills its cells to their edges (no widget margin): containers, and types marked `flush`. */
+export function isFlushType(type: string | undefined): boolean {
+  const widget = catalogWidget(type);
+  return !!widget?.container || !!widget?.flush;
+}
+
 /** Whether a placed widget holds other widgets (drawn as a nested grid). */
 export function isContainer(item: LayoutItem): boolean {
   return !!catalogWidget(item.type)?.container || !!item.children?.length;

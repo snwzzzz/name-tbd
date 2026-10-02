@@ -79,7 +79,7 @@
 
 // ─── Dropped grid items ───────────────────────────────────────────────────────
 :host ::ng-deep .grid-stack-item-content {
-  border-radius: var(--widget-radius);
+  // Square: each widget draws its own corners (the nav has none, a button has 4px)
   overflow: hidden !important;
 
   .grid-item-content {
@@ -126,8 +126,15 @@
     }
   }
 
+  // Widgets that fill their cells to the edges (a nav bar): no GridStack margin, like a container
+  &.flush-widget {
+    inset: 0 !important;
+  }
+
+  // A container: its background color (set inline, see Canvas.paintContainer), else a faint fill
+  // so its area shows while editing
   &.container-widget {
-    background: rgba(0, 0, 0, 0.03); // light gray for testing
+    background: rgba(0, 0, 0, 0.03);
     inset: 0 !important; // override GridStack margin so it acts as a flush structural wrapper
     overflow: hidden !important; // strictly enforce no scrollbars on the container itself
   }
@@ -178,6 +185,31 @@
 
 :host ::ng-deep .grid-stack-item.selected > .grid-stack-item-content {
   outline: 3px solid #ffa200;
+}
+
+// ─── Center guides ───────────────────────────────────────────────────────────
+// While a widget is dragged or resized centered in its grid (the page, or a container's), a dashed
+// line marks the grid's middle (see Canvas.showCenterGuides)
+:host ::ng-deep .grid-stack.guide-x::before,
+:host ::ng-deep .grid-stack.guide-y::after {
+  content: '';
+  position: absolute;
+  z-index: 50;
+  pointer-events: none;
+}
+
+:host ::ng-deep .grid-stack.guide-x::before {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 1px dashed #e8178a;
+}
+
+:host ::ng-deep .grid-stack.guide-y::after {
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px dashed #e8178a;
 }
 
 // ─── Preview mode ────────────────────────────────────────────────────────────
