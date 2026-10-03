@@ -4,16 +4,17 @@ import { firstValueFrom } from 'rxjs';
 import { DataSourceControllerService } from '../api/services/dataSourceController.service';
 import { DataSourceDto, DataSourceSummaryDto } from '../api/models';
 import { DATA_SOURCE_FORMATS } from '../_constants/data-source.constants';
-import { EDITOR_BRANCH_ID } from '../_constants/api.constants';
+import { EditorContext } from './editor-context.service';
 import { DataSourceFormat } from '../_types/data-source.types';
 
 /**
- * The project's data sources (tabular data imported from files). The list is loaded once; a data
+ * The branch's data sources (tabular data imported from files). The list is loaded once; a data
  * source's rows only when it's opened. Which one is open is up to the URL (see DataSourcePanel).
  */
 @Injectable({ providedIn: 'root' })
 export class DataSourceStateService {
   private readonly api = inject(DataSourceControllerService);
+  private readonly context = inject(EditorContext);
 
   readonly sources = signal<DataSourceSummaryDto[]>([]);
   readonly loading = signal(false);
@@ -31,7 +32,7 @@ export class DataSourceStateService {
     if (this.requested) return;
     this.requested = true;
     this.loading.set(true);
-    this.api.getDataSources(EDITOR_BRANCH_ID).subscribe({
+    this.api.getDataSources(this.context.requireBranchId()).subscribe({
       next: (sources) => {
         this.sources.set(sources);
         this.loaded.set(true);
@@ -75,7 +76,7 @@ export class DataSourceStateService {
     try {
       const content = await file.text();
       const created = await firstValueFrom(
-        this.api.importDataSource({ branchId: EDITOR_BRANCH_ID, name: baseName(file.name), format: format.format, content }),
+        this.api.importDataSource({ branchId: this.context.requireBranchId(), name: baseName(file.name), format: format.format, content }),
       );
       this.sources.update((all) => [...all, summaryOf(created)].sort(byName));
       this.cache(created);

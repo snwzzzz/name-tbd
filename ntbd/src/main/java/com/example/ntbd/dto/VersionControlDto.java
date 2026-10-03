@@ -1,12 +1,12 @@
 package com.example.ntbd.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record VersionControlDto(
         Long id,
         String version,
         BranchDto branch,
-        LocalDateTime timestamp,
+        Instant timestamp,
         String applicationDefinition,
         UserDto modifiedBy
 ) {}

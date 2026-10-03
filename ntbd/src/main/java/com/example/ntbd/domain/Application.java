@@ -28,6 +28,16 @@ public class Application extends AuditableEntity {
     @JoinColumn(name = "workspace_id", nullable = false)
     private Workspace workspace;
 
+    /** The branch the editor opens; created with the application. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "default_branch_id")
+    private Branch defaultBranch;
+
+    /** Who changed the application (or anything in it) last; see ApplicationActivity. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    private User lastModifiedBy;
+
     @OneToMany(orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "application")
     private List<Branch> branches = List.of();
 

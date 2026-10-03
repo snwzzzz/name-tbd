@@ -1,0 +1,67 @@
+# Staging: the editor and the API behind Caddy (HTTPS), the backend, and PostgreSQL.
+#   cp deploy/.env.example deploy/.env   # then fill it in
+#   docker compose -f deploy/compose.yaml --env-file deploy/.env up -d --build
+name: ntbd-staging
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ntbd
+      POSTGRES_USER: ntbd
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ntbd -d ntbd"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/backend.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: staging
+      DATABASE_URL: jdbc:postgresql://db:5432/ntbd
+      DATABASE_USER: ntbd
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      APP_FRONTEND_URL: https://${SITE_ADDRESS:?Set SITE_ADDRESS}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
+      SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-staging}
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL (for the HTTPS certificate)}
+      SENTRY_DSN_EDITOR: ${SENTRY_DSN_EDITOR:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-staging}
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

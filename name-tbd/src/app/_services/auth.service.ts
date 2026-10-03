@@ -6,6 +6,7 @@ import { MeControllerService } from '../api/services/meController.service';
 import { MeDto } from '../api/models';
 import { API_BASE_URL } from '../_constants/api.constants';
 import { ToastService } from './toast.service';
+import { setErrorTrackingUser } from './error-tracking';
 
 /** The identity providers users sign in with (backend: spring.security.oauth2.client.registration.*). */
 export type SignInProvider = 'google' | 'microsoft';
@@ -39,7 +40,10 @@ export class AuthService {
       catchError((error: unknown) =>
         error instanceof HttpErrorResponse && error.status === 401 ? of(null) : throwError(() => error),
       ),
-      tap((me) => this.me.set(me)),
+      tap((me) => {
+        this.me.set(me);
+        setErrorTrackingUser(me?.user?.id);
+      }),
       finalize(() => (this.loading = undefined)),
       shareReplay(1),
     );
@@ -94,6 +98,7 @@ export class AuthService {
   /** The session is gone (signed out, or expired as a 401 showed). */
   signedOut(): void {
     this.me.set(null);
+    setErrorTrackingUser(null);
   }
 }
 

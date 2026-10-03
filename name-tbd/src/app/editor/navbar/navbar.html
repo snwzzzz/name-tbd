@@ -11,7 +11,10 @@
         <svg lucideMoon></svg>
       }
     </button>
-    <div class="logo" routerLink="/">My IDE</div>
+    <a class="logo" routerLink="/console" title="All applications">My IDE</a>
+    @if (appTitle()) {
+      <span class="app-title" [title]="appTitle()">{{ appTitle() }}</span>
+    }
   </div>
 
   <div class="center-section">

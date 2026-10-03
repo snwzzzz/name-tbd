@@ -1,0 +1,32 @@
+<!-- Not a <form>: app-button has no type, so any of its buttons would submit it -->
+<div class="application-form-modal">
+  <h3 class="dialog-title">{{ data.heading }}</h3>
+
+  <div class="ui-fields">
+    <div class="ui-field">
+      <label class="ui-field-label" for="app-title">Title</label>
+      <input
+        class="ui-input"
+        id="app-title"
+        maxlength="255"
+        autocomplete="off"
+        [value]="title()"
+        (input)="title.set($any($event.target).value)"
+        (keydown.enter)="submit()" />
+    </div>
+    <div class="ui-field">
+      <label class="ui-field-label" for="app-description">Description <span class="optional">optional</span></label>
+      <textarea
+        class="ui-input"
+        id="app-description"
+        rows="3"
+        [value]="description()"
+        (input)="description.set($any($event.target).value)"></textarea>
+    </div>
+  </div>
+
+  <div class="dialog-actions">
+    <app-button color="neutral" variant="ghost" (click)="cancel()">Cancel</app-button>
+    <app-button [disabled]="!valid()" (click)="submit()">{{ data.submitText }}</app-button>
+  </div>
+</div>

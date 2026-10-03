@@ -163,7 +163,7 @@ npm install
 npm start            # builds the runtime once, then serves the editor
 ```
 
-Open `http://localhost:4200/editor`. The editor calls the API on its own origin (`API_BASE_URL` in `_constants/api.constants.ts` is empty); `ng serve` proxies `/api` and the login paths to `http://localhost:8080` (`name-tbd/proxy.conf.json`). A deploy does the same with one reverse proxy in front of both.
+Open `http://localhost:4200` (the console, after signing in; in development use the dev sign-in below). The editor calls the API on its own origin (`API_BASE_URL` in `_constants/api.constants.ts` is empty); `ng serve` proxies `/api` and the login paths to `http://localhost:8080` (`name-tbd/proxy.conf.json`). A deploy does the same with one reverse proxy in front of both.
 
 ### npm scripts
 
@@ -188,6 +188,32 @@ The backend looks for the runtime build in several places, in order (`ntbd.expor
 3. `classpath:export-runtime/` (a packaged jar)
 
 During development, the backend therefore uses a fresh runtime build **without a restart**.
+
+### Deploy to a server (staging)
+
+Everything for a deploy is in `deploy/`: three containers, started with Docker Compose.
+
+| Container | What it is |
+|---|---|
+| `web` | Caddy: serves the editor (`deploy/web.Dockerfile` builds it) and proxies `/api`, the sign-in paths and `/actuator/health` to the backend, so both share one origin. Gets the HTTPS certificate itself. |
+| `backend` | The Spring Boot jar (`deploy/backend.Dockerfile`), with the `staging` profile (`application-staging.properties`). |
+| `db` | PostgreSQL 17, data in a Docker volume. |
+
+1. Point a domain at the server (ports 80 and 443 open).
+2. `cp deploy/.env.example deploy/.env` and fill it in: the domain, a database password, the OIDC credentials (register `https://<domain>/login/oauth2/code/google` and `…/microsoft` as redirect URIs), optionally Sentry DSNs. `deploy/.env` is ignored by git.
+3. `docker compose -f deploy/compose.yaml --env-file deploy/.env up -d --build`
+
+Flyway creates the schema on first start; a deploy has no sample data and no dev sign-in (both exist only in the test configuration). Build both images from the repository root (the compose file does): they need `shared/`.
+
+**What a deploy adds:**
+
+- **Limits** (`RequestLimitsFilter`, `app.limits.*`): 20 sign-ins per minute per IP address, 120 changes per minute per user, 10 workflow runs per minute per user (they call webhooks and send email); bodies up to 1 MB, data imports up to 10 MB. Over a limit: `429` with `Retry-After`, or `413`. A body without a length is refused (`411`). Counts are in memory, so each backend instance counts on its own. Rates by IP address rely on the proxy setting `X-Forwarded-For` (Caddy does, overwriting what clients send); don't expose the backend directly.
+- **Headers**: HSTS, `nosniff`, no referrer, frame denial; API answers get `Content-Security-Policy: default-src 'none'`, the editor a CSP that allows only its own scripts (`deploy/Caddyfile`). The editor build therefore doesn't inline critical CSS (`angular.json`), which would need an inline script.
+- **Logs**: one JSON object per line (Elastic Common Schema), each with the request's `requestId` (also the `X-Request-Id` response header; the proxy's is kept) and the signed-in `userId`; one line per API request (`ntbd.requests`).
+- **Error tracking**: Sentry, when `SENTRY_DSN_BACKEND` / `SENTRY_DSN_EDITOR` are set. Only the user's id is sent (`SentryUser`, `setErrorTrackingUser`), no names or emails. The editor reads its DSN at startup from `/config.json` (served by Caddy) and loads Sentry only then.
+- **Health**: `GET /actuator/health` (no sign-in, no details).
+
+**Times** are stored in UTC (`Timestamps.nowUtc()`) and leave the API as instants (`…Z`), so the editor shows them in the browser's time zone whatever the server's is.
 
 ---
 
@@ -305,7 +331,7 @@ User (creator of branches)
 - **Workspace**: where applications live. Each user gets a personal workspace on first sign-in; **WorkspaceMember** gives a user a role in a workspace.
 
 - **Application**: an app being built, with a title, in one workspace. The app's name in exports.
-- **Branch**: a line of work on an application. **Pages, workflows and data sources belong to a branch**, and an export is always *of a branch*. The editor currently works on the seeded branch `-1` (`EDITOR_BRANCH_ID`).
+- **Branch**: a line of work on an application. **Pages, workflows and data sources belong to a branch**, and an export is always *of a branch*. Every application is created with a `main` branch, its **default branch**: the one the editor opens (`Application.defaultBranch`, which can't be deleted).
 - **Page**: a screen with a `name` and a `path` (its address in the exported app). One page per branch can be the **layout page** (`layout = true`): its widgets (navbar, sidebar, …) appear around every other page.
 - **UiComponent**: a placed widget.
   - `type` is a catalog type.
@@ -319,7 +345,9 @@ User (creator of branches)
 
 ### Database migrations
 
-Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). `V1_0_16` turns saved nav menus' old default colors into Auto; `V1_0_17` gives saved buttons and links the new brand color. Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. The sample data (application `-1`, user `-1`, branch `-1`, page `-1`) is in `ntbd/src/test/resources/db/devdata/V1_0_3__add_test_data.sql`. Only dev runs and tests add that location (`spring.flyway.locations` in `ntbd/src/test/resources/config/application.properties`), so a real deploy starts with an empty database. `V1_0_18__accounts.sql` moves applications that existed before accounts into the shared workspace `-1`, with every existing user as an owner.
+Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). `V1_0_16` turns saved nav menus' old default colors into Auto; `V1_0_17` gives saved buttons and links the new brand color. Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. The sample data (application `-1`, user `-1`, branch `-1`, page `-1`) is in `ntbd/src/test/resources/db/devdata/V1_0_3__add_test_data.sql`. Only dev runs and tests add that location (`spring.flyway.locations` in `ntbd/src/test/resources/config/application.properties`), so a real deploy starts with an empty database. `V1_0_18__accounts.sql` moves applications that existed before accounts into the shared workspace `-1`, with every existing user as an owner. `V1_0_19__application_lifecycle.sql` adds the default branch and "last edited by", and makes the foreign keys cascade, so deleting an application (one `DELETE`) deletes its branches and everything in them.
+
+**Duplicating** (`ApplicationCopier`) copies an application's default branch (pages, widgets, workflows, data sources; not its versions) into a new application in the same workspace. Every id stored inside the copy is rewritten to the copy's: widget parents and workflows, widget props of type `page`, `pages` and `dataSource`, and the widget and page ids in workflow nodes (`elementId`, and in action configs `targetId`, `tableId`, `detailId`, `inputId`, `detailPageId`). An id that pointed to nothing is cleared. `ApplicationDuplicateTest` checks each of them.
 
 ---
 
@@ -399,12 +427,15 @@ Angular 21: standalone components, signals (`signal`, `computed`, `effect`, `res
 ```
 /                                → /console
 /login                           sign in with Google or Microsoft (?error= explains a failed sign-in)
-/console                         application overview (currently mock data)
-/editor                          → /editor/welcome-0/welcome (the Start tab)
-/editor/:tabId/:mode             the editor, one tab active
+/console                         the user's applications: open, create, rename, delete
+/apps/:appId/edit                → /apps/:appId/edit/welcome-0/welcome (the Start tab)
+/apps/:appId/edit/:tabId/:mode   the editor on one application, one tab active
+/editor/**                       → /console (the editor before it had applications)
 ```
 
-`/console` and `/editor` are behind `authGuard`: it asks `GET /api/me` once (`AuthService`) and sends anyone not signed in to `/login?returnUrl=…`. Signing in leaves the editor for the identity provider; the backend sends the browser back to `/console`, and the guard continues to the remembered `returnUrl`. `authErrorInterceptor` sends a lost session (any 401 from the API) to the login page and explains a 403 in a toast. The user menu (`components/user-menu`) shows who is signed in and signs out.
+**Which application.** `editorAppGuard` loads the application (`GET /api/applications/:appId`) into `EditorContext` before the editor starts; the editor's services read the branch to work on from there (`EditorContext.requireBranchId()`) and build editor links with `EditorContext.path(…)`. The editor's state services are app-wide singletons that keep what they loaded, so opening a *different* application reloads the page instead of resetting each of them. Saved tabs and recent pages are kept per application (`EditorContext.storageKey`). Specs open the editor on `TEST_APP` with `provideTestEditorContext()` (`_testing/`).
+
+`/console` and the editor are behind `authGuard`: it asks `GET /api/me` once (`AuthService`) and sends anyone not signed in to `/login?returnUrl=…`. Signing in leaves the editor for the identity provider; the backend sends the browser back to `/console`, and the guard continues to the remembered `returnUrl`. `authErrorInterceptor` sends a lost session (any 401 from the API) to the login page and explains a 403 in a toast. The user menu (`components/user-menu`) shows who is signed in and signs out.
 
 The editor works with **tabs**, like an IDE. A tab id's kind is decided by `tabKind(id)` in `tabs.service.ts`:
 
@@ -714,7 +745,7 @@ commands/        request bodies (NewPageCommand, UpdateUiComponentCommand, …)
 
 | Area | Endpoints |
 |---|---|
-| Applications | `POST /api/applications`, `GET /api/applications` |
+| Applications | `POST /api/applications` (with its `main` branch), `GET /api/applications`, `GET`/`PATCH`/`DELETE /api/applications/{id}` (delete removes everything in it), `POST /api/applications/{id}/duplicate` |
 | Branches | `POST /api/branches`, `GET /api/branches`, `DELETE /api/branches/{id}` |
 | Versions | `POST /api/versions`, `GET /api/versions`, `GET /api/versions/latest` |
 | Users | `POST /api/users` |
@@ -845,7 +876,7 @@ Pages carry their widgets' geometry in grid cells only (`x`, `y`, `w`, `h`): tur
 
 ### 13.1 Building a page
 
-1. **Start screen → "Build a page"**: `POST /api/pages` on branch `-1`. A tab opens in Edit mode.
+1. **Start screen → "Build a page"**: `POST /api/pages` on the application's default branch. A tab opens in Edit mode.
 2. **Drag a widget from the palette.**
    - The size comes from the catalog.
    - `POST /api/ui-components` stores type, geometry and parent.
@@ -927,6 +958,7 @@ The backend needs no change: it reads the catalog.
 1. Use the new `type` in the catalog prop.
 2. Create an editor component extending `BasePropEditor` in `editor/prop-editors/`.
 3. Register it in `PROP_EDITORS` under that type name.
+4. If its value holds the id of a page, data source or widget, teach `ApplicationCopier.rewriteProp` (backend) to map it, so duplicated apps point to their own things.
 
 ### Add a workflow action
 
@@ -937,6 +969,7 @@ The backend needs no change: it reads the catalog.
 2. Register the handler in `ACTION_HANDLERS` (`core/workflow/action-handlers.ts`) under the action id.
 3. **Editor**: create a settings component in `editor/action-editors/` and add an `ACTION_TYPES` entry (id, label, `defaultConfig`, `editor`).
 4. Add a spec next to the handler (use `provideFakeApp`).
+5. If its config holds the id of a widget or page, add the key to `NODE_WIDGET_KEYS` / `NODE_PAGE_KEYS` in `ApplicationCopier` (backend), so duplicated apps point to their own.
 
 ### Add a table operation
 
@@ -1044,7 +1077,7 @@ The whole folder is regenerated each time. Commit it together with the backend c
 ## 19. Known limitations and roadmap
 
 **Today:**
-- The editor works on one hard-coded branch (`-1`). The console shows mock applications.
+- The editor always works on an application's default branch; there's no way to switch branches in the editor yet.
 - Condition nodes are stored and editable but not executed by the browser runtime.
 - There is no home-page setting: the export starts on the page at `/`, or else the first page.
 - Exported data lives in the export and in each visitor's browser. There's no shared live data yet.

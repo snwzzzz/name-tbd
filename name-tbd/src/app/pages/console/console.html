@@ -1,12 +1,40 @@
 <header class="console-header">
   <h1>Applications</h1>
-  <app-user-menu />
+  <div class="header-actions">
+    @if (canCreate()) {
+      <app-button size="sm" (click)="create()">New application</app-button>
+    }
+    <app-user-menu />
+  </div>
 </header>
 
-<div class="applications-container">
-  <div class="applications-grid">
-    @for (application of applications; track application.id) {
-      <app-application-card [application]="application" />
-    }
-  </div>
-</div>
+<main class="applications-container">
+  @if (loading()) {
+    <p class="state" role="status"><span class="ui-spinner"></span> Loading applications…</p>
+  } @else if (failed()) {
+    <div class="state" role="alert">
+      <p>The applications couldn't be loaded.</p>
+      <app-button size="sm" variant="outline" (click)="load()">Try again</app-button>
+    </div>
+  } @else if (applications().length === 0) {
+    <div class="state empty">
+      <h2>No applications yet</h2>
+      <p>Create your first application to start building.</p>
+      @if (canCreate()) {
+        <app-button (click)="create()">New application</app-button>
+      }
+    </div>
+  } @else {
+    <div class="applications-grid">
+      @for (application of applications(); track application.id) {
+        <app-application-card
+          [application]="application"
+          (rename)="rename(application)"
+          (duplicate)="duplicate(application)"
+          (remove)="remove(application)" />
+      }
+    </div>
+  }
+</main>
+
+<app-toast-host />

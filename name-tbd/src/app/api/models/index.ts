@@ -98,6 +98,9 @@ export interface ApplicationDto {
     workspaceId?: number;
     title?: string;
     description?: string;
+    defaultBranchId?: number;
+    lastModified?: Date;
+    lastModifiedBy?: string;
 }
 
 export interface BranchDto {
@@ -180,6 +183,15 @@ export interface NewBranchCommand {
 
 export interface NewApplicationCommand {
     workspaceId?: number;
+    title?: string;
+    description?: string;
+}
+
+export interface DuplicateApplicationCommand {
+    title?: string;
+}
+
+export interface UpdateApplicationCommand {
     title?: string;
     description?: string;
 }

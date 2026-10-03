@@ -1,0 +1,7 @@
+# Keep the Docker build context small: dependencies and outputs are rebuilt inside the images
+**/node_modules
+**/dist
+**/.angular
+**/target
+.git
+deploy/.env

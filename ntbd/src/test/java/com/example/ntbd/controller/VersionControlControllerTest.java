@@ -17,6 +17,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,7 +51,7 @@ public class VersionControlControllerTest {
     @Test
     void create_version_returns_201() throws Exception {
         var command = new NewVersionControlCommand(1L, 2L, java.time.LocalDateTime.now(), "{}", "1.0.0");
-        var dto = new VersionControlDto(10L, "1.0.0", null, java.time.LocalDateTime.now(), "{}", null);
+        var dto = new VersionControlDto(10L, "1.0.0", null, Instant.now(), "{}", null);
 
         when(versionControlService.createVersion(any())).thenReturn(dto);
 
@@ -64,7 +65,7 @@ public class VersionControlControllerTest {
 
     @Test
     void get_versions_by_branch_returns_200() throws Exception {
-        var dtos = List.of(new VersionControlDto(10L, "1.0.0", null, java.time.LocalDateTime.now(), "{}", null));
+        var dtos = List.of(new VersionControlDto(10L, "1.0.0", null, Instant.now(), "{}", null));
         when(versionControlService.findByBranchId(1L)).thenReturn(dtos);
 
         mockMvc.perform(get("/api/versions").param("branchId", "1"))
@@ -75,7 +76,7 @@ public class VersionControlControllerTest {
 
     @Test
     void get_latest_version_by_branch_returns_200_when_found() throws Exception {
-        var dto = new VersionControlDto(10L, "1.0.0", null, java.time.LocalDateTime.now(), "{}", null);
+        var dto = new VersionControlDto(10L, "1.0.0", null, Instant.now(), "{}", null);
         when(versionControlService.findLatestByBranchId(1L)).thenReturn(Optional.of(dto));
 
         mockMvc.perform(get("/api/versions/latest").param("branchId", "1"))

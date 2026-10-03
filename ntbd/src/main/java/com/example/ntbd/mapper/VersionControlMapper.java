@@ -1,5 +1,6 @@
 package com.example.ntbd.mapper;
 
+import com.example.ntbd.domain.Timestamps;
 import com.example.ntbd.domain.Branch;
 import com.example.ntbd.domain.Version;
 import com.example.ntbd.domain.VersionControl;
@@ -14,7 +15,7 @@ public class VersionControlMapper {
                 versionControl.getId() != null ? versionControl.getId().id() : null,
                 versionControl.getVersion() != null ? versionControl.getVersion().value() : null,
                 BranchMapper.toDto(versionControl.getBranch()),
-                versionControl.getCreatedAt(),
+                Timestamps.toInstant(versionControl.getCreatedAt()),
                 versionControl.getApplicationDefinition(),
                 UserMapper.toDto(versionControl.getModifiedBy())
         );
@@ -30,7 +31,7 @@ public class VersionControlMapper {
                 .applicationDefinition(versionControlDto.applicationDefinition())
                 .modifiedBy(UserMapper.toEntity(versionControlDto.modifiedBy()))
                 .build();
-        vc.setCreatedAt(versionControlDto.timestamp());
+        vc.setCreatedAt(Timestamps.fromInstant(versionControlDto.timestamp()));
         
         return vc;
     }

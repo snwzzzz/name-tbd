@@ -3,7 +3,9 @@ import { NavigationBehaviorOptions, NavigationEnd, Router } from '@angular/route
 import { filter } from 'rxjs';
 import { EditorMode, TabItem, isPageMode } from '../_types/tab.types';
 import { PagesStateService } from './pages-state.service';
+import { EditorContext } from './editor-context.service';
 
+/** Saved per application (see EditorContext.storageKey). */
 const STORAGE_KEY = 'editor-tabs';
 const EDITOR_MODES: EditorMode[] = ['welcome', 'edit', 'workflow', 'data', 'panel'];
 /** What the Start tab is called (its mode is 'welcome'). */
@@ -42,14 +44,16 @@ function fits(kind: TabKind, mode: EditorMode): boolean {
 const defaultMode = (kind: TabKind): EditorMode => (kind === 'start' ? 'welcome' : kind === 'panel' ? 'panel' : 'edit');
 
 /**
- * The editor's open tabs. The URL (`/editor/:tabId/:mode`) is the source of truth for the
- * active tab and mode; the tab list itself is kept in sessionStorage. A URL for a page or panel
+ * The editor's open tabs. The URL (`/apps/:appId/edit/:tabId/:mode`) is the source of truth for
+ * the active tab and mode; the tab list itself is kept in sessionStorage, per application. A URL for a page or panel
  * that isn't open opens its tab, and a mode that doesn't fit a tab is corrected.
  */
 @Injectable({ providedIn: 'root' })
 export class TabsService {
   private readonly router = inject(Router);
   private readonly pages = inject(PagesStateService);
+  private readonly context = inject(EditorContext);
+  private readonly storageKey = this.context.storageKey(STORAGE_KEY);
 
   readonly tabs = signal<TabItem[]>([]);
   readonly activeTabId = signal<string | null>(null);
@@ -58,7 +62,7 @@ export class TabsService {
   constructor() {
     this.tabs.set(this.restoreTabs());
 
-    effect(() => sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.tabs())));
+    effect(() => sessionStorage.setItem(this.storageKey, JSON.stringify(this.tabs())));
 
     // Page tabs are titled after their page (also once the pages have loaded, or a page is renamed)
     this.pages.ensureLoaded();
@@ -90,7 +94,7 @@ export class TabsService {
     if (!this.tabs().some((tab) => tab.id === id)) {
       this.tabs.update((tabs) => [...tabs, { id, title, mode: 'panel' }]);
     }
-    this.router.navigate(['/editor', id, 'panel'], EDITOR_NAVIGATION);
+    this.router.navigate(this.context.path(id, 'panel'), EDITOR_NAVIGATION);
   }
 
   updateTabState(id: string, updates: Partial<TabItem>): void {
@@ -115,14 +119,14 @@ export class TabsService {
     const tab = this.tabs().find((t) => t.id === id);
     const kind = tabKind(id);
     const mode = tab?.mode && (!kind || fits(kind, tab.mode)) ? tab.mode : defaultMode(kind ?? 'page');
-    this.router.navigate(['/editor', id, mode], EDITOR_NAVIGATION);
+    this.router.navigate(this.context.path(id, mode), EDITOR_NAVIGATION);
   }
 
   /** Switch the active tab to another mode (only pages have modes to switch between). */
   setMode(mode: EditorMode): void {
     const tabId = this.activeTabId();
     const kind = tabId ? tabKind(tabId) : null;
-    if (tabId && (!kind || fits(kind, mode))) this.router.navigate(['/editor', tabId, mode], EDITOR_NAVIGATION);
+    if (tabId && (!kind || fits(kind, mode))) this.router.navigate(this.context.path(tabId, mode), EDITOR_NAVIGATION);
   }
 
   reorderTabs(previousIndex: number, currentIndex: number): void {
@@ -136,7 +140,7 @@ export class TabsService {
 
   private restoreTabs(): TabItem[] {
     try {
-      const saved: unknown = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? 'null');
+      const saved: unknown = JSON.parse(sessionStorage.getItem(this.storageKey) ?? 'null');
       if (Array.isArray(saved) && saved.length > 0) {
         return (saved as TabItem[]).map((tab) => {
           const kind = tabKind(tab.id);
@@ -162,11 +166,12 @@ export class TabsService {
   }
 
   private readStateFromUrl(): void {
+    // apps / :appId / edit / :tabId / :mode
     const segments = this.router.parseUrl(this.router.url).root.children['primary']?.segments;
-    if (segments?.[0]?.path !== 'editor') return;
+    if (segments?.[0]?.path !== 'apps' || segments[2]?.path !== 'edit') return;
 
-    const tabId = segments[1]?.path;
-    const urlMode = segments[2]?.path;
+    const tabId = segments[3]?.path;
+    const urlMode = segments[4]?.path;
     if (!tabId) return;
     const kind = tabKind(tabId);
 
@@ -204,6 +209,6 @@ export class TabsService {
   }
 
   private redirect(tabId: string, mode: EditorMode): void {
-    this.router.navigate(['/editor', tabId, mode], { ...EDITOR_NAVIGATION, replaceUrl: true });
+    this.router.navigate(this.context.path(tabId, mode), { ...EDITOR_NAVIGATION, replaceUrl: true });
   }
 }

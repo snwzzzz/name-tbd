@@ -6,6 +6,7 @@ import { PagesStateService } from './pages-state.service';
 import { PreviewSessionService } from './preview-session.service';
 import { PreviewDataService } from './preview-data.service';
 import { TabsService } from './tabs.service';
+import { provideTestEditorContext } from '../_testing/editor-context.testing';
 
 describe('PageNavigationService', () => {
   let navigated: unknown[][];
@@ -14,7 +15,7 @@ describe('PageNavigationService', () => {
     navigated = [];
     sessionStorage.clear();
     TestBed.configureTestingModule({
-      providers: [
+      providers: [provideTestEditorContext(), 
         { provide: PagesStateService, useValue: { pages: signal([]), ensureLoaded: () => {}, page: () => ({ id: 7, name: 'About' }) } },
       ],
     });
@@ -28,7 +29,7 @@ describe('PageNavigationService', () => {
     TestBed.inject(PageNavigationService).openPage(7);
 
     expect(TestBed.inject(TabsService).tabs().some((t) => t.id === '7' && t.title === 'About')).toBe(true);
-    expect(navigated).toEqual([[['/editor', '7', 'edit'], { queryParamsHandling: 'preserve' }]]);
+    expect(navigated).toEqual([[['/apps', 3, 'edit', '7', 'edit'], { queryParamsHandling: 'preserve' }]]);
   });
 
   it('keeps a preview (and its data) going on the next page', () => {

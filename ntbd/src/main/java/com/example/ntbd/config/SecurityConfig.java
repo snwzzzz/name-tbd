@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -14,7 +15,13 @@ import org.springframework.security.authentication.AuthenticationTrustResolverIm
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
@@ -40,10 +47,22 @@ import java.util.List;
  *       which Angular's HttpClient does on its own for same-origin requests.</li>
  *   <li>CORS: off, because the editor calls the API on its own origin (a proxy in front of both).
  *       {@code app.cors.allowed-origins} turns it on for exactly those origins.</li>
+ *   <li>Limits: request size and rate limits ({@link RequestLimitsFilter}); every request gets an id
+ *       and a log line ({@link RequestContextFilter}).</li>
+ *   <li>Headers: Spring's defaults (nosniff, frame denial, no caching, HSTS over HTTPS), no referrer, and
+ *       for API answers a Content-Security-Policy that allows nothing. The editor's own CSP is the proxy's
+ *       (deploy/Caddyfile).</li>
  * </ul>
  */
 @Configuration
+@EnableConfigurationProperties(LimitsProperties.class)
 public class SecurityConfig {
+
+    private final LimitsProperties limits;
+
+    public SecurityConfig(LimitsProperties limits) {
+        this.limits = limits;
+    }
 
     /** Where the editor runs; sign-in sends the browser back there. */
     @Value("${app.frontend-url}")
@@ -72,8 +91,17 @@ public class SecurityConfig {
 
         http.csrf(csrf -> csrf.spa())
             .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
+            .addFilterAfter(new RequestContextFilter(), SecurityContextHolderFilter.class)
+            .addFilterBefore(new RequestLimitsFilter(limits), OAuth2AuthorizationRequestRedirectFilter.class)
+            .headers(headers -> headers
+                    .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                    .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy",
+                            "camera=(), microphone=(), geolocation=(), payment=()"))
+                    .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                            PathPatternRequestMatcher.withDefaults().matcher("/api/**"),
+                            new StaticHeadersWriter("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'"))))
             .authorizeHttpRequests(auth -> {
-                auth.requestMatchers("/oauth2/**", "/login/**", "/error").permitAll();
+                auth.requestMatchers("/oauth2/**", "/login/**", "/error", "/actuator/health").permitAll();
                 if (devSignIn) {
                     auth.requestMatchers(DevSignInController.PATH).permitAll();
                 }

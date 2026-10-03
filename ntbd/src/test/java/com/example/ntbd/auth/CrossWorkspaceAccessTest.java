@@ -124,11 +124,16 @@ class CrossWorkspaceAccessTest {
     private List<Route> routes(Tenant t) {
         var routes = new ArrayList<Route>();
         RouteAdder add = (method, pattern, path, body) -> routes.add(new Route(method, pattern, path, body));
-        HttpMethod GET = HttpMethod.GET, POST = HttpMethod.POST, PUT = HttpMethod.PUT, DELETE = HttpMethod.DELETE;
+        HttpMethod GET = HttpMethod.GET, POST = HttpMethod.POST, PUT = HttpMethod.PUT, PATCH = HttpMethod.PATCH,
+                DELETE = HttpMethod.DELETE;
 
         add.accept(GET, "/api/applications", "/api/applications?workspaceId=" + t.workspaceId(), null);
         add.accept(POST, "/api/applications", "/api/applications",
                 "{\"workspaceId\":%d,\"title\":\"x\",\"description\":\"\"}".formatted(t.workspaceId()));
+        add.accept(GET, "/api/applications/{id}", "/api/applications/" + t.app(), null);
+        add.accept(PATCH, "/api/applications/{id}", "/api/applications/" + t.app(), "{\"title\":\"x\"}");
+        add.accept(DELETE, "/api/applications/{id}", "/api/applications/" + t.app(), null);
+        add.accept(POST, "/api/applications/{id}/duplicate", "/api/applications/%d/duplicate".formatted(t.app()), null);
 
         add.accept(POST, "/api/branches", "/api/branches",
                 "{\"applicationId\":%d,\"name\":\"x\",\"description\":\"\"}".formatted(t.app()));

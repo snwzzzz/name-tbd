@@ -1,6 +1,6 @@
 package com.example.ntbd.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 
 public record NodeDto(
@@ -10,6 +10,6 @@ public record NodeDto(
         Map<String, Object> props,
         Double x,
         Double y,
-        LocalDateTime createdAt,
-        LocalDateTime lastModified
+        Instant createdAt,
+        Instant lastModified
 ) {}

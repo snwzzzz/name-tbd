@@ -2,6 +2,7 @@ package com.example.ntbd.auth;
 
 import com.example.ntbd.Exception.*;
 import com.example.ntbd.domain.WorkspaceRole;
+import com.example.ntbd.persistence.ResourceAccess;
 import com.example.ntbd.persistence.WorkspaceAccessRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -19,7 +20,8 @@ import java.util.function.Supplier;
  *       so other workspaces' data can't even be detected.</li>
  *   <li>A member whose role is below {@code least}: {@link ForbiddenException} (403).</li>
  * </ul>
- * Reads need {@link WorkspaceRole#VIEWER}, changes {@link WorkspaceRole#EDITOR}.
+ * Reads need {@link WorkspaceRole#VIEWER}, changes {@link WorkspaceRole#EDITOR}; a change also
+ * updates the application's "last edited" once it succeeds ({@link ApplicationActivity}).
  */
 @RequiredArgsConstructor
 @Component
@@ -27,6 +29,7 @@ public class WorkspaceAccess {
 
     private final WorkspaceAccessRepository repository;
     private final CurrentUser currentUser;
+    private final ApplicationActivity activity;
 
     /** The workspaces the user is a member of. */
     public List<Long> workspaceIds() {
@@ -34,7 +37,9 @@ public class WorkspaceAccess {
     }
 
     public void requireWorkspace(Long id, WorkspaceRole least) {
-        require("workspaceId", id, least, repository::roleInWorkspace, () -> new WorkspaceNotFoundException(id));
+        require("workspaceId", id, least,
+                (workspaceId, userId) -> repository.roleInWorkspace(workspaceId, userId).map(role -> new ResourceAccess(role, null)),
+                () -> new WorkspaceNotFoundException(id));
     }
 
     public void requireApplication(Long id, WorkspaceRole least) {
@@ -72,15 +77,18 @@ public class WorkspaceAccess {
     }
 
     private void require(String name, Long id, WorkspaceRole least,
-                         BiFunction<Long, Long, Optional<WorkspaceRole>> roleOf,
+                         BiFunction<Long, Long, Optional<ResourceAccess>> accessOf,
                          Supplier<? extends ResourceNotFoundException> notFound) {
         if (id == null) {
             throw new IllegalArgumentException(name + " is required");
         }
-        WorkspaceRole role = roleOf.apply(id, currentUser.requireId().id()).orElseThrow(notFound);
-        if (!role.includes(least)) {
-            throw new ForbiddenException("Your role in this workspace (" + role.name().toLowerCase()
+        ResourceAccess access = accessOf.apply(id, currentUser.requireId().id()).orElseThrow(notFound);
+        if (!access.role().includes(least)) {
+            throw new ForbiddenException("Your role in this workspace (" + access.role().name().toLowerCase()
                     + ") doesn't allow this");
+        }
+        if (least.includes(WorkspaceRole.EDITOR)) {
+            activity.changing(access.applicationId());
         }
     }
 }

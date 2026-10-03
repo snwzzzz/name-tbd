@@ -1,5 +1,6 @@
 package com.example.ntbd.mapper;
 
+import com.example.ntbd.domain.Timestamps;
 import com.example.ntbd.domain.Edge;
 import com.example.ntbd.domain.Node;
 import com.example.ntbd.dto.EdgeDto;
@@ -24,8 +25,8 @@ public class EdgeMapper {
                 sourceNodeId,
                 targetNodeId,
                 edge.getSourcePort(),
-                edge.getCreatedAt(),
-                edge.getLastModified()
+                Timestamps.toInstant(edge.getCreatedAt()),
+                Timestamps.toInstant(edge.getLastModified())
         );
     }
 
@@ -42,8 +43,8 @@ public class EdgeMapper {
                         ? Node.builder().id(new Node.NodeId(dto.targetNodeId())).build()
                         : null)
                 .build();
-        edge.setCreatedAt(dto.createdAt());
-        edge.setLastModified(dto.lastModified());
+        edge.setCreatedAt(Timestamps.fromInstant(dto.createdAt()));
+        edge.setLastModified(Timestamps.fromInstant(dto.lastModified()));
         return edge;
     }
 }

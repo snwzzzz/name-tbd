@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Sidebar } from './sidebar';
 import { SidebarStateService } from '../../_services/sidebar-state.service';
+import { provideTestEditorContext } from '../../_testing/editor-context.testing';
 
 @Component({
   imports: [Sidebar],
@@ -10,7 +11,10 @@ import { SidebarStateService } from '../../_services/sidebar-state.service';
 class Host {}
 
 describe('Sidebar', () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({ providers: [provideTestEditorContext()] });
+  });
 
   const mount = () => {
     const fixture = TestBed.createComponent(Host);

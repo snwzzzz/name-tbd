@@ -55,8 +55,11 @@ public class BranchService {
 
     @Transactional
     public void deleteBranch(Long branchId) {
-        if (!branchRepository.existsById(new Branch.BranchId(branchId))) {
-            throw new BranchNotFoundException(branchId);
+        Branch branch = branchRepository.findById(new Branch.BranchId(branchId))
+                .orElseThrow(() -> new BranchNotFoundException(branchId));
+        Branch defaultBranch = branch.getApplication().getDefaultBranch();
+        if (defaultBranch != null && defaultBranch.getId().equals(branch.getId())) {
+            throw new IllegalArgumentException("The application's default branch can't be deleted");
         }
 
         branchRepository.deleteById(new Branch.BranchId(branchId));

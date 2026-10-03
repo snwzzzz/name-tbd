@@ -27,6 +27,7 @@
     "@foblex/utils": "^1.1.1",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@lucide/angular": "^1.48.0",
+    "@sentry/browser": "^10.76.0",
     "gridstack": "^14.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"

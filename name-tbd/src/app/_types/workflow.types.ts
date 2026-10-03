@@ -56,7 +56,10 @@ export interface SearchConfig {
   tableId: string;           // id of a data table on this page, or 'all' (see SEARCH_ALL_TABLES)
 }
 
-/** Config of any action. */
+/**
+ * Config of any action. A config field holding the id of a widget or page must also be listed in the
+ * backend's ApplicationCopier (NODE_WIDGET_KEYS / NODE_PAGE_KEYS), so duplicated apps point to their own.
+ */
 export type ActionConfig = SetTextConfig | TableActionConfig | ShowDetailConfig | SearchConfig;
 
 export interface ActionNode extends FlowNodeBase {
