@@ -6,10 +6,11 @@ import { EDITOR_BRANCH_ID, appExportUrl } from '../../_constants/api.constants';
 import { HttpActivityService } from '../../_services/http-activity.service';
 import { ModalService } from '../../_services/modal/modal.service';
 import { ShortcutsModal } from '../../components/shortcuts-modal/shortcuts-modal';
+import { UserMenu } from '../../components/user-menu/user-menu';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, LucideMoon, LucideSun, LucideDownload, LucideSearch, LucideKeyboard],
+  imports: [RouterLink, LucideMoon, LucideSun, LucideDownload, LucideSearch, LucideKeyboard, UserMenu],
   templateUrl: './navbar.html',
   styleUrl: './navbar.scss',
 })

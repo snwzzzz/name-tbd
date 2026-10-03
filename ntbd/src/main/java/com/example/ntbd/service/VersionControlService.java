@@ -2,6 +2,7 @@ package com.example.ntbd.service;
 
 import com.example.ntbd.Exception.BranchNotFoundException;
 import com.example.ntbd.Exception.UserNotFoundException;
+import com.example.ntbd.auth.CurrentUser;
 import com.example.ntbd.commands.NewVersionControlCommand;
 import com.example.ntbd.domain.Branch;
 import com.example.ntbd.domain.User;
@@ -29,6 +30,7 @@ public class VersionControlService {
     private final VersionControlRepository versionControlRepository;
     private final BranchRepository branchRepository;
     private final UserRepository userRepository;
+    private final CurrentUser currentUser;
 
     @Transactional
     public VersionControlDto createVersion(NewVersionControlCommand command) {
@@ -36,9 +38,10 @@ public class VersionControlService {
         Branch branch = branchRepository.findById(new Branch.BranchId(command.branchId()))
                 .orElseThrow(() -> new BranchNotFoundException(command.branchId()));
 
-        // 2. Find the user or throw a not found exception
-        User user = userRepository.findById(new User.UserId(command.modifiedById()))
-                .orElseThrow(() -> new UserNotFoundException(command.modifiedById()));
+        // 2. The signed-in user is the author
+        User.UserId userId = currentUser.requireId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId.id()));
 
         // 3. Build and save the new version control (commit) entity
         VersionControl versionControl = VersionControl.builder()

@@ -1,13 +1,21 @@
 import { Routes } from '@angular/router';
 import { Editor } from './editor/editor';
+import { authGuard } from './_guards/auth.guard';
 
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'console' },
+  {
+    path: 'login',
+    loadComponent: () => import('./pages/login/login').then((m) => m.Login),
+  },
   {
     path: 'console',
+    canActivate: [authGuard],
     loadComponent: () => import('./pages/console/console').then((m) => m.ApplicationConsole),
   },
   {
     path: 'editor',
+    canActivate: [authGuard],
     component: Editor,
     children: [
       { path: ':tabId/edit', loadComponent: () => import('./pages/canvas/canvas').then((m) => m.Canvas) },

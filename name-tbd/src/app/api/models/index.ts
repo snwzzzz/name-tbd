@@ -88,7 +88,6 @@ export interface EdgeDto {
 export interface NewVersionControlCommand {
     id?: number;
     branchId?: number;
-    modifiedById?: number;
     timestamp?: Date;
     applicationDefinition?: string;
     version?: string;
@@ -96,6 +95,7 @@ export interface NewVersionControlCommand {
 
 export interface ApplicationDto {
     id?: number;
+    workspaceId?: number;
     title?: string;
     description?: string;
 }
@@ -115,9 +115,9 @@ export interface UserDto {
     id?: number;
     username?: string;
     email?: string;
-    password?: string;
     firstName?: string;
     lastName?: string;
+    avatarUrl?: string;
 }
 
 export interface VersionControlDto {
@@ -127,14 +127,6 @@ export interface VersionControlDto {
     timestamp?: Date;
     applicationDefinition?: string;
     modifiedBy?: UserDto;
-}
-
-export interface NewUserCommand {
-    username?: string;
-    email?: string;
-    password?: string;
-    firstName?: string;
-    lastName?: string;
 }
 
 export interface NewUiComponentCommand {
@@ -182,12 +174,12 @@ export interface DataSourceDto {
 
 export interface NewBranchCommand {
     applicationId?: number;
-    createdById?: number;
     name?: string;
     description?: string;
 }
 
 export interface NewApplicationCommand {
+    workspaceId?: number;
     title?: string;
     description?: string;
 }
@@ -201,6 +193,18 @@ export interface WidgetPropDefinitionDto {
     label?: string;
     group?: string;
     options?: Array<string>;
+}
+
+export interface MeDto {
+    user?: UserDto;
+    workspaces?: Array<WorkspaceMembershipDto>;
+}
+
+export interface WorkspaceMembershipDto {
+    id?: number;
+    name?: string;
+    personal?: boolean;
+    role?: string;
 }
 
 export interface DataSourceSummaryDto {

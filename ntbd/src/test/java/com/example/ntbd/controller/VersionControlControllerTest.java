@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -21,6 +22,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(VersionControlController.class)
 @Import(SecurityConfig.class)
+@WithMockUser
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 public class VersionControlControllerTest {
 
@@ -42,12 +45,12 @@ public class VersionControlControllerTest {
 
     @Test
     void create_version_returns_201() throws Exception {
-        var command = new NewVersionControlCommand(1L, 2L, 3L, java.time.LocalDateTime.now(), "{}", "1.0.0");
+        var command = new NewVersionControlCommand(1L, 2L, java.time.LocalDateTime.now(), "{}", "1.0.0");
         var dto = new VersionControlDto(10L, "1.0.0", null, java.time.LocalDateTime.now(), "{}", null);
 
         when(versionControlService.createVersion(any())).thenReturn(dto);
 
-        mockMvc.perform(post("/api/versions")
+        mockMvc.perform(post("/api/versions").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(command)))
                 .andExpect(status().isCreated())

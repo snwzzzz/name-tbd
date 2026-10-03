@@ -144,6 +144,8 @@ Users sign in with Google or Microsoft (OIDC). The backend starts without creden
 
 The redirect URIs use the editor's origin because `ng serve` proxies the login paths to the backend. Sign-in starts at `/oauth2/authorization/google` (or `microsoft`); `GET /api/me` returns the signed-in user and their workspaces, and `POST /logout` signs out.
 
+Every API request needs a signed-in user (`SecurityConfig`); without one the answer is `401`. The session is an `HttpOnly` cookie. Writes need the CSRF token: the backend sets it as the `XSRF-TOKEN` cookie and Angular's `HttpClient` sends it back as the `X-XSRF-TOKEN` header, which only works for same-origin requests (hence the proxy). CORS is off unless `APP_CORS_ALLOWED_ORIGINS` lists origins. On HTTPS, set `SESSION_COOKIE_SECURE=true`. In local development (`app.security.public-api-docs` in the test configuration) the OpenAPI spec and Swagger UI stay open, so the API client can be generated.
+
 ### Run the editor
 
 ```bash
@@ -378,17 +380,22 @@ Angular 21: standalone components, signals (`signal`, `computed`, `effect`, `res
 | `editor/` | Editor shell pieces: navbar, sidebars, tabs, panels, prop and action editors, runtime adapters | Yes |
 | `pages/` | Editor screens (routes) | Yes |
 | `components/` | Generic UI building blocks | Used by both |
-| `_services/` | Editor state (pages, layouts, data, tabs, selection, preview, autosave…) | Yes |
+| `_services/` | Editor state (pages, layouts, data, tabs, selection, preview, autosave…) and the signed-in user (`auth.service.ts`) | Yes |
+| `_guards/` | Route guards (`authGuard`: signed-in users only) | Yes |
 | `_constants/`, `_types/`, `_utils/`, `_directives/`, `_styles/` | Shared helpers. The editor-only registries in `_constants` are off-limits for the core. | Mixed |
 | `api/` | Generated backend client | Editor only |
 
 ### 7.2 Routing and tabs
 
 ```
+/                                → /console
+/login                           sign in with Google or Microsoft (?error= explains a failed sign-in)
 /console                         application overview (currently mock data)
 /editor                          → /editor/welcome-0/welcome (the Start tab)
 /editor/:tabId/:mode             the editor, one tab active
 ```
+
+`/console` and `/editor` are behind `authGuard`: it asks `GET /api/me` once (`AuthService`) and sends anyone not signed in to `/login?returnUrl=…`. Signing in leaves the editor for the identity provider; the backend sends the browser back to `/console`, and the guard continues to the remembered `returnUrl`. `authErrorInterceptor` sends a lost session (any 401 from the API) to the login page and explains a 403 in a toast. The user menu (`components/user-menu`) shows who is signed in and signs out.
 
 The editor works with **tabs**, like an IDE. A tab id's kind is decided by `tabKind(id)` in `tabs.service.ts`:
 
@@ -1033,7 +1040,7 @@ The whole folder is regenerated each time. Commit it together with the backend c
 - There is no home-page setting: the export starts on the page at `/`, or else the first page.
 - Exported data lives in the export and in each visitor's browser. There's no shared live data yet.
 - Pages are designed for one desktop window size. They adapt to windows down to half its width; on smaller screens (phones) they scroll sideways. Real mobile layouts would need per-breakpoint geometry.
-- Security is wide open (all requests permitted, CORS `*`). Fine for local development only.
+- Signing in works, but data isn't scoped to workspaces yet: every signed-in user can read and change every application.
 
 **Planned, and prepared for by the architecture:**
 - **Live data sources** (databases, APIs): a new definition section plus an `AppData` implementation (section 15).

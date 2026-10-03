@@ -1,0 +1,26 @@
+@if (user(); as user) {
+  <button
+    type="button"
+    class="avatar-button"
+    aria-haspopup="menu"
+    [attr.aria-expanded]="open()"
+    [attr.aria-label]="'Account: ' + name()"
+    [title]="name()"
+    (click)="toggle()">
+    @if (user.avatarUrl && !pictureFailed()) {
+      <img class="avatar" [src]="user.avatarUrl" alt="" referrerpolicy="no-referrer" (error)="pictureFailed.set(true)" />
+    } @else {
+      <span class="avatar initials" aria-hidden="true">{{ initials() }}</span>
+    }
+  </button>
+
+  @if (open()) {
+    <div class="menu" role="menu">
+      <div class="who">
+        <div class="name">{{ name() }}</div>
+        <div class="email">{{ user.email }}</div>
+      </div>
+      <button type="button" class="item" role="menuitem" (click)="signOut()">Sign out</button>
+    </div>
+  }
+}

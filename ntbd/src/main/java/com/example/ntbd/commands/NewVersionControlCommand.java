@@ -2,10 +2,10 @@ package com.example.ntbd.commands;
 
 import java.time.LocalDateTime;
 
+/** A new version of branch {@code branchId}; the signed-in user is its author. */
 public record NewVersionControlCommand(
         Long id,
         Long branchId,
-        Long modifiedById,
         LocalDateTime timestamp,
         String applicationDefinition,
         String version
