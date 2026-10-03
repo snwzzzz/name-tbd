@@ -30,7 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+// Its own context (a property no other test sets): other tests' csrf() leaves a CSRF repository
+// behind in their context that doesn't write the cookie
+@SpringBootTest(properties = "spring.application.name=ntbd-security-config-test")
 @AutoConfigureMockMvc
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -49,7 +51,8 @@ class SecurityConfigTest {
         for (RequestMappingInfo info : handlerMapping.getHandlerMethods().keySet()) {
             Set<RequestMethod> methods = info.getMethodsCondition().getMethods();
             for (String pattern : info.getPatternValues()) {
-                if (!pattern.startsWith("/api/")) continue;
+                // The dev sign-in is open on purpose, and only exists in development (DevSignInControllerTest)
+                if (!pattern.startsWith("/api/") || pattern.startsWith("/api/dev/")) continue;
                 String path = pattern.replaceAll("\\{[^}]+}", "1");
                 if (methods.isEmpty()) {
                     routes.add(new Route(HttpMethod.GET, path));
@@ -88,8 +91,8 @@ class SecurityConfigTest {
     }
 
     /**
-     * Runs first: the test helper csrf() swaps the CSRF token repository in the shared context for
-     * one that doesn't write the cookie, so after any request with csrf() the cookie wouldn't show.
+     * Runs first: the test helper csrf() swaps the CSRF token repository in the context for one
+     * that doesn't write the cookie, so after any request with csrf() the cookie wouldn't show.
      */
     @Test
     @Order(1)

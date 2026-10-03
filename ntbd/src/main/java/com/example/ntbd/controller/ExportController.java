@@ -1,5 +1,6 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.auth.WorkspaceAccess;
 import com.example.ntbd.export.definition.AppDefinition;
 import com.example.ntbd.export.definition.AppDefinitionService;
 import com.example.ntbd.export.format.ExportFormatRegistry;
@@ -17,6 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+import static com.example.ntbd.domain.WorkspaceRole.EDITOR;
+import static com.example.ntbd.domain.WorkspaceRole.VIEWER;
+
 /** Exports a branch's app: as its definition, or packaged in one of the export formats. */
 @RequiredArgsConstructor
 @RestController
@@ -25,10 +29,12 @@ public class ExportController {
 
     private final AppDefinitionService definitionService;
     private final ExportFormatRegistry formats;
+    private final WorkspaceAccess access;
 
     /** What the exported app runs: its pages, widgets, workflows and data. */
     @GetMapping(value = "/branches/{branchId}/definition", produces = "application/json")
     public ResponseEntity<AppDefinition> getDefinition(@PathVariable Long branchId) {
+        access.requireBranch(branchId, VIEWER);
         return ResponseEntity.ok(definitionService.build(branchId));
     }
 
@@ -36,6 +42,7 @@ public class ExportController {
     @GetMapping("/branches/{branchId}/export")
     public ResponseEntity<byte[]> exportApp(@PathVariable Long branchId,
                                             @RequestParam(defaultValue = "html") String format) {
+        access.requireBranch(branchId, VIEWER);
         ExportedFile file = formats.get(format).export(definitionService.build(branchId));
 
         HttpHeaders headers = new HttpHeaders();

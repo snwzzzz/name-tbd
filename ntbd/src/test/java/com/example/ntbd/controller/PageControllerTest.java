@@ -1,5 +1,6 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.auth.WorkspaceAccess;
 import com.example.ntbd.commands.NewPageCommand;
 import com.example.ntbd.dto.PageDto;
 import com.example.ntbd.service.PageService;
@@ -19,6 +20,9 @@ class PageControllerTest {
 
     @Mock
     private PageService pageService;
+
+    @Mock
+    private WorkspaceAccess access;
 
     @InjectMocks
     private PageController pageController;

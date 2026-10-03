@@ -25,7 +25,7 @@ export class LayoutStateService {
     const cached = this.layouts()[pageId];
     if (cached) return of(cached);
 
-    return this.pageService.getComponents1(Number(pageId)).pipe(
+    return this.pageService.getComponents(Number(pageId)).pipe(
       map((dtos) => buildLayoutTree((Array.isArray(dtos) ? dtos : []).map(toLayoutItem))),
       tap((layout) => this.layouts.update((all) => ({ ...all, [pageId]: layout }))),
     );
@@ -36,7 +36,7 @@ export class LayoutStateService {
    * not saved yet win over the loaded ones, so nothing typed is lost.
    */
   refreshLayout(pageId: string): Observable<LayoutItem[]> {
-    return this.pageService.getComponents1(Number(pageId)).pipe(
+    return this.pageService.getComponents(Number(pageId)).pipe(
       map((dtos) => buildLayoutTree((Array.isArray(dtos) ? dtos : []).map(toLayoutItem))),
       map((loaded) => {
         const current = this.getLayout(pageId);

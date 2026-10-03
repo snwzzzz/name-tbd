@@ -27,5 +27,24 @@
         Continue with Microsoft
       </button>
     </div>
+
+    @if (devMode) {
+      <form class="dev" (submit)="$event.preventDefault(); devSignIn()">
+        <h2>Development</h2>
+        <label for="dev-email">Sign in as</label>
+        <div class="dev-row">
+          <input
+            id="dev-email"
+            type="email"
+            autocomplete="off"
+            [value]="devEmail()"
+            (input)="devEmail.set($any($event.target).value)" />
+          <button type="submit">Sign in</button>
+        </div>
+        @if (devError(); as message) {
+          <p class="error" role="alert">{{ message }}</p>
+        }
+      </form>
+    }
   </section>
 </main>

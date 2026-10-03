@@ -24,11 +24,25 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getMessage(), HttpStatus.CONFLICT.value()));
     }
 
+    @ExceptionHandler(com.example.ntbd.Exception.ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(com.example.ntbd.Exception.ForbiddenException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(ex.getMessage(), HttpStatus.FORBIDDEN.value()));
+    }
+
     @ExceptionHandler(com.example.ntbd.auth.NotSignedInException.class)
     public ResponseEntity<ErrorResponse> handleNotSignedIn(com.example.ntbd.auth.NotSignedInException ex) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse(ex.getMessage(), HttpStatus.UNAUTHORIZED.value()));
+    }
+
+    @ExceptionHandler(com.example.ntbd.auth.SignInRejectedException.class)
+    public ResponseEntity<ErrorResponse> handleSignInRejected(com.example.ntbd.auth.SignInRejectedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST.value()));
     }
 
     @ExceptionHandler(com.example.ntbd.Exception.ExportRuntimeUnavailableException.class)

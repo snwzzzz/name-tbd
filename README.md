@@ -142,9 +142,18 @@ Users sign in with Google or Microsoft (OIDC). The backend starts without creden
 | `MICROSOFT_TENANT` | Optional: one tenant id instead of `common` (any Microsoft account) |
 | `APP_FRONTEND_URL` | Where the editor runs (default `http://localhost:4200`); sign-in returns there |
 
+**Without credentials**, use the dev sign-in: in development builds the login page also has a "Sign in as" field that signs in as any email (`POST /api/dev/sign-in`, `DevSignInController`). It creates the account like a real sign-in, personal workspace included, and makes the user an owner of the sample workspace `-1`, so the sample app (branch `-1`) stays usable. The backend only has it with `app.security.dev-sign-in=true`, which only the test configuration (`ntbd/src/test/resources/config/application.properties`) sets, so a packaged backend never offers it.
+
 The redirect URIs use the editor's origin because `ng serve` proxies the login paths to the backend. Sign-in starts at `/oauth2/authorization/google` (or `microsoft`); `GET /api/me` returns the signed-in user and their workspaces, and `POST /logout` signs out.
 
 Every API request needs a signed-in user (`SecurityConfig`); without one the answer is `401`. The session is an `HttpOnly` cookie. Writes need the CSRF token: the backend sets it as the `XSRF-TOKEN` cookie and Angular's `HttpClient` sends it back as the `X-XSRF-TOKEN` header, which only works for same-origin requests (hence the proxy). CORS is off unless `APP_CORS_ALLOWED_ORIGINS` lists origins. On HTTPS, set `SESSION_COOKIE_SECURE=true`. In local development (`app.security.public-api-docs` in the test configuration) the OpenAPI spec and Swagger UI stay open, so the API client can be generated.
+
+**Access to data.** Everything belongs to a workspace (widget → page → branch → application → workspace), and a user sees only the workspaces they're a member of. Every controller method asks `WorkspaceAccess` first, e.g. `access.requireBranch(branchId, VIEWER)`:
+
+- Not a member of the data's workspace, or no such data: `404`, so other workspaces' data can't even be detected.
+- A member whose role is too low: `403`. Reads need `VIEWER`, changes `EDITOR` (roles: `OWNER` ⊃ `EDITOR` ⊃ `VIEWER`).
+
+Each check is one query in `WorkspaceAccessRepository` that walks from the data up to its workspace. References inside a request must stay in the same place too: an edge's nodes in its workflow, a widget's parent on its page, a widget's workflow in its branch (else `404`). `CrossWorkspaceAccessTest` calls every API route with another workspace's ids and expects `404`; it fails when a new route is missing from its list, so **a new endpoint needs an access check and an entry there**.
 
 ### Run the editor
 
@@ -1040,7 +1049,7 @@ The whole folder is regenerated each time. Commit it together with the backend c
 - There is no home-page setting: the export starts on the page at `/`, or else the first page.
 - Exported data lives in the export and in each visitor's browser. There's no shared live data yet.
 - Pages are designed for one desktop window size. They adapt to windows down to half its width; on smaller screens (phones) they scroll sideways. Real mobile layouts would need per-breakpoint geometry.
-- Signing in works, but data isn't scoped to workspaces yet: every signed-in user can read and change every application.
+- Workspace members can't be invited yet; each user only has their personal workspace (plus, in development, the sample workspace).
 
 **Planned, and prepared for by the architecture:**
 - **Live data sources** (databases, APIs): a new definition section plus an `AppData` implementation (section 15).

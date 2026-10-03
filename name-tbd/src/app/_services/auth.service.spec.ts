@@ -97,6 +97,21 @@ describe('AuthService', () => {
     expect(auth.takeReturnUrl()).toBeNull();
   });
 
+  it('signs in for development and then loads the user', () => {
+    auth.ensureLoaded().subscribe();
+    http.expectOne('/api/me').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    let result: unknown;
+    auth.devSignIn('dev@example.com').subscribe((me) => (result = me));
+    const signIn = http.expectOne('/api/dev/sign-in');
+    expect(signIn.request.body).toEqual({ email: 'dev@example.com' });
+    signIn.flush(null, { status: 204, statusText: 'No Content' });
+    http.expectOne('/api/me').flush(ME);
+
+    expect(result).toEqual(ME);
+    expect(auth.user()?.email).toBe('ada@example.com');
+  });
+
   it('signs out and goes to the login page', () => {
     auth.ensureLoaded().subscribe();
     http.expectOne('/api/me').flush(ME);

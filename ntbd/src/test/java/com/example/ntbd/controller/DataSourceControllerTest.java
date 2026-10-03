@@ -1,5 +1,6 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.auth.WorkspaceAccess;
 import com.example.ntbd.commands.NewDataSourceCommand;
 import com.example.ntbd.dto.DataSourceDto;
 import com.example.ntbd.service.DataSourceService;
@@ -22,6 +23,9 @@ class DataSourceControllerTest {
 
     @Mock
     private DataSourceService dataSourceService;
+
+    @Mock
+    private WorkspaceAccess access;
 
     @InjectMocks
     private DataSourceController dataSourceController;

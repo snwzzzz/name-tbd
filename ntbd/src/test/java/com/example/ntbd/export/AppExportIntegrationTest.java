@@ -1,6 +1,7 @@
 package com.example.ntbd.export;
 
 import com.example.ntbd.Exception.BranchNotFoundException;
+import com.example.ntbd.auth.TestSignIn;
 import com.example.ntbd.commands.NewDataSourceCommand;
 import com.example.ntbd.commands.NewEdgeCommand;
 import com.example.ntbd.commands.NewNodeCommand;
@@ -18,6 +19,7 @@ import com.example.ntbd.service.NodeService;
 import com.example.ntbd.service.PageService;
 import com.example.ntbd.service.UiComponentService;
 import com.example.ntbd.service.WorkflowService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,8 +61,15 @@ class AppExportIntegrationTest {
     private UiComponentDto button;
     private UiComponentDto label;
 
+    @AfterEach
+    void signOut() {
+        TestSignIn.signOut();
+    }
+
     @BeforeEach
     void setUp() {
+        // The sample user -1 owns the sample workspace, so exporting branch -1 is allowed
+        TestSignIn.signInAs(-1L);
         about = pageService.createPage(new NewPageCommand("About", "/about", BRANCH));
         UiComponentDto box = uiComponentService.createComponent(
                 new NewUiComponentCommand(about.id(), "container", Map.of(), null, null, 0.0, 0.0, 6.0, 3.0));
@@ -74,7 +83,7 @@ class AppExportIntegrationTest {
                 Map.of("triggerType", "element_click", "elementId", String.valueOf(button.id())), 0.0, 0.0));
         NodeDto action = nodeService.createNode(new NewNodeCommand(workflowId, "Action",
                 Map.of("actionType", "set_text", "config", Map.of("targetId", String.valueOf(label.id()), "text", "Bye")), 300.0, 0.0));
-        edgeService.createEdge(new NewEdgeCommand(trigger.id(), action.id(), "out"));
+        edgeService.createEdge(workflowId, new NewEdgeCommand(trigger.id(), action.id(), "out"));
 
         dataSourceService.importDataSource(new NewDataSourceCommand(BRANCH, "People", "csv", "name,city\nAlice,Bern\nBob,Basel"));
     }

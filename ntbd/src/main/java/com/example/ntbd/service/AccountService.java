@@ -74,6 +74,20 @@ public class AccountService {
         return new MeDto(UserMapper.toDto(user), workspaces);
     }
 
+    /** Makes the user a member of the workspace with {@code role}, if the workspace exists and they aren't one yet. */
+    @Transactional
+    public void joinWorkspaceIfPresent(User.UserId userId, Long workspaceId, WorkspaceRole role) {
+        Optional<Workspace> workspace = workspaceRepository.findById(new Workspace.WorkspaceId(workspaceId));
+        if (workspace.isEmpty() || memberRepository.existsByWorkspace_IdAndUser_Id(workspace.get().getId(), userId)) {
+            return;
+        }
+        memberRepository.save(WorkspaceMember.builder()
+                .workspace(workspace.get())
+                .user(userRepository.getReferenceById(userId))
+                .role(role)
+                .build());
+    }
+
     private User createUser(Email email, OidcProfile profile) {
         User user = User.builder().email(email).build();
         applyProfile(user, profile);

@@ -25,11 +25,16 @@ export class ApplicationControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    getApplications(observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<ApplicationDto>>;
-    getApplications(observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<ApplicationDto>>>;
-    getApplications(observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<ApplicationDto>>>;
-    getApplications(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+    getApplications(workspaceId?: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<ApplicationDto>>;
+    getApplications(workspaceId?: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<ApplicationDto>>>;
+    getApplications(workspaceId?: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<ApplicationDto>>>;
+    getApplications(workspaceId?: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/applications`;
+
+        let params = new HttpParams();
+        if (workspaceId != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, workspaceId, 'workspaceId');
+        }
 
         let headers: HttpHeaders;
         if (options?.headers instanceof HttpHeaders) {
@@ -45,6 +50,7 @@ export class ApplicationControllerService {
         return this.httpClient.request('get', url, {
             observe,
             headers,
+            params,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

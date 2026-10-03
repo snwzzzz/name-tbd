@@ -24,11 +24,14 @@ public class EdgeService {
     private final NodeRepository nodeRepository;
 
     @Transactional
-    public EdgeDto createEdge(NewEdgeCommand command) {
+    /** An edge between two nodes of workflow {@code workflowId} (a node of another workflow counts as not found). */
+    public EdgeDto createEdge(Long workflowId, NewEdgeCommand command) {
         Node sourceNode = nodeRepository.findById(new Node.NodeId(command.sourceNodeId()))
+                .filter(node -> inWorkflow(node, workflowId))
                 .orElseThrow(() -> new NodeNotFoundException(command.sourceNodeId()));
 
         Node targetNode = nodeRepository.findById(new Node.NodeId(command.targetNodeId()))
+                .filter(node -> inWorkflow(node, workflowId))
                 .orElseThrow(() -> new NodeNotFoundException(command.targetNodeId()));
 
         Edge edge = Edge.builder()
@@ -60,5 +63,9 @@ public class EdgeService {
             throw new EdgeNotFoundException(id);
         }
         edgeRepository.deleteById(new Edge.EdgeId(id));
+    }
+
+    private static boolean inWorkflow(Node node, Long workflowId) {
+        return node.getWorkflow() != null && node.getWorkflow().getId().id().equals(workflowId);
     }
 }

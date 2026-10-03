@@ -1,5 +1,6 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.auth.WorkspaceAccess;
 import com.example.ntbd.Exception.BranchNotFoundException;
 import com.example.ntbd.commands.NewBranchCommand;
 import com.example.ntbd.dto.BranchDto;
@@ -41,6 +42,9 @@ public class BranchControllerTest {
 
     @MockitoBean
     private BranchService branchService;
+
+    @MockitoBean
+    private WorkspaceAccess access;
 
     @Test
     void create_branch_returns_201() throws Exception {

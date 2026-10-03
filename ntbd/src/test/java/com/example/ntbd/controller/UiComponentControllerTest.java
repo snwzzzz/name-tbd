@@ -1,5 +1,6 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.auth.WorkspaceAccess;
 import com.example.ntbd.commands.NewUiComponentCommand;
 import com.example.ntbd.dto.UiComponentDto;
 import com.example.ntbd.service.UiComponentService;
@@ -21,6 +22,9 @@ class UiComponentControllerTest {
 
     @Mock
     private UiComponentService uiComponentService;
+
+    @Mock
+    private WorkspaceAccess access;
 
     @InjectMocks
     private UiComponentController uiComponentController;

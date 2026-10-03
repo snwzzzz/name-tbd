@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject } from '@angular/core';
+import { Component, OnInit, computed, inject, isDevMode, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
@@ -30,6 +31,11 @@ export class Login implements OnInit {
     return code === null ? null : (ERROR_MESSAGES[code] ?? DEFAULT_ERROR);
   });
 
+  /** Dev builds also offer signing in as any email (needs app.security.dev-sign-in on the backend). */
+  readonly devMode = isDevMode();
+  readonly devEmail = signal('dev@example.com');
+  readonly devError = signal<string | null>(null);
+
   ngOnInit(): void {
     // Already signed in (e.g. the back button): straight on
     this.auth
@@ -45,5 +51,18 @@ export class Login implements OnInit {
 
   signIn(provider: SignInProvider): void {
     this.auth.signIn(provider, this.returnUrl());
+  }
+
+  devSignIn(): void {
+    this.devError.set(null);
+    this.auth.devSignIn(this.devEmail()).subscribe({
+      next: () => this.router.navigateByUrl(this.returnUrl() ?? '/console'),
+      error: (error: unknown) =>
+        this.devError.set(
+          error instanceof HttpErrorResponse && error.status === 400
+            ? (error.error?.message ?? "That email doesn't work.")
+            : 'Dev sign-in is off on the backend (app.security.dev-sign-in).',
+        ),
+    });
   }
 }

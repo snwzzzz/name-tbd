@@ -1,5 +1,6 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.auth.WorkspaceAccess;
 import com.example.ntbd.commands.NewVersionControlCommand;
 import com.example.ntbd.dto.VersionControlDto;
 import com.example.ntbd.service.VersionControlService;
@@ -42,6 +43,9 @@ public class VersionControlControllerTest {
 
     @MockitoBean
     private VersionControlService versionControlService;
+
+    @MockitoBean
+    private WorkspaceAccess access;
 
     @Test
     void create_version_returns_201() throws Exception {

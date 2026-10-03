@@ -1,5 +1,6 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.auth.WorkspaceAccess;
 import com.example.ntbd.Exception.WorkflowNotFoundException;
 import com.example.ntbd.commands.NewWorkflowCommand;
 import com.example.ntbd.domain.WorkflowStatus;
@@ -45,6 +46,9 @@ public class WorkflowControllerTest {
 
     @MockitoBean
     private WorkflowService workflowService;
+
+    @MockitoBean
+    private WorkspaceAccess access;
 
     @MockitoBean
     private NodeService nodeService;

@@ -1,7 +1,7 @@
 import { DOCUMENT, Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, catchError, finalize, of, shareReplay, tap, throwError } from 'rxjs';
+import { Observable, catchError, finalize, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { MeControllerService } from '../api/services/meController.service';
 import { MeDto } from '../api/models';
 import { API_BASE_URL } from '../_constants/api.constants';
@@ -55,6 +55,19 @@ export class AuthService {
       // No session storage: sign-in still works, it just lands on the console
     }
     this.document.location.assign(`${API_BASE_URL}/oauth2/authorization/${provider}`);
+  }
+
+  /**
+   * Local development only: signs in as any email without an identity provider. The backend
+   * offers it only with app.security.dev-sign-in (DevSignInController); elsewhere this fails with 401.
+   */
+  devSignIn(email: string): Observable<MeDto | null> {
+    return this.http.post(`${API_BASE_URL}/api/dev/sign-in`, { email }).pipe(
+      switchMap(() => {
+        this.me.set(undefined);
+        return this.ensureLoaded();
+      }),
+    );
   }
 
   /** The page the user wanted before signing in, once (null if none). */

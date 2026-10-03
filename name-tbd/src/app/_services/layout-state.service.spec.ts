@@ -12,7 +12,7 @@ describe('LayoutStateService', () => {
   beforeEach(() => {
     uiService = { updateComponent: vi.fn().mockReturnValue(of({})) };
     const pageService = {
-      getComponents1: vi.fn().mockReturnValue(of([
+      getComponents: vi.fn().mockReturnValue(of([
         { id: 1, type: 'button', x: 1, y: 1, w: 2, h: 1, props: { label: 'Stored' } },
       ])),
     };

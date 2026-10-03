@@ -42,8 +42,9 @@ public class ApplicationService {
     }
 
     @Transactional
-    public List<ApplicationDto> findAll() {
-        return applicationRepository.findAll().stream()
+    public List<ApplicationDto> findInWorkspaces(List<Long> workspaceIds) {
+        if (workspaceIds.isEmpty()) return List.of();
+        return applicationRepository.findByWorkspaceIds(workspaceIds).stream()
                 .map(ApplicationMapper::toDto)
                 .toList();
     }

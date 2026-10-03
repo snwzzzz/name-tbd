@@ -1,6 +1,7 @@
 package com.example.ntbd.persistence;
 
 import com.example.ntbd.domain.User;
+import com.example.ntbd.domain.Workspace;
 import com.example.ntbd.domain.WorkspaceMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,4 +17,6 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
             order by w.personal desc, w.name, w.id.id
             """)
     List<WorkspaceMember> findByUserWithWorkspace(User.UserId userId);
+
+    boolean existsByWorkspace_IdAndUser_Id(Workspace.WorkspaceId workspaceId, User.UserId userId);
 }

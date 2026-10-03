@@ -1,5 +1,6 @@
 package com.example.ntbd.config;
 
+import com.example.ntbd.auth.DevSignInController;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,6 +57,10 @@ public class SecurityConfig {
     @Value("${app.security.public-api-docs:false}")
     private boolean publicApiDocs;
 
+    /** Local development: sign in as any email at DevSignInController, without an identity provider. */
+    @Value("${app.security.dev-sign-in:false}")
+    private boolean devSignIn;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         List<String> origins = corsAllowedOrigins.stream().filter(o -> !o.isBlank()).toList();
@@ -69,6 +74,9 @@ public class SecurityConfig {
             .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
             .authorizeHttpRequests(auth -> {
                 auth.requestMatchers("/oauth2/**", "/login/**", "/error").permitAll();
+                if (devSignIn) {
+                    auth.requestMatchers(DevSignInController.PATH).permitAll();
+                }
                 if (publicApiDocs) {
                     auth.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
                 }

@@ -25,11 +25,16 @@ export class PageControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    getPages(observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<PageDto>>;
-    getPages(observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<PageDto>>>;
-    getPages(observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<PageDto>>>;
-    getPages(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+    getPages(branchId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<PageDto>>;
+    getPages(branchId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<PageDto>>>;
+    getPages(branchId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<PageDto>>>;
+    getPages(branchId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/pages`;
+
+        let params = new HttpParams();
+        if (branchId != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, branchId, 'branchId');
+        }
 
         let headers: HttpHeaders;
         if (options?.headers instanceof HttpHeaders) {
@@ -45,6 +50,7 @@ export class PageControllerService {
         return this.httpClient.request('get', url, {
             observe,
             headers,
+            params,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
@@ -134,10 +140,10 @@ export class PageControllerService {
         });
     }
 
-    getComponents1(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<UiComponentDto>>;
-    getComponents1(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<UiComponentDto>>>;
-    getComponents1(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<UiComponentDto>>>;
-    getComponents1(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+    getComponents(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<UiComponentDto>>;
+    getComponents(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<UiComponentDto>>>;
+    getComponents(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<UiComponentDto>>>;
+    getComponents(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/pages/${id}/ui-components`;
 
         let headers: HttpHeaders;

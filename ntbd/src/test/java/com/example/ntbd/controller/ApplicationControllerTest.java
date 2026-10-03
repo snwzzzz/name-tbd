@@ -1,5 +1,6 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.auth.WorkspaceAccess;
 import com.example.ntbd.commands.NewApplicationCommand;
 import com.example.ntbd.dto.ApplicationDto;
 import com.example.ntbd.service.ApplicationService;
@@ -41,6 +42,9 @@ public class ApplicationControllerTest {
     @MockitoBean
     private ApplicationService applicationService;
 
+    @MockitoBean
+    private WorkspaceAccess access;
+
     @Test
     void create_application_returns_201() throws Exception {
         var command = new NewApplicationCommand(1L, "App 1", "Desc");
@@ -59,7 +63,8 @@ public class ApplicationControllerTest {
     @Test
     void get_applications_returns_200() throws Exception {
         var dtos = List.of(new ApplicationDto(1L, 1L, "App 1", "Desc"));
-        when(applicationService.findAll()).thenReturn(dtos);
+        when(access.workspaceIds()).thenReturn(List.of(1L));
+        when(applicationService.findInWorkspaces(List.of(1L))).thenReturn(dtos);
 
         mockMvc.perform(get("/api/applications"))
                 .andExpect(status().isOk())

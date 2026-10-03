@@ -1,5 +1,6 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.auth.WorkspaceAccess;
 import com.example.ntbd.commands.NewPageCommand;
 import com.example.ntbd.dto.PageDto;
 import com.example.ntbd.service.PageService;
@@ -10,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static com.example.ntbd.domain.WorkspaceRole.EDITOR;
+import static com.example.ntbd.domain.WorkspaceRole.VIEWER;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(value = "/api/pages", produces = "application/json")
@@ -18,30 +22,37 @@ public class PageController {
     private final PageService pageService;
     private final com.example.ntbd.service.UiComponentService uiComponentService;
     private final com.example.ntbd.service.WorkflowService workflowService;
+    private final WorkspaceAccess access;
 
     @PostMapping
     public ResponseEntity<PageDto> createPage(@RequestBody NewPageCommand command) {
+        access.requireBranch(command.branchId(), EDITOR);
         return ResponseEntity.status(HttpStatus.CREATED).body(pageService.createPage(command));
     }
 
+    /** The branch's pages. */
     @GetMapping(produces = "application/json")
-    public ResponseEntity<List<PageDto>> getPages() {
-        return ResponseEntity.ok(pageService.findAll());
+    public ResponseEntity<List<PageDto>> getPages(@RequestParam Long branchId) {
+        access.requireBranch(branchId, VIEWER);
+        return ResponseEntity.ok(pageService.findByBranchId(branchId));
     }
 
     @GetMapping(value = "/{id}", produces = "application/json")
     public ResponseEntity<PageDto> getPage(@PathVariable Long id) {
+        access.requirePage(id, VIEWER);
         return ResponseEntity.ok(pageService.findById(id));
     }
 
     @GetMapping(value = "/{id}/ui-components", produces = "application/json")
     public ResponseEntity<List<com.example.ntbd.dto.UiComponentDto>> getComponents(@PathVariable Long id) {
+        access.requirePage(id, VIEWER);
         return ResponseEntity.ok(uiComponentService.findByPageId(id));
     }
 
     /** The workflow holding this page's UI logic; created on first access. */
     @GetMapping(value = "/{id}/workflow", produces = "application/json")
     public ResponseEntity<com.example.ntbd.dto.WorkflowDto> getPageWorkflow(@PathVariable Long id) {
+        access.requirePage(id, VIEWER);
         return ResponseEntity.ok(workflowService.findOrCreateForPage(id));
     }
 }
