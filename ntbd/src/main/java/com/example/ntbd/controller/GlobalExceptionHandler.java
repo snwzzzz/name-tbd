@@ -24,11 +24,11 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getMessage(), HttpStatus.CONFLICT.value()));
     }
 
-    @ExceptionHandler(com.example.ntbd.Exception.PasswordValidationException.class)
-    public ResponseEntity<ErrorResponse> handlePasswordValidation(com.example.ntbd.Exception.PasswordValidationException ex) {
+    @ExceptionHandler(com.example.ntbd.auth.NotSignedInException.class)
+    public ResponseEntity<ErrorResponse> handleNotSignedIn(com.example.ntbd.auth.NotSignedInException ex) {
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST.value()));
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(ex.getMessage(), HttpStatus.UNAUTHORIZED.value()));
     }
 
     @ExceptionHandler(com.example.ntbd.Exception.ExportRuntimeUnavailableException.class)

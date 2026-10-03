@@ -7,6 +7,7 @@ import com.example.ntbd.persistence.EdgeRepository;
 import com.example.ntbd.persistence.NodeRepository;
 import com.example.ntbd.persistence.UserRepository;
 import com.example.ntbd.persistence.WorkflowRepository;
+import com.example.ntbd.persistence.WorkspaceRepository;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
@@ -41,14 +42,17 @@ class FlowEngineIntegrationTest {
     private ApplicationRepository applicationRepository;
 
     @Autowired
+    private WorkspaceRepository workspaceRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Test
     void can_execute_full_workflow_in_db() {
-        var user = User.builder().username(new Username("flowtest")).email(new Email("flow@example.com")).password("test").firstName("Test").lastName("Test").build();
+        var user = User.builder().username(new Username("flowtest")).email(new Email("flow@example.com")).firstName("Test").lastName("Test").build();
         userRepository.save(user);
 
-        var app = Application.builder().title("App").description("Desc").build();
+        var app = Application.builder().workspace(workspaceRepository.save(Workspace.builder().name("Workspace").build())).title("App").description("Desc").build();
         applicationRepository.save(app);
 
         var branch = Branch.builder().name("main").description("main branch").createdBy(user).application(app).build();

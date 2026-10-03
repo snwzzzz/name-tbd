@@ -23,6 +23,9 @@ public class BranchRepositoryTest {
     private ApplicationRepository applicationRepository;
 
     @Autowired
+    private WorkspaceRepository workspaceRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Test
@@ -31,14 +34,13 @@ public class BranchRepositoryTest {
         var user = User.builder()
                 .username(new Username("snwz"))
                 .email(new Email("snwzishot@gmail.com"))
-                .password("password")
                 .firstName("snwz")
                 .lastName("ishot")
                 .build();
 
         var savedUser = userRepository.save(user);
 
-        var application = Application.builder()
+        var application = Application.builder().workspace(workspaceRepository.save(Workspace.builder().name("Workspace").build()))
                 .title("Customer Portal")
                 .description("Self-service portal for customers to manage their accounts and subscriptions.")
                 .build();
@@ -63,15 +65,14 @@ public class BranchRepositoryTest {
         var user = User.builder()
                 .username(new Username("snwz"))
                 .email(new Email("snwzishot@gmail.com"))
-                .password("password")
                 .firstName("snwz")
                 .lastName("ishot")
                 .build();
 
         var savedUser = userRepository.save(user);
 
-        Application app1 = applicationRepository.saveAndFlush(Application.builder().title("App 1").description("temp").build());
-        Application app2 = applicationRepository.saveAndFlush(Application.builder().title("App 2").description("temp").build());
+        Application app1 = applicationRepository.saveAndFlush(Application.builder().workspace(workspaceRepository.save(Workspace.builder().name("Workspace").build())).title("App 1").description("temp").build());
+        Application app2 = applicationRepository.saveAndFlush(Application.builder().workspace(workspaceRepository.save(Workspace.builder().name("Workspace").build())).title("App 2").description("temp").build());
 
         branchRepository.saveAllAndFlush(List.of(
                 Branch.builder()
@@ -109,14 +110,13 @@ public class BranchRepositoryTest {
         var user = User.builder()
                 .username(new Username("snwz"))
                 .email(new Email("snwzishot@gmail.com"))
-                .password("password")
                 .firstName("snwz")
                 .lastName("ishot")
                 .build();
 
         var savedUser = userRepository.save(user);
 
-        var application = Application.builder()
+        var application = Application.builder().workspace(workspaceRepository.save(Workspace.builder().name("Workspace").build()))
                 .title("Customer Portal")
                 .description("Self-service portal for customers to manage their accounts and subscriptions.")
                 .build();

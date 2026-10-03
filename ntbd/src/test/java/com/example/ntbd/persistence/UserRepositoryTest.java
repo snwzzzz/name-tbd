@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -24,7 +24,6 @@ public class UserRepositoryTest {
         var user = User.builder()
                 .username(new Username("snwz"))
                 .email(new Email("snwzishot@gmail.com"))
-                .password("password")
                 .firstName("snwz")
                 .lastName("ishot").build();
 
@@ -33,17 +32,16 @@ public class UserRepositoryTest {
     }
 
     @Test
-    void exists_by_username() {
+    void find_by_email() {
         var user = User.builder()
                 .username(new Username("snwz"))
                 .email(new Email("snwzishot@gmail.com"))
-                .password("password")
                 .firstName("snwz")
                 .lastName("ishot").build();
 
         var savedUser = userRepository.save(user);
 
-        assertThat(userRepository.existsByUsername(new Username("snwz"))).isTrue();
+        assertThat(userRepository.findByEmail(new Email("snwzishot@gmail.com"))).isPresent();
     }
 
     @Test
@@ -51,7 +49,6 @@ public class UserRepositoryTest {
         var user = User.builder()
                 .username(new Username("snwz"))
                 .email(new Email("snwzishot@gmail.com"))
-                .password("password")
                 .firstName("snwz")
                 .lastName("ishot").build();
 

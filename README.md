@@ -131,6 +131,19 @@ The backend runs through `TestNtbdApplication` (in `ntbd/src/test/java`). It sta
 
 The API listens on `http://localhost:8080`. Swagger UI is served by springdoc (`/swagger-ui.html`), and the raw spec at `/v3/api-docs`.
 
+### Sign-in
+
+Users sign in with Google or Microsoft (OIDC). The backend starts without credentials, but signing in needs them, as environment variables:
+
+| Variable | What it is |
+|---|---|
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | An OAuth client from Google Cloud. Redirect URI: `http://localhost:4200/login/oauth2/code/google` |
+| `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | An app registration in Microsoft Entra. Redirect URI: `http://localhost:4200/login/oauth2/code/microsoft` |
+| `MICROSOFT_TENANT` | Optional: one tenant id instead of `common` (any Microsoft account) |
+| `APP_FRONTEND_URL` | Where the editor runs (default `http://localhost:4200`); sign-in returns there |
+
+The redirect URIs use the editor's origin because `ng serve` proxies the login paths to the backend. Sign-in starts at `/oauth2/authorization/google` (or `microsoft`); `GET /api/me` returns the signed-in user and their workspaces, and `POST /logout` signs out.
+
 ### Run the editor
 
 ```bash
@@ -259,6 +272,11 @@ The recipes in [section 15](#15-extending-the-system-recipes) walk through each 
 ## 5. The domain model
 
 ```
+Workspace ─┬─ WorkspaceMember (user, role: OWNER / EDITOR / VIEWER)
+           └─ Application (below)
+
+User ─ UserIdentity (issuer + subject: one way to sign in)
+
 Application ─┬─ Branch ─┬─ Page ─┬─ UiComponent ─┬─ UiComponentProperty (key → value, text)
   (title)    │ (name,   │ (name, │  (type, x, y, │
              │ version) │ path,  │   w, h,       └─ children (UiComponent, via parent)
@@ -272,7 +290,10 @@ Application ─┬─ Branch ─┬─ Page ─┬─ UiComponent ─┬─ UiCo
 User (creator of branches)
 ```
 
-- **Application**: an app being built, with a title. The app's name in exports.
+- **User**: a person who signs in with an identity provider (Google, Microsoft). There are no passwords. A **UserIdentity** links the provider's `issuer` and `subject` to the user; a second provider joins the same user only if it reports the email as verified.
+- **Workspace**: where applications live. Each user gets a personal workspace on first sign-in; **WorkspaceMember** gives a user a role in a workspace.
+
+- **Application**: an app being built, with a title, in one workspace. The app's name in exports.
 - **Branch**: a line of work on an application. **Pages, workflows and data sources belong to a branch**, and an export is always *of a branch*. The editor currently works on the seeded branch `-1` (`EDITOR_BRANCH_ID`).
 - **Page**: a screen with a `name` and a `path` (its address in the exported app). One page per branch can be the **layout page** (`layout = true`): its widgets (navbar, sidebar, …) appear around every other page.
 - **UiComponent**: a placed widget.
@@ -287,7 +308,7 @@ User (creator of branches)
 
 ### Database migrations
 
-Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). `V1_0_16` turns saved nav menus' old default colors into Auto; `V1_0_17` gives saved buttons and links the new brand color. Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. The sample data (application `-1`, user `-1`, branch `-1`, page `-1`) is in `ntbd/src/test/resources/db/devdata/V1_0_3__add_test_data.sql`. Only dev runs and tests add that location (`spring.flyway.locations` in the test `application.properties`), so a real deploy starts with an empty database.
+Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). `V1_0_16` turns saved nav menus' old default colors into Auto; `V1_0_17` gives saved buttons and links the new brand color. Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. The sample data (application `-1`, user `-1`, branch `-1`, page `-1`) is in `ntbd/src/test/resources/db/devdata/V1_0_3__add_test_data.sql`. Only dev runs and tests add that location (`spring.flyway.locations` in `ntbd/src/test/resources/config/application.properties`), so a real deploy starts with an empty database. `V1_0_18__accounts.sql` moves applications that existed before accounts into the shared workspace `-1`, with every existing user as an owner.
 
 ---
 

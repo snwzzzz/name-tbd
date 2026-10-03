@@ -24,6 +24,10 @@ public class Application extends AuditableEntity {
     @Column(nullable = false)
     private String description;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "workspace_id", nullable = false)
+    private Workspace workspace;
+
     @OneToMany(orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "application")
     private List<Branch> branches = List.of();
 

@@ -27,6 +27,9 @@ public class VersionControlRepositoryTest {
     private ApplicationRepository applicationRepository;
 
     @Autowired
+    private WorkspaceRepository workspaceRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Test
@@ -35,14 +38,13 @@ public class VersionControlRepositoryTest {
         var user = User.builder()
                 .username(new Username("snwz"))
                 .email(new Email("snwzishot@gmail.com"))
-                .password("password")
                 .firstName("snwz")
                 .lastName("ishot")
                 .build();
 
         var savedUser = userRepository.save(user);
 
-        var application = Application.builder()
+        var application = Application.builder().workspace(workspaceRepository.save(Workspace.builder().name("Workspace").build()))
                 .title("Customer Portal")
                 .description("Self-service portal for customers to manage their accounts and subscriptions.")
                 .build();
@@ -76,14 +78,13 @@ public class VersionControlRepositoryTest {
         var user = User.builder()
                 .username(new Username("snwz"))
                 .email(new Email("snwzishot@gmail.com"))
-                .password("password")
                 .firstName("snwz")
                 .lastName("ishot")
                 .build();
 
         var savedUser = userRepository.save(user);
 
-        var application = Application.builder()
+        var application = Application.builder().workspace(workspaceRepository.save(Workspace.builder().name("Workspace").build()))
                 .title("Customer Portal")
                 .description("Self-service portal for customers to manage their accounts and subscriptions.")
                 .build();

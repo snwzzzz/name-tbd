@@ -1,5 +1,6 @@
 package com.example.ntbd.persistence;
 
+import com.example.ntbd.domain.Workspace;
 import com.example.ntbd.domain.Application;
 import com.example.ntbd.domain.Branch;
 import com.example.ntbd.domain.Page;
@@ -28,14 +29,17 @@ public class PageRepositoryTest {
     private ApplicationRepository applicationRepository;
 
     @Autowired
+    private WorkspaceRepository workspaceRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Test
     void can_save_and_find_by_branch() {
-        var user = User.builder().username(new com.example.ntbd.domain.Username("test")).email(new com.example.ntbd.domain.Email("test@example.com")).password("test").firstName("Test").lastName("Test").build();
+        var user = User.builder().username(new com.example.ntbd.domain.Username("test")).email(new com.example.ntbd.domain.Email("test@example.com")).firstName("Test").lastName("Test").build();
         userRepository.save(user);
 
-        var app = Application.builder().title("App").description("Desc").build();
+        var app = Application.builder().workspace(workspaceRepository.save(Workspace.builder().name("Workspace").build())).title("App").description("Desc").build();
         applicationRepository.save(app);
 
         var branch = Branch.builder().name("main").description("main branch").createdBy(user).application(app).build();
@@ -53,9 +57,9 @@ public class PageRepositoryTest {
 
     @Test
     void knows_whether_a_branch_has_a_layout_page() {
-        var user = User.builder().username(new com.example.ntbd.domain.Username("layoutuser")).email(new com.example.ntbd.domain.Email("layout@example.com")).password("test").firstName("Test").lastName("Test").build();
+        var user = User.builder().username(new com.example.ntbd.domain.Username("layoutuser")).email(new com.example.ntbd.domain.Email("layout@example.com")).firstName("Test").lastName("Test").build();
         userRepository.save(user);
-        var app = Application.builder().title("App").description("Desc").build();
+        var app = Application.builder().workspace(workspaceRepository.save(Workspace.builder().name("Workspace").build())).title("App").description("Desc").build();
         applicationRepository.save(app);
         var branch = branchRepository.save(Branch.builder().name("main").description("main branch").createdBy(user).application(app).build());
 

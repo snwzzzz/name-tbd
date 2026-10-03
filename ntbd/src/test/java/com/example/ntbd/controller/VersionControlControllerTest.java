@@ -3,11 +3,13 @@ package com.example.ntbd.controller;
 import com.example.ntbd.commands.NewVersionControlCommand;
 import com.example.ntbd.dto.VersionControlDto;
 import com.example.ntbd.service.VersionControlService;
+import com.example.ntbd.config.SecurityConfig;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(VersionControlController.class)
+@Import(SecurityConfig.class)
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 public class VersionControlControllerTest {
 
