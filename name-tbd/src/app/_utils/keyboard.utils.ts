@@ -8,8 +8,9 @@ export function isTyping(): boolean {
 
 /**
  * Whether a key event is the given keys, e.g. "Alt+1", "Ctrl+S", "?" or "Delete". Ctrl also
- * matches ⌘ on a Mac. Letters and digits match by key position, so they work on any keyboard
- * layout and with ⌥ on a Mac (which changes the typed character).
+ * matches ⌘ on a Mac. A letter matches the letter the key types, so Ctrl+Z is the key labelled Z on
+ * any layout (on a German keyboard it sits where Y is on an English one); when the key types no
+ * letter (⌥ on a Mac changes the character), its position counts. Digits match by position.
  */
 export function matchesKeys(event: KeyboardEvent, keys: string): boolean {
   const parts = keys.split('+');
@@ -23,7 +24,9 @@ export function matchesKeys(event: KeyboardEvent, keys: string): boolean {
   if (mods.has('shift') !== event.shiftKey) return false;
 
   if (/^[0-9]$/.test(key)) return event.code === `Digit${key}` || event.code === `Numpad${key}`;
-  if (/^[a-z]$/i.test(key)) return event.code === `Key${key.toUpperCase()}`;
+  if (/^[a-z]$/i.test(key)) {
+    return /^[a-z]$/i.test(event.key) ? event.key.toLowerCase() === key.toLowerCase() : event.code === `Key${key.toUpperCase()}`;
+  }
   return event.key === key;
 }
 

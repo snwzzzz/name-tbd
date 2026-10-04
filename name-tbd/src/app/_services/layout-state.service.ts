@@ -4,7 +4,7 @@ import { map, tap } from 'rxjs/operators';
 import { PageControllerService } from '../api/services/pageController.service';
 import { ChangeOperation, PageContentDto } from '../api/models';
 import { ComponentId, LayoutItem, PropPatch, WidgetProps } from '../_types/layout.types';
-import { buildLayoutTree, findInTree, flattenTree, updateInTree } from '../_utils/layout-tree.utils';
+import { buildLayoutTree, findInTree, flattenTree, insertIntoTree, removeFromTree, updateInTree } from '../_utils/layout-tree.utils';
 import { toApiProps, toConnection, toFlowNode, toLayoutItem } from '../_utils/api-mapper.utils';
 import { isTemporaryId } from '../_utils/component-id.utils';
 import { catalogDefaults, catalogWidget } from '../core/catalog/widget-catalog';
@@ -112,14 +112,41 @@ export class LayoutStateService {
    * copies. Each goes into its parent's children, or onto the page.
    */
   addWidgets(pageId: string, items: LayoutItem[]): void {
+    this.insert(pageId, items);
+    for (const item of flattenTree(items)) this.createWidget(pageId, item);
+  }
+
+  // ---- For undo and redo (editor/commands): change the layout and save it ----
+
+  /** Puts widgets in these places (position, size and container). */
+  placeWidgets(pageId: string, places: LayoutItem[]): void {
     let layout = this.getLayout(pageId);
-    for (const item of items) {
-      layout = item.parentId != null && findInTree(layout, item.parentId)
-        ? updateInTree(layout, item.parentId, (parent) => ({ ...parent, children: [...(parent.children ?? []), item] }))
-        : [...layout, item];
+    for (const place of places) {
+      const item = place.id != null ? findInTree(layout, place.id) : null;
+      if (!item || place.id == null) continue;
+      layout = insertIntoTree(removeFromTree(layout, [place.id]),
+        { ...item, x: place.x, y: place.y, w: place.w, h: place.h, parentId: place.parentId });
     }
     this.layouts.update((all) => ({ ...all, [pageId]: layout }));
-    for (const item of flattenTree(items)) this.createWidget(pageId, item);
+    places.forEach((place) => this.saveWidgetPlace(place));
+  }
+
+  /** Deletes widgets (with what's inside them). */
+  removeWidgets(pageId: string, ids: ComponentId[]): void {
+    this.layouts.update((all) => ({ ...all, [pageId]: removeFromTree(this.getLayout(pageId), ids) }));
+    ids.forEach((id) => this.deleteWidget(id));
+  }
+
+  /** Brings back deleted widgets, as they were (with what was inside them), by their ids. */
+  restoreWidgets(pageId: string, items: LayoutItem[]): void {
+    this.insert(pageId, items);
+    items.forEach((item) => item.id != null && this.saveQueue.enqueue({ op: 'restoreWidget', ...target(item.id) }));
+  }
+
+  private insert(pageId: string, items: LayoutItem[]): void {
+    let layout = this.getLayout(pageId);
+    for (const item of items) layout = insertIntoTree(layout, item);
+    this.layouts.update((all) => ({ ...all, [pageId]: layout }));
   }
 
   /** Delete a widget (and what's inside it); it can be restored for a while (soft delete). */

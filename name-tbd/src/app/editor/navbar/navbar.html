@@ -25,6 +25,24 @@
   </div>
 
   <div class="actions">
+    <button
+      type="button"
+      class="icon-action"
+      [disabled]="!undoLabel()"
+      [title]="undoLabel() ? 'Undo ' + undoLabel() + ' (' + undoKeys + ')' : 'Nothing to undo'"
+      aria-label="Undo"
+      (click)="undo()">
+      <svg lucideUndo2></svg>
+    </button>
+    <button
+      type="button"
+      class="icon-action"
+      [disabled]="!redoLabel()"
+      [title]="redoLabel() ? 'Redo ' + redoLabel() + ' (' + redoKeys + ')' : 'Nothing to redo'"
+      aria-label="Redo"
+      (click)="redo()">
+      <svg lucideRedo2></svg>
+    </button>
     <app-save-indicator />
     @if (busy()) {
       <!-- Only shows once a request takes a moment (see navbar.scss), so quick ones don't flicker -->

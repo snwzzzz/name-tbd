@@ -4,9 +4,10 @@ import { Sidebar } from './sidebar/sidebar';
 import { Navbar } from './navbar/navbar';
 import { EditorTabs } from './editor-tabs/editor-tabs';
 import { ModeDropdown } from './mode-dropdown/mode-dropdown';
-import { TabsService } from '../_services/tabs.service';
+import { TabsService, tabKind } from '../_services/tabs.service';
 import { SidebarStateService } from '../_services/sidebar-state.service';
 import { SaveQueue } from '../_services/save-queue.service';
+import { HistoryService } from './commands/history.service';
 import { RecentPagesService } from '../_services/recent-pages.service';
 import { ModalService } from '../_services/modal/modal.service';
 import { ShortcutsModal } from '../components/shortcuts-modal/shortcuts-modal';
@@ -24,6 +25,7 @@ import { isTyping, matchesShortcut } from '../_utils/keyboard.utils';
 export class Editor {
   private readonly tabs = inject(TabsService);
   private readonly saveQueue = inject(SaveQueue);
+  private readonly history = inject(HistoryService);
   private readonly modal = inject(ModalService);
   private readonly sidebars = inject(SidebarStateService);
 
@@ -40,6 +42,9 @@ export class Editor {
     'mode-edit': () => this.setMode('edit'),
     'mode-workflow': () => this.setMode('workflow'),
     'mode-data': () => this.setMode('data'),
+    'undo': () => this.onPage((pageId) => this.history.undo(pageId)),
+    'redo': () => this.onPage((pageId) => this.history.redo(pageId)),
+    'redo-y': () => this.onPage((pageId) => this.history.redo(pageId)),
     'save': () => void this.saveQueue.flush(),
     'new-tab': () => this.tabs.addTab(),
     'close-tab': () => {
@@ -68,5 +73,11 @@ export class Editor {
   /** Modes belong to pages; the Start and panel tabs have none to switch. */
   private setMode(mode: EditorMode): void {
     if (this.tabs.activeTabId() && this.hasModes()) this.tabs.setMode(mode);
+  }
+
+  /** Runs on the open page (undo and redo act on it), if a page is open. */
+  private onPage(run: (pageId: string) => void): void {
+    const tabId = this.tabs.activeTabId();
+    if (tabId && tabKind(tabId) === 'page') run(tabId);
   }
 }

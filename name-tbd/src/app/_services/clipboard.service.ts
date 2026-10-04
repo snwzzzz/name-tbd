@@ -6,7 +6,7 @@ import { IdRegistry } from './id-registry.service';
 import { GRID_COLUMNS, GRID_ROWS } from '../_constants/artboard.constants';
 import { TRIGGER_SPACING_Y } from '../_constants/workflow.constants';
 import { ComponentId, LayoutItem, WidgetProps } from '../_types/layout.types';
-import { ActionConfig, ActionNode, FlowNode, NewFlowNode } from '../_types/workflow.types';
+import { ActionConfig, ActionNode, FlowConnection, FlowNode, NewFlowNode } from '../_types/workflow.types';
 import { findInTree } from '../_utils/layout-tree.utils';
 import { splitPortId } from '../_utils/port.utils';
 import { findFreeSpot } from '../_utils/placement.utils';
@@ -35,7 +35,10 @@ interface CopiedFlows {
 /** Node settings that point at a widget (shared/id-references.json): a copied node points at the widget's copy, when it was copied along. */
 const WIDGET_REFERENCES = workflowKeysOf('widget');
 
-export type PasteResult = { ids: string[] } | { noRoom: true };
+/** What a paste created (to select it, and to undo it), or that there was no room. */
+export type PasteResult =
+  | { ids: string[]; items: LayoutItem[]; nodes: FlowNode[]; connections: FlowConnection[] }
+  | { noRoom: true };
 
 /**
  * The canvas's copy and paste: copies widgets with their current props (unsaved edits included),
@@ -78,7 +81,7 @@ export class ClipboardService {
    * such place.
    */
   async paste(pageId: string): Promise<PasteResult> {
-    if (!this.copied) return { ids: [] };
+    if (!this.copied) return { ids: [], items: [], nodes: [], connections: [] };
     const { widgets } = this.copied;
     const layout = this.layoutState.getLayout(pageId);
 
@@ -104,8 +107,8 @@ export class ClipboardService {
     const items = placed.map(({ widget, parentId }) => this.newItem(widget, toComponentId(parentId), copies));
     this.layoutState.addWidgets(pageId, items);
 
-    await this.pasteFlows(pageId, await this.copied.flows, copies);
-    return { ids: items.map((item) => String(item.id)) };
+    const flows = await this.pasteFlows(pageId, await this.copied.flows, copies);
+    return { ids: items.map((item) => String(item.id)), items: structuredClone(items), ...flows };
   }
 
   /** A new widget (temporary id) copying this one, with copies of its children; remembers each original's copy. */
@@ -143,8 +146,9 @@ export class ClipboardService {
   }
 
   /** The copied flows on the page, below its own, pointing at the copies. */
-  private async pasteFlows(pageId: string, flows: CopiedFlows, copies: Map<string, string>): Promise<void> {
-    if (flows.nodes.length === 0) return;
+  private async pasteFlows(pageId: string, flows: CopiedFlows, copies: Map<string, string>): Promise<{ nodes: FlowNode[]; connections: FlowConnection[] }> {
+    const created = { nodes: [] as FlowNode[], connections: [] as FlowConnection[] };
+    if (flows.nodes.length === 0) return created;
     const graph = await firstValueFrom(this.workflows.ensureGraph(pageId));
     const bottom = graph.nodes.length ? Math.max(...graph.nodes.map((n) => n.position.y)) + TRIGGER_SPACING_Y : null;
     const top = Math.min(...flows.nodes.map((n) => n.position.y));
@@ -153,13 +157,16 @@ export class ClipboardService {
     const nodeCopies = new Map<string, string>();
     for (const node of flows.nodes) {
       const { id, ...rest } = this.repoint(node, pageId, copies);
-      const created = await firstValueFrom(this.workflows.addNode(pageId, { ...rest, position: { x: node.position.x, y: node.position.y + shiftY } } as NewFlowNode));
-      nodeCopies.set(id, created.id);
+      const copy = await firstValueFrom(this.workflows.addNode(pageId, { ...rest, position: { x: node.position.x, y: node.position.y + shiftY } } as NewFlowNode));
+      nodeCopies.set(id, copy.id);
+      created.nodes.push(copy);
     }
     for (const { from, port, to } of flows.connections) {
       const [a, b] = [nodeCopies.get(from), nodeCopies.get(to)];
-      if (a && b) await firstValueFrom(this.workflows.addConnection(pageId, a, port, b));
+      const connection = a && b ? await firstValueFrom(this.workflows.addConnection(pageId, a, port, b)) : null;
+      if (connection) created.connections.push(connection);
     }
+    return created;
   }
 
   /** A copied node pointing at the copies of the widgets it pointed at (when they were copied along). */

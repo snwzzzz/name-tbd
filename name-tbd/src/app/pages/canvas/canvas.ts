@@ -37,6 +37,8 @@ import { ComponentId, GridGeometry, LayoutItem, WidgetProps } from '../../_types
 import { Point } from '../../_types/viewport.types';
 import { toComponentId } from '../../_utils/component-id.utils';
 import { IdRegistry } from '../../_services/id-registry.service';
+import { HistoryService } from '../../editor/commands/history.service';
+import { AddWidgets, DeleteWidgets, MoveWidgets, WidgetPlace } from '../../editor/commands/widget-commands';
 import {
   addStoredWidget, createRemoveButton, fitContainersToContent, geometryOf, growContainerForDrop, nodeId,
   parentIdOf, sameGeometry, syncSubGridRows, toLayoutItems, widgetType,
@@ -75,6 +77,7 @@ export class Canvas implements AfterViewInit {
   private readonly previewSession = inject(PreviewSessionService);
   private readonly widgetEvents = inject(WidgetEventsService);
   private readonly registry = inject(IdRegistry);
+  private readonly history = inject(HistoryService);
   private readonly vcr = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -85,6 +88,13 @@ export class Canvas implements AfterViewInit {
   private readonly gridReady = signal(false);
   /** True while a saved layout is being put into the grid (its events must not be persisted). */
   private restoring = false;
+  /**
+   * A user gesture is going on (a drag, resize, drop, delete or "Center"): only what changes during
+   * one is recorded for undo. GridStack also moves things by itself (e.g. laying a rebuilt page out
+   * again); that's saved, but isn't a step anyone could undo, and mustn't wipe out what can be redone.
+   */
+  private gesture = false;
+  private gestureEnd: ReturnType<typeof setTimeout> | undefined;
   /** Live widget components by component id. */
   private readonly widgetRefs = new Map<string, ComponentRef<BaseWidget>>();
   /** The content element of each container (by component id), which shows its background. */
@@ -166,11 +176,20 @@ export class Canvas implements AfterViewInit {
     // New widgets were saved: their elements go by the real ids from now on
     const savedIds = this.registry.mapped$.subscribe((ids) => ids.forEach((id, ref) => this.adoptSavedId(ref, id)));
 
+    // Undo or redo changed this page's widgets: show them as they are now
+    const undone = this.history.applied$.subscribe((pageId) => {
+      if (pageId !== this.tabs.activeTabId()) return;
+      this.restoreLayout(pageId, this.layoutState.getLayout(pageId));
+      const layout = this.layoutState.getLayout(pageId);
+      this.selection.selectMany(this.selection.selectedIds().filter((id) => findInTree(layout, id)));
+    });
+
     this.destroyRef.onDestroy(() => {
       this.stopPreview();
       propPatches.unsubscribe();
       widgetEvents.unsubscribe();
       savedIds.unsubscribe();
+      undone.unsubscribe();
       this.grid?.destroy(false);
       this.grid = null;
     });
@@ -190,12 +209,7 @@ export class Canvas implements AfterViewInit {
     grid.on('change', () => {
       if (!this.restoring) this.syncLayout();
     });
-    grid.on('resizestop', (_event, el) => {
-      // A container's nested grid keeps as many rows as the container is high
-      if (el.gridstackNode) syncSubGridRows(el.gridstackNode);
-      this.syncLayout();
-    });
-    this.showCenterGuides(grid);
+    this.wireGrid(grid);
     this.gridReady.set(true);
   }
 
@@ -296,6 +310,7 @@ export class Canvas implements AfterViewInit {
         this.toasts.show('There is no free space for the copies here. Make some room (or make the container bigger) and paste again.', 'warning');
         return;
       }
+      if (result.items.length > 0) this.history.record(new AddWidgets(tabId, result.items, result.nodes, result.connections, 'Paste'));
       if (this.tabs.activeTabId() !== tabId) return;
       this.restoreLayout(tabId, this.layoutState.getLayout(tabId));
       this.selection.selectMany(result.ids);
@@ -321,6 +336,7 @@ export class Canvas implements AfterViewInit {
 
   /** Moves each selected widget to the middle of what it's in (the page, or its container) on the axis. */
   center(axis: CenterAxis): void {
+    this.beginGesture();
     for (const id of this.selection.selectedIds()) {
       const el = this.itemElement(id);
       const node = el?.gridstackNode;
@@ -330,6 +346,7 @@ export class Canvas implements AfterViewInit {
       grid.update(el, centeredPosition({ x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 1, h: node.h ?? 1 }, room, axis));
     }
     this.syncLayout();
+    this.endGestureSoon();
   }
 
   /** "Add action": a new action on the button's click flow (trigger created if missing), then the workflow editor. */
@@ -446,7 +463,7 @@ export class Canvas implements AfterViewInit {
       }
 
       const subGrid = el.gridstackNode?.subGrid;
-      if (subGrid) this.showCenterGuides(subGrid);
+      if (subGrid) this.wireGrid(subGrid);
       if (item.children?.length && subGrid) this.addStoredWidgets(tabId, subGrid, item.children);
     }
   }
@@ -456,6 +473,7 @@ export class Canvas implements AfterViewInit {
     const tabId = this.tabs.activeTabId();
 
     const created: { id: string; type: string }[] = [];
+    if (!this.restoring && nodes.some((node) => !(node.el?.getAttribute('data-gs-id') || node.id))) this.beginGesture();
     for (const node of nodes) {
       const type = widgetType(node.el);
       const known = node.el?.getAttribute('data-gs-id') || node.id;
@@ -475,9 +493,14 @@ export class Canvas implements AfterViewInit {
     // Containers something was dropped into grow to fit it
     nodes.forEach(growContainerForDrop);
     this.syncLayout();
-    // Dropped widgets start with their type's defaults (the live widget too)
-    const tabId2 = this.tabs.activeTabId();
-    if (tabId2) created.forEach(({ id, type }) => this.layoutState.applyTypeDefaults(tabId2, id, type));
+    // Dropped widgets start with their type's defaults (the live widget too); the drop can be undone
+    if (tabId && created.length > 0) {
+      created.forEach(({ id, type }) => this.layoutState.applyTypeDefaults(tabId, id, type));
+      const layout = this.layoutState.getLayout(tabId);
+      const items = created.map(({ id }) => findInTree(layout, id)).filter((item): item is LayoutItem => !!item);
+      this.history.record(new AddWidgets(tabId, items.map((item) => structuredClone(item))));
+      this.endGestureSoon();
+    }
   }
 
   /** Turn a dropped palette card into the real widget (or a container's nested grid). */
@@ -490,7 +513,7 @@ export class Canvas implements AfterViewInit {
     if (type === 'container') {
       content.innerHTML = '';
       const subGrid = rootGrid.makeSubGrid(node.el, subGridOptions(node.h ?? 1), undefined, false);
-      this.showCenterGuides(subGrid);
+      this.wireGrid(subGrid);
       content.classList.add('container-widget');
       this.containerContents.set(id, content);
       return;
@@ -517,11 +540,9 @@ export class Canvas implements AfterViewInit {
       parentId,
     };
 
-    if (isNew) {
-      this.layoutState.createWidget(tabId, { ...item, props: {} });
-    } else {
-      this.layoutState.saveWidgetPlace(item);
-    }
+    // A widget moved into or out of a container: syncLayout saves (and records) its new place
+    if (!isNew) return;
+    this.layoutState.createWidget(tabId, { ...item, props: {} });
     if (id != null) this.savedGeometry.set(id.toString(), geometryOf(item));
   }
 
@@ -572,6 +593,8 @@ export class Canvas implements AfterViewInit {
     const tabId = this.tabs.activeTabId();
     if (this.restoring || !tabId) return;
 
+    const before: WidgetPlace[] = [];
+    const after: WidgetPlace[] = [];
     for (const item of flattenTree(layout)) {
       if (item.id == null) continue;
       const key = item.id.toString();
@@ -579,11 +602,17 @@ export class Canvas implements AfterViewInit {
       const last = this.savedGeometry.get(key);
       if (!last || !sameGeometry(last, geometry)) {
         // Unchanged widgets are skipped; the save queue merges a widget's moves into one change
-        if (last) this.layoutState.saveWidgetPlace(item);
+        if (last) {
+          this.layoutState.saveWidgetPlace(item);
+          before.push({ id: item.id, ...last });
+          after.push({ id: item.id, ...geometry });
+        }
         this.savedGeometry.set(key, geometry);
       }
     }
     this.layoutState.saveLayout(tabId, layout);
+    // One drag (or "Center") is one step: moves recorded together merge (HistoryService)
+    if (after.length > 0 && this.gesture) this.history.record(new MoveWidgets(tabId, before, after));
   }
 
   // ─── Widgets ─────────────────────────────────────────────────────────────
@@ -633,8 +662,13 @@ export class Canvas implements AfterViewInit {
    * While a widget is dragged or resized in this grid, a dashed line marks the grid's middle on
    * each axis the widget is centered on (see .guide-x / .guide-y in canvas.scss).
    */
-  private showCenterGuides(grid: GridStack): void {
-    const update = (el: GridItemHTMLElement) => {
+  /**
+   * A grid's drag and resize events (the page's grid, and each container's): center guides while
+   * dragging, the gesture's start and end, and a resized container's nested rows. All in one place,
+   * because GridStack keeps only one handler per drag or resize event.
+   */
+  private wireGrid(grid: GridStack): void {
+    const showGuides = (el: GridItemHTMLElement) => {
       const node = el.gridstackNode;
       if (!node) return;
       const room = { w: grid.getColumn(), h: grid.opts.row || grid.getRow() };
@@ -642,9 +676,35 @@ export class Canvas implements AfterViewInit {
       grid.el.classList.toggle('guide-x', axes.x);
       grid.el.classList.toggle('guide-y', axes.y);
     };
-    const clear = () => grid.el.classList.remove('guide-x', 'guide-y');
-    grid.on('dragstart drag resizestart resize', (_event: Event, el: GridItemHTMLElement) => update(el));
-    grid.on('dragstop resizestop', clear);
+    const clearGuides = () => grid.el.classList.remove('guide-x', 'guide-y');
+
+    grid.on('dragstart resizestart', (_event: Event, el: GridItemHTMLElement) => {
+      this.beginGesture();
+      showGuides(el);
+    });
+    grid.on('drag resize', (_event: Event, el: GridItemHTMLElement) => showGuides(el));
+    grid.on('dragstop', () => {
+      clearGuides();
+      this.endGestureSoon();
+    });
+    grid.on('resizestop', (_event: Event, el: GridItemHTMLElement) => {
+      clearGuides();
+      // A container's nested grid keeps as many rows as the container is high
+      if (el.gridstackNode) syncSubGridRows(el.gridstackNode);
+      this.syncLayout();
+      this.endGestureSoon();
+    });
+  }
+
+  private beginGesture(): void {
+    clearTimeout(this.gestureEnd);
+    this.gesture = true;
+  }
+
+  /** Over once what the gesture set off has happened (GridStack's change events follow its stop events). */
+  private endGestureSoon(): void {
+    clearTimeout(this.gestureEnd);
+    this.gestureEnd = setTimeout(() => (this.gesture = false), 0);
   }
 
   private attachRemoveButton(el: HTMLElement, grid: GridStack): void {
@@ -654,7 +714,13 @@ export class Canvas implements AfterViewInit {
 
   private removeWidget(grid: GridStack, el: HTMLElement): void {
     const id = toComponentId(el.getAttribute('data-gs-id'));
+    const tabId = this.tabs.activeTabId();
+    // What's deleted, as it is now (with what's inside it), so undo can bring it back
+    const deleted = id != null && tabId ? findInTree(this.layoutState.getLayout(tabId), id) : null;
+    this.beginGesture();
     grid.removeWidget(el, true, true);
     if (id != null) this.layoutState.deleteWidget(id);
+    if (deleted && tabId) this.history.record(new DeleteWidgets(tabId, [structuredClone(deleted)]));
+    this.endGestureSoon();
   }
 }

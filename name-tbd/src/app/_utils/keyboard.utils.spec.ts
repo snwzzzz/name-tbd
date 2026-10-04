@@ -18,6 +18,16 @@ describe('matchesKeys', () => {
     expect(matchesKeys(key({ code: 'KeyS', key: 's' }), 'Ctrl+S')).toBe(false);
   });
 
+  it('matches letters by what the key types, whatever the layout', () => {
+    // German keyboard: the key labelled Z is where Y is on an English one
+    expect(matchesKeys(key({ code: 'KeyY', key: 'z', ctrlKey: true }), 'Ctrl+Z')).toBe(true);
+    expect(matchesKeys(key({ code: 'KeyY', key: 'z', ctrlKey: true }), 'Ctrl+Y')).toBe(false);
+    expect(matchesKeys(key({ code: 'KeyY', key: 'Z', ctrlKey: true, shiftKey: true }), 'Ctrl+Shift+Z')).toBe(true);
+    expect(matchesKeys(key({ code: 'KeyZ', key: 'y', ctrlKey: true }), 'Ctrl+Y')).toBe(true);
+    // ⌥ on a Mac types another character: the key's position counts
+    expect(matchesKeys(key({ code: 'KeyP', key: 'π', altKey: true }), 'Alt+P')).toBe(true);
+  });
+
   it('matches "?" however it is typed, and named keys', () => {
     expect(matchesKeys(key({ key: '?', shiftKey: true }), '?')).toBe(true);
     expect(matchesKeys(key({ key: '?', ctrlKey: true }), '?')).toBe(false);

@@ -83,7 +83,7 @@ describe('ClipboardService', () => {
 
     const result = await clipboard.paste('p');
 
-    expect(result).toEqual({ ids: ['new_100'] });
+    expect(result).toEqual(expect.objectContaining({ ids: ['new_100'], nodes: [], connections: [] }));
     expect(created).toEqual([
       // Right below the original container (nothing there), the original isn't touched
       { id: 'new_100', type: 'container', x: 0, y: 19, w: 16, h: 9, props: { background: '#eeeeee' }, parentId: undefined },

@@ -120,9 +120,14 @@
         height: 1.125rem;
       }
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: var(--color-surface-hover);
         color: var(--color-text-primary);
+      }
+
+      &:disabled {
+        color: var(--color-text-disabled);
+        cursor: default;
       }
     }
 

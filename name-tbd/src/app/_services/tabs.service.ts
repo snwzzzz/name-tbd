@@ -30,7 +30,8 @@ export type TabKind = 'start' | 'panel' | 'page';
 export function tabKind(id: string): TabKind | null {
   if (/^(welcome|new)-/.test(id)) return 'start';
   if (id.startsWith('panel-')) return 'panel';
-  return /^\d+$/.test(id) ? 'page' : null;
+  // Page ids are numbers, the sample data's negative (-1)
+  return /^-?\d+$/.test(id) ? 'page' : null;
 }
 
 /** Whether a mode fits a kind of tab (a page can't be shown as Start, nor Start as a page). */

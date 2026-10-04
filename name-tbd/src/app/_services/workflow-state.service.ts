@@ -119,6 +119,19 @@ export class WorkflowStateService {
     this.saveQueue.enqueue({ op: 'deleteNode', ...target(nodeId) });
   }
 
+  /** Brings back deleted nodes with these connections between them, by their ids (undo/redo). */
+  restoreNodes(pageId: string, nodes: FlowNode[], connections: FlowConnection[]): void {
+    this.patchGraph(pageId, (g) => {
+      const all = [...g.nodes, ...nodes.filter((n) => !g.nodes.some((existing) => existing.id === n.id))];
+      const ids = new Set(all.map((n) => n.id));
+      const restored = connections.filter((c) => ids.has(c.fromNode) && ids.has(c.toNode) && !g.connections.some((e) => e.id === c.id));
+      return { nodes: all, connections: [...g.connections, ...restored] };
+    });
+    nodes.forEach((node) => this.saveQueue.enqueue({ op: 'restoreNode', ...target(node.id) }));
+    // Connections deleted along with another of their nodes come back once both nodes are here
+    connections.forEach((c) => this.saveQueue.enqueue({ op: 'restoreEdge', ...target(c.id) }));
+  }
+
   /** Connect an output port of one node to the input of another. */
   connect(pageId: string, fromNode: string, fromPort: string, toNode: string): void {
     this.createConnection(pageId, fromNode, fromPort, toNode)
@@ -265,5 +278,5 @@ export class WorkflowStateService {
 
 /** How a change names a node or connection: by id once saved, else by its temporary id. */
 function target(id: string): Pick<ChangeOperation, 'id' | 'ref'> {
-  return /^\d+$/.test(id) ? { id: Number(id) } : { ref: id };
+  return /^-?\d+$/.test(id) ? { id: Number(id) } : { ref: id };
 }

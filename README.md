@@ -897,6 +897,16 @@ The editor never waits for the backend while editing. Every change applies to it
 - **The indicator** (`SaveIndicator`, in the navbar and the properties panel) shows Saved / Unsaved changes / Saving… / Offline / Couldn't save.
 - Pages and data sources are still created and deleted with their own requests (not batched).
 
+### 13.1b Undo and redo
+
+Every change on a page's canvas can be undone (`Ctrl+Z`, the navbar's Undo button) and redone (`Ctrl+Shift+Z` or `Ctrl+Y`). The steps live in `HistoryService`, per page; Undo/Redo act on the open page, and their buttons name the step ("Undo Move").
+
+- **Commands** (`editor/commands/`): a step is a `Command` with `apply()` (also for redo) and `invert()`. So far: `MoveWidgets` (drags, resizes, into or out of a container, "Center"), `AddWidgets` (a drop, a paste with its flows) and `DeleteWidgets` (with what's inside; undo brings them back by their ids, thanks to soft delete). Prop edits and the workflow editor follow.
+- **Recording:** the canvas still lets GridStack do the editing; afterwards it records what happened (`history.record`). Steps recorded within 150 ms are one step (a drop and the container growing for it; the moves of one drag; deleting a selection). A step is named after what isn't a move.
+- **Applying:** undo and redo change the editor's state through `LayoutStateService` / `WorkflowStateService` (`placeWidgets`, `removeWidgets`, `restoreWidgets`, `restoreNodes`), which save through the `SaveQueue`, and `history.applied$` tells the canvas to rebuild the page from that state (locally, no requests).
+- **Ids:** commands keep the ids things had when they were recorded; a temporary id saved since is looked up in `IdRegistry` when the command applies.
+- The last 100 steps per page are kept; reloading the editor starts a fresh history.
+
 ### 13.2 Adding behavior
 
 1. Right-click a button → **Add action**, or switch to Workflow mode.

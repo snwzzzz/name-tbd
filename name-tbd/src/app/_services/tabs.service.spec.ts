@@ -26,7 +26,7 @@ describe('TabsService', () => {
   });
 
   it('tells what a tab is from its id', () => {
-    expect(['welcome-0', 'new-3', 'panel-data', '42', 'nonsense'].map(tabKind)).toEqual(['start', 'start', 'panel', 'page', null]);
+    expect(['welcome-0', 'new-3', 'panel-data', '42', '-1', 'nonsense'].map(tabKind)).toEqual(['start', 'start', 'panel', 'page', 'page', null]);
   });
 
   it('keeps the query parameters (sidebar state) when switching tab or mode', () => {
