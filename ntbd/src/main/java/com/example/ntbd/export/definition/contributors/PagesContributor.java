@@ -1,18 +1,14 @@
 package com.example.ntbd.export.definition.contributors;
 
 import com.example.ntbd.catalog.WidgetCatalog;
-import com.example.ntbd.dto.EdgeDto;
-import com.example.ntbd.dto.NodeDto;
-import com.example.ntbd.dto.PageDto;
-import com.example.ntbd.dto.UiComponentDto;
+import com.example.ntbd.content.BranchContent.EdgeContent;
+import com.example.ntbd.content.BranchContent.NodeContent;
+import com.example.ntbd.content.BranchContent.PageContent;
+import com.example.ntbd.content.BranchContent.WidgetContent;
+import com.example.ntbd.content.BranchContent.WorkflowContent;
 import com.example.ntbd.export.definition.AppDefinition;
 import com.example.ntbd.export.definition.AppDefinitionContributor;
 import com.example.ntbd.export.definition.ExportScope;
-import com.example.ntbd.service.EdgeService;
-import com.example.ntbd.service.NodeService;
-import com.example.ntbd.service.PageService;
-import com.example.ntbd.service.UiComponentService;
-import com.example.ntbd.service.WorkflowService;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.annotation.Order;
@@ -23,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -34,68 +31,66 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PagesContributor implements AppDefinitionContributor {
 
-    private final PageService pageService;
-    private final UiComponentService uiComponentService;
-    private final WorkflowService workflowService;
-    private final NodeService nodeService;
-    private final EdgeService edgeService;
     private final WidgetCatalog widgetCatalog;
 
     @Override
     public void contribute(ExportScope scope, AppDefinition definition) {
-        List<PageDefinition> pages = pageService.findByBranchId(scope.branchId()).stream()
-                .sorted(Comparator.comparing(PageDto::id))
-                .map(this::page)
+        List<WorkflowContent> workflows = scope.content().workflows();
+        List<PageDefinition> pages = scope.content().pages().stream()
+                .sorted(Comparator.comparing(PageContent::id))
+                .map(page -> page(page, workflows))
                 .toList();
         // No home page setting yet: the exported app starts on the page at "/", or else the first one
         definition.put("homePageId", null);
         definition.put("pages", pages);
     }
 
-    private PageDefinition page(PageDto page) {
+    private PageDefinition page(PageContent page, List<WorkflowContent> workflows) {
+        Optional<WorkflowContent> workflow = workflows.stream()
+                .filter(w -> page.id().equals(w.pageId()))
+                .min(Comparator.comparing(WorkflowContent::id));
         return new PageDefinition(
                 page.id(),
                 Objects.requireNonNullElse(page.name(), ""),
                 Objects.requireNonNullElse(page.path(), ""),
                 page.layout(),
-                components(page.id()),
-                workflow(page.id()));
+                components(page.widgets()),
+                workflow(workflow));
     }
 
-    private List<ComponentDefinition> components(Long pageId) {
-        List<UiComponentDto> all = uiComponentService.findByPageId(pageId);
-        Map<Long, List<UiComponentDto>> byParent = all.stream()
+    private List<ComponentDefinition> components(List<WidgetContent> all) {
+        Map<Long, List<WidgetContent>> byParent = all.stream()
                 .filter(c -> c.parentId() != null)
-                .collect(Collectors.groupingBy(UiComponentDto::parentId));
+                .collect(Collectors.groupingBy(WidgetContent::parentId));
         return all.stream()
                 .filter(c -> c.parentId() == null)
-                .sorted(Comparator.comparing(UiComponentDto::id))
+                .sorted(Comparator.comparing(WidgetContent::id))
                 .map(c -> component(c, byParent))
                 .toList();
     }
 
-    private ComponentDefinition component(UiComponentDto c, Map<Long, List<UiComponentDto>> byParent) {
+    private ComponentDefinition component(WidgetContent c, Map<Long, List<WidgetContent>> byParent) {
         Map<String, Object> props = new LinkedHashMap<>(widgetCatalog.defaultsOf(c.type()));
         if (c.props() != null) props.putAll(c.props());
 
         List<ComponentDefinition> children = byParent.getOrDefault(c.id(), List.of()).stream()
-                .sorted(Comparator.comparing(UiComponentDto::id))
+                .sorted(Comparator.comparing(WidgetContent::id))
                 .map(child -> component(child, byParent))
                 .toList();
         return new ComponentDefinition(c.id(), c.parentId(), c.type(), c.x(), c.y(), c.w(), c.h(), props,
                 children.isEmpty() ? null : children);
     }
 
-    private WorkflowDefinition workflow(Long pageId) {
-        return workflowService.findForPage(pageId)
+    private WorkflowDefinition workflow(Optional<WorkflowContent> found) {
+        return found
                 .map(workflow -> new WorkflowDefinition(
-                        nodeService.findByWorkflowId(workflow.id()).stream()
-                                .sorted(Comparator.comparing(NodeDto::id))
+                        workflow.nodes().stream()
+                                .sorted(Comparator.comparing(NodeContent::id))
                                 .map(n -> new NodeDefinition(n.id(), n.type(), n.x(), n.y(),
                                         n.props() != null ? n.props() : Map.of()))
                                 .toList(),
-                        edgeService.findByWorkflowId(workflow.id()).stream()
-                                .sorted(Comparator.comparing(EdgeDto::id))
+                        workflow.edges().stream()
+                                .sorted(Comparator.comparing(EdgeContent::id))
                                 .map(e -> new EdgeDefinition(e.id(), e.sourceNodeId(),
                                         Objects.requireNonNullElse(e.sourcePort(), "out"), e.targetNodeId()))
                                 .toList()))

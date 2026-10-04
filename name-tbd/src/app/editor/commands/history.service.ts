@@ -40,10 +40,14 @@ export class HistoryService {
     const stacks = this.stacksOf(command.pageId);
     const now = Date.now();
     const top = stacks.undo[stacks.undo.length - 1];
-    const sameGesture = top && this.lastRecorded?.pageId === command.pageId && now - this.lastRecorded.at < GROUP_MS;
-    const undo = sameGesture
-      ? [...stacks.undo.slice(0, -1), top.merge?.(command) ?? new CompositeCommand(command.pageId, [top, command], nameOf(top, command))]
-      : [...stacks.undo, command].slice(-HISTORY_LIMIT);
+    const elapsed = top && this.lastRecorded?.pageId === command.pageId ? now - this.lastRecorded.at : Infinity;
+    // Typing into a setting merges for longer (mergeWindowMs); other steps only within one gesture
+    const merged = elapsed < Math.max(GROUP_MS, top?.mergeWindowMs ?? 0) ? top.merge?.(command) ?? null : null;
+    const undo = merged
+      ? [...stacks.undo.slice(0, -1), merged]
+      : elapsed < GROUP_MS
+        ? [...stacks.undo.slice(0, -1), new CompositeCommand(command.pageId, [top, command], nameOf(top, command))]
+        : [...stacks.undo, command].slice(-HISTORY_LIMIT);
     this.set(command.pageId, { undo, redo: [] });
     this.lastRecorded = { pageId: command.pageId, at: now };
   }

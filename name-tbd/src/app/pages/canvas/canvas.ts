@@ -39,6 +39,7 @@ import { toComponentId } from '../../_utils/component-id.utils';
 import { IdRegistry } from '../../_services/id-registry.service';
 import { HistoryService } from '../../editor/commands/history.service';
 import { AddWidgets, DeleteWidgets, MoveWidgets, WidgetPlace } from '../../editor/commands/widget-commands';
+import { recordGraphChange } from '../../editor/commands/workflow-commands';
 import {
   addStoredWidget, createRemoveButton, fitContainersToContent, geometryOf, growContainerForDrop, nodeId,
   parentIdOf, sameGeometry, syncSubGridRows, toLayoutItems, widgetType,
@@ -358,9 +359,8 @@ export class Canvas implements AfterViewInit {
 
     // Switch right away; a widget not saved yet is pointed at by its temporary id until it is
     this.tabs.setMode('workflow');
-    this.workflowState.addActionForElement(tabId, id.toString(), trigger.event).subscribe({
-      error: (err) => console.error('Failed to update the page workflow', err),
-    });
+    recordGraphChange(this.history, this.workflowState, tabId, 'Add action',
+      () => this.workflowState.addActionForElement(tabId, id.toString(), trigger.event));
   }
 
   // ─── Preview ─────────────────────────────────────────────────────────────

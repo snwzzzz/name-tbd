@@ -160,6 +160,13 @@ export class LayoutStateService {
     if (saved) this.saveQueue.enqueue({ op: 'updateWidget', ...target(id), props: toApiProps(saved) });
   }
 
+  /** Set a widget's props as a whole (undo/redo of edits): shown right away, saved with the next batch. */
+  replaceItemProps(pageId: string, id: ComponentId, props: WidgetProps): void {
+    if (this.setItemProps(pageId, id, () => ({ ...props }))) {
+      this.saveQueue.enqueue({ op: 'updateWidget', ...target(id), props: toApiProps(props) });
+    }
+  }
+
   /**
    * Complete a new widget's props with its type's defaults (as loading a page does for stored ones),
    * without saving anything. Values already there win.

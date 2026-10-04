@@ -1,7 +1,7 @@
 import { Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import {
   FCanvasChangeEvent, FCreateConnectionEvent, FDeleteSelectedEvent, FFlowModule, FReassignConnectionEvent,
 } from '@foblex/flow';
@@ -25,6 +25,8 @@ import {
 } from '../../_constants/workflow.constants';
 import { splitPortId } from '../../_utils/port.utils';
 import { flattenTree } from '../../_utils/layout-tree.utils';
+import { HistoryService } from '../../editor/commands/history.service';
+import { recordGraphChange } from '../../editor/commands/workflow-commands';
 import {
   blueprintGridStyle, boundingBox, clamp, clampPanToBounds, fitToViewport, zoomAround,
 } from '../../_utils/viewport.utils';
@@ -40,6 +42,7 @@ const BUTTON_ZOOM_STEP = 1.25;
 })
 export class WorkflowEditor {
   private readonly workflowState = inject(WorkflowStateService);
+  private readonly history = inject(HistoryService);
   private readonly layoutState = inject(LayoutStateService);
   private readonly pages = inject(PagesStateService);
   private readonly flowEl = viewChild.required<string, ElementRef<HTMLElement>>('flowEl', { read: ElementRef });
@@ -128,18 +131,23 @@ export class WorkflowEditor {
     const center = this.toWorld({ x: w / 2, y: h / 2 });
     const position = clampNodePosition({ x: center.x - WORKFLOW_NODE_WIDTH / 2, y: center.y - WORKFLOW_NODE_HEIGHT / 2 });
 
-    this.workflowState.addNode(this.tabId(), newNode(type, position)).subscribe({
-      error: (err) => console.error('Failed to create workflow node', err),
-    });
+    this.record('Add node', () => this.workflowState.addNode(this.tabId(), newNode(type, position)));
   }
 
   updateNode(node: FlowNode): void {
-    this.workflowState.updateNode(this.tabId(), node);
+    const old = this.nodes().find((n) => n.id === node.id);
+    const moved = old && JSON.stringify({ ...old, position: node.position }) === JSON.stringify(node);
+    this.record(moved ? 'Move node' : 'Edit node', () => this.workflowState.updateNode(this.tabId(), node));
   }
 
   deleteNode(nodeId: string): void {
     this.closeContextMenu();
-    this.workflowState.deleteNode(this.tabId(), nodeId);
+    this.record('Delete node', () => this.workflowState.deleteNode(this.tabId(), nodeId));
+  }
+
+  /** Runs a change to the workflow and records it as one undoable step. */
+  private record(label: string, change: () => Observable<unknown> | void): void {
+    recordGraphChange(this.history, this.workflowState, this.tabId(), label, change);
   }
 
   // ─── Context menu ────────────────────────────────────────────────────────
@@ -162,14 +170,12 @@ export class WorkflowEditor {
   /** New action wired to one of the node's outputs. */
   addActionAfter(nodeId: string, port = 'out'): void {
     this.closeContextMenu();
-    this.workflowState.addActionAfter(this.tabId(), nodeId, port).subscribe({
-      error: (err) => console.error('Failed to add an action', err),
-    });
+    this.record('Add action', () => this.workflowState.addActionAfter(this.tabId(), nodeId, port));
   }
 
   deleteConnection(connectionId: string): void {
     this.closeContextMenu();
-    this.workflowState.disconnect(this.tabId(), connectionId);
+    this.record('Delete connection', () => this.workflowState.disconnect(this.tabId(), connectionId));
   }
 
   // ─── Foblex events ───────────────────────────────────────────────────────
@@ -187,21 +193,26 @@ export class WorkflowEditor {
   onConnectionCreated(event: FCreateConnectionEvent): void {
     if (!event.targetId) return;
     const from = splitPortId(event.sourceId);
-    this.workflowState.connect(this.tabId(), from.nodeId, from.port, splitPortId(event.targetId).nodeId);
+    this.record('Connect', () => this.workflowState.connect(this.tabId(), from.nodeId, from.port, splitPortId(event.targetId!).nodeId));
   }
 
   onConnectionReassigned(event: FReassignConnectionEvent): void {
     const connection = this.connections().find((c) => c.id === event.connectionId);
     if (!event.nextTargetId || !connection) return;
     // Edges are immutable in the backend: replace the old one
-    this.workflowState.disconnect(this.tabId(), connection.id);
     const from = splitPortId(connection.fromPort);
-    this.workflowState.connect(this.tabId(), from.nodeId, from.port, splitPortId(event.nextTargetId).nodeId);
+    const target = splitPortId(event.nextTargetId).nodeId;
+    this.record('Reconnect', () => {
+      this.workflowState.disconnect(this.tabId(), connection.id);
+      this.workflowState.connect(this.tabId(), from.nodeId, from.port, target);
+    });
   }
 
   onDeleteSelected(event: FDeleteSelectedEvent): void {
-    (event.connectionIds ?? []).forEach((id) => this.workflowState.disconnect(this.tabId(), id));
-    (event.nodeIds ?? []).forEach((id) => this.workflowState.deleteNode(this.tabId(), id));
+    this.record('Delete', () => {
+      (event.connectionIds ?? []).forEach((id) => this.workflowState.disconnect(this.tabId(), id));
+      (event.nodeIds ?? []).forEach((id) => this.workflowState.deleteNode(this.tabId(), id));
+    });
   }
 
   // ─── Pan & zoom ──────────────────────────────────────────────────────────

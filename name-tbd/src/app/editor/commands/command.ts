@@ -26,6 +26,11 @@ export interface Command {
   invert(): Command;
   /** This step and the next one as one step, if they belong together (e.g. moves during one drag); else null. */
   merge?(next: Command): Command | null;
+  /**
+   * How long after this step a next one may still merge into it (e.g. typing into a setting); without
+   * it, only steps of the same gesture merge (HistoryService.GROUP_MS).
+   */
+  readonly mergeWindowMs?: number;
 }
 
 /** Several commands as one step (they apply in order, and are taken back in reverse). */

@@ -1,5 +1,10 @@
 package com.example.ntbd.export.definition;
 
-/** What is exported: a branch of an application (its pages, workflows and data). */
-public record ExportScope(Long branchId, Long applicationId, String applicationName) {
+import com.example.ntbd.content.BranchContent;
+
+/**
+ * What is exported: an application's content (its pages, workflows and data), from a branch or from a
+ * saved version.
+ */
+public record ExportScope(Long applicationId, String applicationName, BranchContent content) {
 }

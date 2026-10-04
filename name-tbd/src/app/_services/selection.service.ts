@@ -2,6 +2,9 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { LayoutStateService } from './layout-state.service';
 import { TabsService } from './tabs.service';
 import { IdRegistry } from './id-registry.service';
+import { HistoryService } from '../editor/commands/history.service';
+import { SetWidgetProps } from '../editor/commands/props-commands';
+import { findInTree } from '../_utils/layout-tree.utils';
 import { WidgetProps } from '../_types/layout.types';
 
 /** The widgets selected on the canvas (or in Layers), whose props the properties panel edits. */
@@ -9,6 +12,7 @@ import { WidgetProps } from '../_types/layout.types';
 export class SelectionService {
   private readonly layoutState = inject(LayoutStateService);
   private readonly tabs = inject(TabsService);
+  private readonly history = inject(HistoryService);
 
   /** In the order they were selected. */
   readonly selectedIds = signal<string[]>([]);
@@ -43,10 +47,13 @@ export class SelectionService {
     this.selectedIds.set([]);
   }
 
-  /** Edit a widget's props (the one selected last, by default); they're saved with the next batch. */
+  /** Edit a widget's props (the one selected last, by default); saved with the next batch, and undoable. */
   updateProps(props: WidgetProps, id: string | null = this.selectedId()): void {
     const tabId = this.tabs.activeTabId();
     if (!id || !tabId) return;
+    const before = { ...(findInTree(this.layoutState.getLayout(tabId), id)?.props ?? {}) };
     this.layoutState.patchItemProps(tabId, id, props);
+    const after = { ...(findInTree(this.layoutState.getLayout(tabId), id)?.props ?? {}) };
+    if (JSON.stringify(before) !== JSON.stringify(after)) this.history.record(new SetWidgetProps(tabId, id, before, after));
   }
 }

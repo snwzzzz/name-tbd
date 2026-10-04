@@ -12,7 +12,7 @@ describe('SelectionService', () => {
     patched = [];
     TestBed.configureTestingModule({
       providers: [
-        { provide: LayoutStateService, useValue: { patchItemProps: (page: string, id: string, props: unknown) => patched.push([page, id, props]) } },
+        { provide: LayoutStateService, useValue: { getLayout: () => [], patchItemProps: (page: string, id: string, props: unknown) => patched.push([page, id, props]) } },
         { provide: TabsService, useValue: { activeTabId: signal('5') } },
       ],
     });

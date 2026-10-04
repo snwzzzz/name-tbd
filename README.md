@@ -349,7 +349,12 @@ Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init
 
 **Soft delete.** Deleting a widget, workflow node or edge, or data source only marks it (`deleted_at`, `V1_0_20__soft_delete.sql`), so it can be restored with the same id and everything pointing at it works again. A `@SQLRestriction` on those entities hides marked rows from every JPA query (export, duplicate, access checks included); native SQL in `SoftDeleteRepository` still sees them. Rows deleted together share one `deleted_at`: a container takes the widgets inside it along, a node its edges, and a restore (`POST …/restore`) brings back exactly that group; something deleted on its own before stays deleted. A widget comes back only after its container, an edge only while both its nodes exist. `SoftDeletePurge` removes marked rows for good after `app.soft-delete.retention` (a day). All of it lives in `SoftDeleteService`.
 
-**Duplicating** (`ApplicationCopier`) copies an application's default branch (pages, widgets, workflows, data sources; not its versions) into a new application in the same workspace. Every id stored inside the copy is rewritten to the copy's: widget parents and workflows, and the widget props and workflow node settings that `shared/id-references.json` lists (read by the backend's `IdReferences` and the editor's `core/catalog/id-references.ts`; pasting widgets uses the same list). An id that pointed to nothing is cleared. `ApplicationDuplicateTest` checks each of them.
+**Branch content** (`content/`): `BranchContent` is everything in a branch as stored: pages with their widgets (props as stored, without catalog defaults), workflows with nodes and edges, data sources with their rows. Its lists are ordered, so a branch always reads the same, and it carries a `format` number for when its shape changes. Duplicating, the export and (next) version snapshots all go through it:
+- `BranchContentReader.read(branchId)` loads it (soft-deleted things are left out).
+- `BranchContentWriter.write(content, branch)` writes it into a branch with new ids. Every id stored inside is rewritten to the new one: widget parents and workflows, a workflow's page, edges, and the widget props and workflow node settings that `shared/id-references.json` lists (read by the backend's `IdReferences` and the editor's `core/catalog/id-references.ts`; pasting widgets uses the same list). An id that pointed to nothing is cleared.
+- `BranchContentTest` writes a branch into another one and checks both export the same, with ids renumbered by `DefinitionNormalizer` (a test helper: it renumbers per kind, also inside props and node settings).
+
+**Duplicating** (`ApplicationCopier`) creates the new application and its default branch in the same workspace, then reads the source's default branch and writes it into the new one (not its versions). `ApplicationDuplicateTest` checks each rewritten id.
 
 ---
 
@@ -789,7 +794,7 @@ GET /api/branches/{id}/export?format=html
         │
         ▼
 ExportController ──▶ AppDefinitionService.build(branchId)
-                       │  loads the branch and its application → ExportScope
+                       │  BranchContentReader.read(branchId) + the application → ExportScope
                        │  new AppDefinition(app)
                        │  for each AppDefinitionContributor (by @Order):
                        │     PagesContributor       → "homePageId", "pages"
@@ -813,10 +818,12 @@ ExportController ──▶ AppDefinitionService.build(branchId)
 
 `AppDefinition` holds `version`, `app` (`id`, `name`) and **sections**. Each section is a top-level JSON field added by a contributor (`@JsonAnyGetter`). A section name can only be contributed once.
 
+Contributors build from `ExportScope.content()` (a `BranchContent`), not from the database. So `AppDefinitionService.build(applicationId, name, content)` can also export content that isn't in a branch, like a saved version.
+
 - **`PagesContributor`**:
   - all pages of the branch (by id), each with its components as a **tree** (children inside containers);
   - each component's props are **completed with the catalog defaults**, so the exported app never depends on the editor having saved them;
-  - each page's workflow as raw nodes and edges (`findForPage`, which never creates a workflow);
+  - each page's workflow as raw nodes and edges (the page's workflow with the lowest id; none gives an empty one);
   - `homePageId` is `null` for now.
 - **`DataSourcesContributor`**: every data source of the branch with all its rows. `dataRevision` is the first 8 bytes (as 16 hex characters) of the SHA-256 of that data.
 
@@ -899,10 +906,14 @@ The editor never waits for the backend while editing. Every change applies to it
 
 ### 13.1b Undo and redo
 
-Every change on a page's canvas can be undone (`Ctrl+Z`, the navbar's Undo button) and redone (`Ctrl+Shift+Z` or `Ctrl+Y`). The steps live in `HistoryService`, per page; Undo/Redo act on the open page, and their buttons name the step ("Undo Move").
+Every change to a page (its canvas, widget settings, its workflow) can be undone (`Ctrl+Z`, the navbar's Undo button) and redone (`Ctrl+Shift+Z` or `Ctrl+Y`). The steps live in `HistoryService`, per page; Undo/Redo act on the open page, and their buttons name the step ("Undo Move").
 
-- **Commands** (`editor/commands/`): a step is a `Command` with `apply()` (also for redo) and `invert()`. So far: `MoveWidgets` (drags, resizes, into or out of a container, "Center"), `AddWidgets` (a drop, a paste with its flows) and `DeleteWidgets` (with what's inside; undo brings them back by their ids, thanks to soft delete). Prop edits and the workflow editor follow.
+- **Commands** (`editor/commands/`): a step is a `Command` with `apply()` (also for redo) and `invert()`. So far: `MoveWidgets` (drags, resizes, into or out of a container, "Center"), `AddWidgets` (a drop, a paste with its flows) and `DeleteWidgets` (with what's inside; undo brings them back by their ids, thanks to soft delete), `SetWidgetProps` (the properties panel) and `ChangeGraph` (anything in the workflow editor, and the canvas's **Add action**).
 - **Recording:** the canvas still lets GridStack do the editing; afterwards it records what happened (`history.record`). Steps recorded within 150 ms are one step (a drop and the container growing for it; the moves of one drag; deleting a selection). A step is named after what isn't a move.
+- **Merging:** a command can merge the next one into itself (`merge`). Typing into a setting, or nudging a node, merges for `TYPING_MS` (1 s, `mergeWindowMs`): one step from before the first key to after the last.
+- **Workflow changes** are recorded by `recordGraphChange(history, workflows, pageId, label, change)`: it snapshots the graph, runs the change (waiting for it if it returns an Observable) and records the difference as a `ChangeGraph`. A new workflow edit just goes through it.
+- **Not undoable:** creating, renaming or deleting pages, and data sources. They aren't part of one page.
+- **Tested** by `history.property.spec.ts` (fast-check): random sequences of every kind of command on a 50-widget page, undone back to the start and redone back to the end.
 - **Applying:** undo and redo change the editor's state through `LayoutStateService` / `WorkflowStateService` (`placeWidgets`, `removeWidgets`, `restoreWidgets`, `restoreNodes`), which save through the `SaveQueue`, and `history.applied$` tells the canvas to rebuild the page from that state (locally, no requests).
 - **Ids:** commands keep the ids things had when they were recorded; a temporary id saved since is looked up in `IdRegistry` when the command applies.
 - The last 100 steps per page are kept; reloading the editor starts a fresh history.
@@ -1024,7 +1035,7 @@ Implement `TabularDataParser` (`format()`, `parse(content)`) as a Spring `@Compo
 
 ### Add a section to the app definition (e.g. API connections)
 
-1. **Backend**: implement `AppDefinitionContributor` as a `@Component` with an `@Order`, and `definition.put("apiConnections", …)` in `contribute(scope, definition)`.
+1. **Backend**: implement `AppDefinitionContributor` as a `@Component` with an `@Order`, and `definition.put("apiConnections", …)` in `contribute(scope, definition)`. Build it from `scope.content()`; if the new kind of thing is stored in the database, add it to `BranchContent`, its reader and writer (and bump `BranchContent.FORMAT` if old snapshots need converting), so duplicates and versions keep it too.
 2. **Frontend**: add the field to `AppDefinition` in `core/definition/app-definition.ts`, and consume it in the runtime adapters (e.g. a new `AppData` implementation that calls the API).
 3. If the change is breaking, bump the version on both sides.
 

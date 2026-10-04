@@ -1,11 +1,9 @@
 package com.example.ntbd.export.definition.contributors;
 
-import com.example.ntbd.dto.DataSourceDto;
-import com.example.ntbd.dto.DataSourceSummaryDto;
+import com.example.ntbd.content.BranchContent.DataSourceContent;
 import com.example.ntbd.export.definition.AppDefinition;
 import com.example.ntbd.export.definition.AppDefinitionContributor;
 import com.example.ntbd.export.definition.ExportScope;
-import com.example.ntbd.service.DataSourceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -28,24 +26,23 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class DataSourcesContributor implements AppDefinitionContributor {
 
-    private final DataSourceService dataSourceService;
     private final ObjectMapper objectMapper;
 
     @Override
     public void contribute(ExportScope scope, AppDefinition definition) {
-        List<DataSourceSnapshot> snapshots = dataSourceService.findByBranchId(scope.branchId()).stream()
-                .map(DataSourceSummaryDto::id)
-                .map(dataSourceService::findById)
+        List<DataSourceSnapshot> snapshots = scope.content().dataSources().stream()
                 .map(DataSourcesContributor::snapshot)
                 .toList();
         definition.put("dataSources", snapshots);
         definition.put("dataRevision", fingerprint(objectMapper.writeValueAsString(snapshots)));
     }
 
-    private static DataSourceSnapshot snapshot(DataSourceDto source) {
-        return new DataSourceSnapshot(source.id(), Objects.requireNonNullElse(source.name(), ""),
-                Objects.requireNonNullElse(source.columns(), List.of()),
-                Objects.requireNonNullElse(source.rows(), List.of()));
+    /** Its rows with a value per column; empty where a row has none. */
+    private static DataSourceSnapshot snapshot(DataSourceContent source) {
+        List<List<String>> rows = source.rows().stream()
+                .map(row -> row.stream().map(value -> Objects.requireNonNullElse(value, "")).toList())
+                .toList();
+        return new DataSourceSnapshot(source.id(), Objects.requireNonNullElse(source.name(), ""), source.columns(), rows);
     }
 
     private static String fingerprint(String content) {
