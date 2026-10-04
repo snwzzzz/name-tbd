@@ -25,6 +25,7 @@
   </div>
 
   <div class="actions">
+    <app-save-indicator />
     @if (busy()) {
       <!-- Only shows once a request takes a moment (see navbar.scss), so quick ones don't flicker -->
       <span class="busy" role="status" aria-label="Loading"><span class="ui-spinner"></span></span>

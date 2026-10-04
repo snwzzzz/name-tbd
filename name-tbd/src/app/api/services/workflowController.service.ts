@@ -224,6 +224,29 @@ export class WorkflowControllerService {
         });
     }
 
+    restoreNode(workflowId: number, nodeId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    restoreNode(workflowId: number, nodeId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    restoreNode(workflowId: number, nodeId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    restoreNode(workflowId: number, nodeId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/workflows/${workflowId}/nodes/${nodeId}/restore`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+
+        return this.httpClient.request('post', url, {
+            body: null,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
     getEdges(workflowId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<EdgeDto>>;
     getEdges(workflowId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<EdgeDto>>>;
     getEdges(workflowId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<EdgeDto>>>;
@@ -273,6 +296,29 @@ export class WorkflowControllerService {
 
         return this.httpClient.request('post', url, {
             body: newEdgeCommand,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    restoreEdge(workflowId: number, edgeId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    restoreEdge(workflowId: number, edgeId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    restoreEdge(workflowId: number, edgeId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    restoreEdge(workflowId: number, edgeId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/workflows/${workflowId}/edges/${edgeId}/restore`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+
+        return this.httpClient.request('post', url, {
+            body: null,
             observe,
             headers,
             reportProgress: options?.reportProgress,

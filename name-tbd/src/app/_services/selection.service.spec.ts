@@ -2,21 +2,18 @@ import { TestBed } from '@angular/core/testing';
 import { SelectionService } from './selection.service';
 import { LayoutStateService } from './layout-state.service';
 import { TabsService } from './tabs.service';
-import { PropsAutosaveService } from './props-autosave.service';
+import { IdRegistry } from './id-registry.service';
 import { signal } from '@angular/core';
 
 describe('SelectionService', () => {
   let patched: [string, string, unknown][];
-  let scheduled: string[];
 
   beforeEach(() => {
     patched = [];
-    scheduled = [];
     TestBed.configureTestingModule({
       providers: [
         { provide: LayoutStateService, useValue: { patchItemProps: (page: string, id: string, props: unknown) => patched.push([page, id, props]) } },
         { provide: TabsService, useValue: { activeTabId: signal('5') } },
-        { provide: PropsAutosaveService, useValue: { schedule: (_page: string, id: string) => scheduled.push(id) } },
       ],
     });
   });
@@ -47,6 +44,12 @@ describe('SelectionService', () => {
     selection.updateProps({ text: 'a' }, '1');
     selection.updateProps({ text: 'b' });
     expect(patched).toEqual([['5', '1', { text: 'a' }], ['5', '2', { text: 'b' }]]);
-    expect(scheduled).toEqual(['1', '2']);
+  });
+
+  it('keeps a new widget selected once it is saved', () => {
+    const selection = TestBed.inject(SelectionService);
+    selection.selectMany(['3', 'new_a']);
+    TestBed.inject(IdRegistry).record({ new_a: 12 });
+    expect(selection.selectedIds()).toEqual(['3', '12']);
   });
 });

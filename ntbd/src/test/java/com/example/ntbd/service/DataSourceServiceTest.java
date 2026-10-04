@@ -87,11 +87,4 @@ class DataSourceServiceTest {
 
         assertThrows(DataSourceNotFoundException.class, () -> dataSourceService.findById(1L));
     }
-
-    @Test
-    void delete_NotFound() {
-        when(dataSourceRepository.deleteInBulk(new DataSource.DataSourceId(1L))).thenReturn(0);
-
-        assertThrows(DataSourceNotFoundException.class, () -> dataSourceService.delete(1L));
-    }
 }

@@ -34,9 +34,9 @@ import {
 import { widgetTrigger } from '../../_constants/workflow.constants';
 import { CanvasContextMenu } from '../../_types/canvas.types';
 import { ComponentId, GridGeometry, LayoutItem, WidgetProps } from '../../_types/layout.types';
-import { UiComponentDto } from '../../api/models';
 import { Point } from '../../_types/viewport.types';
-import { isSavedId, newTemporaryId, toComponentId } from '../../_utils/component-id.utils';
+import { toComponentId } from '../../_utils/component-id.utils';
+import { IdRegistry } from '../../_services/id-registry.service';
 import {
   addStoredWidget, createRemoveButton, fitContainersToContent, geometryOf, growContainerForDrop, nodeId,
   parentIdOf, sameGeometry, syncSubGridRows, toLayoutItems, widgetType,
@@ -74,6 +74,7 @@ export class Canvas implements AfterViewInit {
   private readonly workflowRuntime = inject(WorkflowRuntimeService);
   private readonly previewSession = inject(PreviewSessionService);
   private readonly widgetEvents = inject(WidgetEventsService);
+  private readonly registry = inject(IdRegistry);
   private readonly vcr = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -88,7 +89,7 @@ export class Canvas implements AfterViewInit {
   private readonly widgetRefs = new Map<string, ComponentRef<BaseWidget>>();
   /** The content element of each container (by component id), which shows its background. */
   private readonly containerContents = new Map<string, HTMLElement>();
-  /** The last persisted geometry of each saved widget, to only send what changed. */
+  /** The last saved geometry of each widget, to only send what changed. */
   private readonly savedGeometry = new Map<string, GridGeometry>();
 
   /** The artboard's size and cell lines (see canvas.scss). */
@@ -162,10 +163,14 @@ export class Canvas implements AfterViewInit {
       if (this.previewMode()) this.workflowRuntime.handleEvent(pageId, elementId, event);
     });
 
+    // New widgets were saved: their elements go by the real ids from now on
+    const savedIds = this.registry.mapped$.subscribe((ids) => ids.forEach((id, ref) => this.adoptSavedId(ref, id)));
+
     this.destroyRef.onDestroy(() => {
       this.stopPreview();
       propPatches.unsubscribe();
       widgetEvents.unsubscribe();
+      savedIds.unsubscribe();
       this.grid?.destroy(false);
       this.grid = null;
     });
@@ -334,13 +339,8 @@ export class Canvas implements AfterViewInit {
     const trigger = widgetTrigger(type);
     if (!tabId || !trigger) return;
 
-    // Switch right away; the new nodes show up in the workflow editor as soon as they're saved
+    // Switch right away; a widget not saved yet is pointed at by its temporary id until it is
     this.tabs.setMode('workflow');
-    // A widget that isn't saved yet has a temporary id a trigger couldn't point to
-    if (!isSavedId(toComponentId(id))) {
-      console.warn('This widget is not saved yet, so no trigger could be created for it.');
-      return;
-    }
     this.workflowState.addActionForElement(tabId, id.toString(), trigger.event).subscribe({
       error: (err) => console.error('Failed to update the page workflow', err),
     });
@@ -444,7 +444,6 @@ export class Canvas implements AfterViewInit {
         this.containerContents.set(item.id.toString(), content);
         this.paintContainer(item.id.toString(), item.props ?? {});
       }
-      if (isSavedId(item.id)) this.layoutState.loadComponentProps(tabId, item.id);
 
       const subGrid = el.gridstackNode?.subGrid;
       if (subGrid) this.showCenterGuides(subGrid);
@@ -456,21 +455,29 @@ export class Canvas implements AfterViewInit {
   private onAdded(rootGrid: GridStack, nodes: GridStackNode[]): void {
     const tabId = this.tabs.activeTabId();
 
+    const created: { id: string; type: string }[] = [];
     for (const node of nodes) {
       const type = widgetType(node.el);
-      const id = node.el?.getAttribute('data-gs-id') || node.id || newTemporaryId();
+      const known = node.el?.getAttribute('data-gs-id') || node.id;
+      const id = known || this.registry.newRef();
       if (node.el) {
         if (node.grid) this.attachRemoveButton(node.el, node.grid);
         node.el.setAttribute('data-gs-id', id);
         node.id = id;
       }
       this.prepareContent(rootGrid, node, id, type);
-      if (!this.restoring && tabId) this.persistAdded(tabId, node);
+      if (!this.restoring && tabId) {
+        this.persistAdded(tabId, node, !known);
+        if (!known) created.push({ id, type });
+      }
     }
 
     // Containers something was dropped into grow to fit it
     nodes.forEach(growContainerForDrop);
     this.syncLayout();
+    // Dropped widgets start with their type's defaults (the live widget too)
+    const tabId2 = this.tabs.activeTabId();
+    if (tabId2) created.forEach(({ id, type }) => this.layoutState.applyTypeDefaults(tabId2, id, type));
   }
 
   /** Turn a dropped palette card into the real widget (or a container's nested grid). */
@@ -496,8 +503,8 @@ export class Canvas implements AfterViewInit {
     this.mountWidget(id, type, content, {});
   }
 
-  /** Create a new widget in the backend, or save the new place of a moved one. */
-  private persistAdded(tabId: string, node: GridStackNode): void {
+  /** Save a widget just dropped from the palette, or the new place of one moved into or out of a container. */
+  private persistAdded(tabId: string, node: GridStackNode, isNew: boolean): void {
     const id = nodeId(node);
     const parentId = parentIdOf(node);
     const item: LayoutItem = {
@@ -510,55 +517,37 @@ export class Canvas implements AfterViewInit {
       parentId,
     };
 
-    if (isSavedId(id)) {
-      this.layoutState.updateComponent(tabId, item).subscribe();
-      return;
+    if (isNew) {
+      this.layoutState.createWidget(tabId, { ...item, props: {} });
+    } else {
+      this.layoutState.saveWidgetPlace(item);
     }
-    this.layoutState.addComponent(tabId, item).subscribe((dto) => {
-      if (dto?.id != null) this.adoptSavedId(tabId, node, id?.toString() ?? '', dto);
-    });
+    if (id != null) this.savedGeometry.set(id.toString(), geometryOf(item));
   }
 
-  /** A new widget got its database id: move everything from the temporary id over to it. */
-  private adoptSavedId(tabId: string, node: GridStackNode, tempId: string, dto: UiComponentDto): void {
-    const savedId = dto.id!;
+  /** A new widget was saved: its element, live widget and remembered geometry go by the real id. */
+  private adoptSavedId(tempId: string, savedId: number): void {
     const newId = savedId.toString();
-    const { type, props } = dto;
-    // GridStack may have replaced the node after the drop; use the one in the grid now
-    const current = node.grid?.engine.nodes.find((n) => n.id === tempId || n.el?.getAttribute('data-gs-id') === tempId) ?? node;
-
-    current.el?.setAttribute('data-gs-id', newId);
-    if (type) current.el?.setAttribute('data-type', type);
-    current.id = newId;
+    const el = this.itemElement(tempId);
+    if (!el) return;
+    el.setAttribute('data-gs-id', newId);
+    if (el.gridstackNode) el.gridstackNode.id = newId;
 
     const container = this.containerContents.get(tempId);
-    if (container && tempId !== newId) {
+    if (container) {
       this.containerContents.delete(tempId);
       this.containerContents.set(newId, container);
     }
-
     const ref = this.widgetRefs.get(tempId);
-    if (ref && tempId !== newId) {
+    if (ref) {
       this.widgetRefs.delete(tempId);
       this.widgetRefs.set(newId, ref);
       ref.setInput('id', newId);
-      if (props) ref.setInput('props', { ...widgetDefinition(type).defaultProps, ...props });
     }
-
-    const geometry: GridGeometry = {
-      x: current.x ?? dto.x ?? 0,
-      y: current.y ?? dto.y ?? 0,
-      w: current.w ?? dto.w ?? 100,
-      h: current.h ?? dto.h ?? 40,
-      parentId: dto.parentId ?? undefined,
-    };
-    this.savedGeometry.set(newId, geometry);
-    this.syncLayout();
-    // Now that the layout knows the saved id, pull the component's props (type defaults included)
-    this.layoutState.loadComponentProps(tabId, savedId);
-    // Moved or resized while the create request was in flight: save the current geometry
-    if (current.x !== dto.x || current.y !== dto.y || current.w !== dto.w || current.h !== dto.h) {
-      this.layoutState.updateComponent(tabId, { id: savedId, type: type ?? 'unknown', ...geometry }).subscribe();
+    const geometry = this.savedGeometry.get(tempId);
+    if (geometry) {
+      this.savedGeometry.delete(tempId);
+      this.savedGeometry.set(newId, geometry);
     }
   }
 
@@ -584,12 +573,13 @@ export class Canvas implements AfterViewInit {
     if (this.restoring || !tabId) return;
 
     for (const item of flattenTree(layout)) {
-      if (!isSavedId(item.id)) continue;
+      if (item.id == null) continue;
       const key = item.id.toString();
       const geometry = geometryOf(item);
       const last = this.savedGeometry.get(key);
       if (!last || !sameGeometry(last, geometry)) {
-        this.layoutState.updateComponent(tabId, item).subscribe();
+        // Unchanged widgets are skipped; the save queue merges a widget's moves into one change
+        if (last) this.layoutState.saveWidgetPlace(item);
         this.savedGeometry.set(key, geometry);
       }
     }
@@ -632,11 +622,11 @@ export class Canvas implements AfterViewInit {
     });
   }
 
-  /** The selected widgets that are saved (a widget still being created can't be copied yet). */
+  /** The selected widgets that are on the page. */
   private savedSelection(): string[] {
     const tabId = this.tabs.activeTabId();
     const layout = tabId ? this.layoutState.getLayout(tabId) : [];
-    return this.selection.selectedIds().filter((id) => isSavedId(toComponentId(id)) && findInTree(layout, id));
+    return this.selection.selectedIds().filter((id) => findInTree(layout, id));
   }
 
   /**
@@ -665,6 +655,6 @@ export class Canvas implements AfterViewInit {
   private removeWidget(grid: GridStack, el: HTMLElement): void {
     const id = toComponentId(el.getAttribute('data-gs-id'));
     grid.removeWidget(el, true, true);
-    if (id != null) this.layoutState.deleteComponent(id).subscribe();
+    if (id != null) this.layoutState.deleteWidget(id);
   }
 }

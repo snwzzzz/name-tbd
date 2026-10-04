@@ -21,6 +21,7 @@ import static com.example.ntbd.domain.WorkspaceRole.VIEWER;
 public class UiComponentController {
 
     private final UiComponentService uiComponentService;
+    private final com.example.ntbd.service.SoftDeleteService softDelete;
     private final WorkspaceAccess access;
 
     @PostMapping
@@ -52,7 +53,15 @@ public class UiComponentController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteComponent(@PathVariable Long id) {
         access.requireUiComponent(id, EDITOR);
-        uiComponentService.deleteComponent(id);
+        softDelete.deleteWidget(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Brings back a deleted widget, with what was inside it, and the same id. */
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restoreComponent(@PathVariable Long id) {
+        access.requireUiComponentEvenIfDeleted(id, EDITOR);
+        softDelete.restoreWidget(id);
         return ResponseEntity.noContent().build();
     }
 }

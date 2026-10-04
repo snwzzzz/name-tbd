@@ -77,14 +77,4 @@ public class NodeService {
         
         return NodeMapper.toDto(nodeRepository.saveAndFlush(node));
     }
-
-    @Transactional
-    public void deleteNode(Long id) {
-        if (!nodeRepository.existsById(new Node.NodeId(id))) {
-            throw new NodeNotFoundException(id);
-        }
-        // Edges reference the node on both ends, so they have to go first
-        edgeRepository.deleteAll(edgeRepository.findBySourceNode_IdOrTargetNode_Id(new Node.NodeId(id), new Node.NodeId(id)));
-        nodeRepository.deleteById(new Node.NodeId(id));
-    }
 }

@@ -184,26 +184,4 @@ public class EdgeServiceTest {
                 .isInstanceOf(EdgeNotFoundException.class)
                 .hasMessageContaining("99");
     }
-
-    // ---- deleteEdge ----
-
-    @Test
-    void deleteEdge_deletes_when_exists() {
-        when(edgeRepository.existsById(new Edge.EdgeId(5L))).thenReturn(true);
-
-        edgeService.deleteEdge(5L);
-
-        verify(edgeRepository).deleteById(new Edge.EdgeId(5L));
-    }
-
-    @Test
-    void deleteEdge_throws_when_not_found() {
-        when(edgeRepository.existsById(new Edge.EdgeId(99L))).thenReturn(false);
-
-        assertThatThrownBy(() -> edgeService.deleteEdge(99L))
-                .isInstanceOf(EdgeNotFoundException.class)
-                .hasMessageContaining("99");
-
-        verify(edgeRepository, never()).deleteById(any());
-    }
 }

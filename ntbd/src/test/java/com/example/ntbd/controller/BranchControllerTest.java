@@ -46,6 +46,9 @@ public class BranchControllerTest {
     @MockitoBean
     private WorkspaceAccess access;
 
+    @MockitoBean
+    private com.example.ntbd.service.ChangeBatchService changeBatchService;
+
     @Test
     void create_branch_returns_201() throws Exception {
         var command = new NewBranchCommand(1L, "main", "Main branch");

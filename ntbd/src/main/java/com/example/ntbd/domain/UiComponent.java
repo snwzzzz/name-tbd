@@ -12,11 +12,17 @@ import java.util.ArrayList;
 @AllArgsConstructor
 @Builder
 @Entity
+// Deleted rows (SoftDeleteService) are invisible to every query; native SQL still sees them (restore, purge)
+@org.hibernate.annotations.SQLRestriction("deleted_at is null")
 @Table(name = "\"ui_component\"")
 public class UiComponent extends AuditableEntity {
 
     @EmbeddedId
     private UiComponentId id;
+
+    /** When it was deleted (it's kept a while, so the deletion can be undone); null while it exists. */
+    @Column(name = "deleted_at")
+    private java.time.LocalDateTime deletedAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "page_id", nullable = false)
@@ -25,7 +31,9 @@ public class UiComponent extends AuditableEntity {
     @Column(nullable = false)
     private String type;
 
+    // Batched, so loading a page's widgets doesn't load their props one widget at a time
     @OneToMany(mappedBy = "component", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 100)
     @Builder.Default
     private List<UiComponentProperty> properties = new ArrayList<>();
 

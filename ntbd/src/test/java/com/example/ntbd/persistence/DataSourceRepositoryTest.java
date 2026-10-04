@@ -67,9 +67,6 @@ public class DataSourceRepositoryTest {
         assertThat(summaries).hasSize(1);
         assertThat(summaries.getFirst().rowCount()).isEqualTo(2);
 
-        dataSourceService.delete(created.id());
-        entityManager.flush();
-        assertThat(dataSourceRepository.findByBranch_IdOrderByNameAsc(branch.getId())).isEmpty();
     }
 
     private Branch createBranch() {

@@ -178,6 +178,36 @@ class ApplicationLifecycleTest {
     }
 
     @Test
+    void a_page_loads_in_one_answer_with_complete_props_and_its_workflow() throws Exception {
+        User ada = user("Ada");
+        JsonNode app = createApp(ada, personalWorkspace(ada), "Shop");
+        long pageId = call(ada, post("/api/pages").contentType("application/json")
+                .content("{\"name\":\"Home\",\"path\":\"/\",\"branchId\":%d}".formatted(app.get("defaultBranchId").asLong())), 201)
+                .get("id").asLong();
+        TestSignIn.signInAs(ada.getId().id());
+        long label;
+        try {
+            label = uiComponentService.createComponent(
+                    new NewUiComponentCommand(pageId, "label", Map.of("text", "Hi"), null, null, 0.0, 0.0, 2.0, 1.0)).id();
+            long workflow = workflowService.findOrCreateForPage(pageId).id();
+            nodeService.createNode(new NewNodeCommand(workflow, "Trigger", Map.of("triggerType", "page_load"), 0.0, 0.0));
+        } finally {
+            TestSignIn.signOut();
+        }
+
+        JsonNode content = call(ada, get("/api/pages/%d/full".formatted(pageId)), 200);
+
+        assertThat(content.get("page").get("name").asString()).isEqualTo("Home");
+        JsonNode widget = content.get("components").get(0);
+        assertThat(widget.get("id").asLong()).isEqualTo(label);
+        // Its own text, and its type's defaults for everything else
+        assertThat(widget.get("props").get("text").asString()).isEqualTo("Hi");
+        assertThat(widget.get("props").size()).isGreaterThan(1);
+        assertThat(content.get("workflow").get("nodes").size()).isEqualTo(1);
+        assertThat(content.get("workflow").get("edges").size()).isZero();
+    }
+
+    @Test
     void the_default_branch_cannot_be_deleted() throws Exception {
         User ada = user("Ada");
         JsonNode app = createApp(ada, personalWorkspace(ada), "Shop");

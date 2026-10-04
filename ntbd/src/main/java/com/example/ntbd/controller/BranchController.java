@@ -20,6 +20,7 @@ import static com.example.ntbd.domain.WorkspaceRole.VIEWER;
 public class BranchController {
 
     private final BranchService branchService;
+    private final com.example.ntbd.service.ChangeBatchService changeBatchService;
     private final WorkspaceAccess access;
 
     @PostMapping
@@ -32,6 +33,17 @@ public class BranchController {
     public ResponseEntity<List<BranchDto>> getBranchesByApplication(@RequestParam Long applicationId) {
         access.requireApplication(applicationId, VIEWER);
         return ResponseEntity.ok(branchService.findByApplicationId(applicationId));
+    }
+
+    /**
+     * Saves a batch of the editor's changes to the branch (widgets, workflow nodes and edges), all or
+     * nothing; answers the ids of what it created, by the editor's refs (see ChangeOperation).
+     */
+    @PostMapping(value = "/{id}/changes", produces = "application/json")
+    public ResponseEntity<com.example.ntbd.dto.ChangeBatchResultDto> applyChanges(
+            @PathVariable Long id, @RequestBody com.example.ntbd.commands.ChangeBatchCommand command) {
+        access.requireBranch(id, EDITOR);
+        return ResponseEntity.ok(changeBatchService.apply(id, command));
     }
 
     @DeleteMapping("/{id}")

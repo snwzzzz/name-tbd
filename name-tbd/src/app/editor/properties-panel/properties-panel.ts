@@ -1,9 +1,9 @@
 import { Component, computed, inject } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
-import { LucideCheck, LucideCircleAlert, LucideMousePointerClick } from '@lucide/angular';
+import { LucideMousePointerClick } from '@lucide/angular';
 import { SelectionService } from '../../_services/selection.service';
 import { LayoutStateService } from '../../_services/layout-state.service';
-import { PropsAutosaveService } from '../../_services/props-autosave.service';
+import { SaveIndicator } from '../../components/save-indicator/save-indicator';
 import { TabsService } from '../../_services/tabs.service';
 import { WidgetRegistryService } from '../../_services/widget-registry.service';
 import { widgetDefinition } from '../../_constants/widget-registry.constants';
@@ -18,7 +18,7 @@ import { findInTree } from '../../_utils/layout-tree.utils';
   selector: 'app-properties-panel',
   imports: [
     NgComponentOutlet, DynamicSettings,
-    LucideCheck, LucideCircleAlert, LucideMousePointerClick,
+    LucideMousePointerClick, SaveIndicator,
   ],
   templateUrl: './properties-panel.html',
   styleUrl: './properties-panel.scss',
@@ -28,7 +28,6 @@ export class PropertiesPanel {
   private readonly layoutState = inject(LayoutStateService);
   private readonly tabs = inject(TabsService);
   private readonly registry = inject(WidgetRegistryService);
-  private readonly autosave = inject(PropsAutosaveService);
 
   /** The selected widgets that are on the open page, each with what its section shows. */
   readonly sections = computed(() => {
@@ -48,10 +47,5 @@ export class PropertiesPanel {
   });
 
   /** Whether edits are waiting, being saved, saved, or failed to save. */
-  readonly saveState = this.autosave.state;
 
-  /** Saves what's waiting now (also the way to retry after an error). */
-  saveNow(): void {
-    this.autosave.flush();
-  }
 }

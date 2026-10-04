@@ -10,22 +10,33 @@ import {
   ACTION_TYPES, CLICK_EVENT, NEXT_NODE_OFFSET_X, NEXT_NODE_OFFSET_Y, TRIGGER_SPACING_Y, TRIGGER_START,
 } from '../_constants/workflow.constants';
 import { toApiProps, toConnection, toFlowNode, toNodeProps } from '../_utils/api-mapper.utils';
-import { outputPortId } from '../_utils/port.utils';
+import { inputPortId, outputPortId } from '../_utils/port.utils';
+import { ChangeOperation } from '../api/models';
+import { WORKFLOW_NODE_ID_KINDS } from '../core/catalog/id-references';
+import { SaveQueue } from './save-queue.service';
+import { IdRegistry } from './id-registry.service';
 
 const EMPTY_GRAPH: WorkflowGraph = { nodes: [], connections: [] };
-/** Node edits are saved after this pause, so typing doesn't flood the API. */
-const SAVE_DEBOUNCE_MS = 300;
 
-/** The workflow of each page (by page id = editor tab id). Every change is persisted. */
+/**
+ * The workflow of each page (by page id = editor tab id). Changes apply here right away and go to
+ * the backend through the SaveQueue; new nodes and connections have a temporary id until it's
+ * swapped for the saved one (IdRegistry).
+ */
 @Injectable({ providedIn: 'root' })
 export class WorkflowStateService {
   private readonly workflowService = inject(WorkflowControllerService);
   private readonly pageService = inject(PageControllerService);
+  private readonly saveQueue = inject(SaveQueue);
+  private readonly registry = inject(IdRegistry);
 
   private readonly graphs = signal<Record<string, PageWorkflow>>({});
   private readonly pendingLoads = new Map<string, Observable<PageWorkflow>>();
   private readonly pendingTriggers = new Map<string, Observable<string>>();
-  private readonly saveTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+
+  constructor() {
+    this.registry.mapped$.subscribe((ids) => this.adoptSavedIds(ids));
+  }
 
   /** Load the page's workflow (nodes + edges) once; later calls get the cached graph. */
   ensureGraph(pageId: string): Observable<PageWorkflow> {
@@ -57,57 +68,55 @@ export class WorkflowStateService {
     return pending;
   }
 
+  /** The page's workflow as loaded with the page (GET /pages/:id/full); a graph already here wins. */
+  seedGraph(pageId: string, graph: PageWorkflow): void {
+    if (this.graphs()[pageId]) return;
+    this.graphs.update((all) => ({ ...all, [pageId]: graph }));
+  }
+
   getGraphForTab(pageId: string): WorkflowGraph {
     return this.graphs()[pageId] ?? EMPTY_GRAPH;
   }
 
-  /** Create a node in the backend and add it to the graph with its real id. */
+  /** Add a node to the graph (with a temporary id) and save it. */
   addNode(pageId: string, node: NewFlowNode): Observable<FlowNode> {
     return this.ensureGraph(pageId).pipe(
-      switchMap((graph) =>
-        this.workflowService.createNode(graph.workflowId, {
+      map((graph) => {
+        const created = { ...node, id: this.registry.newRef() } as FlowNode;
+        this.patchGraph(pageId, (g) => ({ ...g, nodes: [...g.nodes, created] }));
+        this.saveQueue.enqueue({
+          op: 'createNode',
+          ref: created.id,
           workflowId: graph.workflowId,
           type: node.type,
           props: toApiProps(toNodeProps(node)),
           x: node.position.x,
           y: node.position.y,
-        }),
-      ),
-      map((dto) => ({ ...node, id: dto.id!.toString() }) as FlowNode),
-      tap((created) => this.patchGraph(pageId, (g) => ({ ...g, nodes: [...g.nodes, created] }))),
+        });
+        return created;
+      }),
     );
   }
 
-  /** Replace a node locally right away and persist it (debounced). */
+  /** Replace a node: shown right away, saved with the next batch. */
   updateNode(pageId: string, node: FlowNode): void {
     this.patchGraph(pageId, (g) => ({ ...g, nodes: g.nodes.map((n) => (n.id === node.id ? node : n)) }));
-
-    const workflowId = this.graphs()[pageId]?.workflowId;
-    if (workflowId == null) return;
-
-    clearTimeout(this.saveTimeouts.get(node.id));
-    this.saveTimeouts.set(node.id, setTimeout(() => {
-      this.saveTimeouts.delete(node.id);
-      this.workflowService.updateNode(workflowId, Number(node.id), {
-        props: toApiProps(toNodeProps(node)),
-        x: node.position.x,
-        y: node.position.y,
-      }).subscribe({ error: (err) => console.error(`Failed to save workflow node ${node.id}`, err) });
-    }, SAVE_DEBOUNCE_MS));
+    this.saveQueue.enqueue({
+      op: 'updateNode',
+      ...target(node.id),
+      props: toApiProps(toNodeProps(node)),
+      x: node.position.x,
+      y: node.position.y,
+    });
   }
 
-  /** Remove a node and its connections (the backend drops the edges with it). */
+  /** Remove a node and its connections (the backend deletes the edges with it). */
   deleteNode(pageId: string, nodeId: string): void {
-    const workflowId = this.graphs()[pageId]?.workflowId;
-    clearTimeout(this.saveTimeouts.get(nodeId));
     this.patchGraph(pageId, (g) => ({
       nodes: g.nodes.filter((n) => n.id !== nodeId),
       connections: g.connections.filter((c) => c.fromNode !== nodeId && c.toNode !== nodeId),
     }));
-    if (workflowId != null) {
-      this.workflowService.deleteNode(workflowId, Number(nodeId))
-        .subscribe({ error: (err) => console.error(`Failed to delete workflow node ${nodeId}`, err) });
-    }
+    this.saveQueue.enqueue({ op: 'deleteNode', ...target(nodeId) });
   }
 
   /** Connect an output port of one node to the input of another. */
@@ -117,12 +126,8 @@ export class WorkflowStateService {
   }
 
   disconnect(pageId: string, connectionId: string): void {
-    const workflowId = this.graphs()[pageId]?.workflowId;
     this.patchGraph(pageId, (g) => ({ ...g, connections: g.connections.filter((c) => c.id !== connectionId) }));
-    if (workflowId != null) {
-      this.workflowService.deleteEdge(workflowId, Number(connectionId))
-        .subscribe({ error: (err) => console.error(`Failed to delete workflow connection ${connectionId}`, err) });
-    }
+    this.saveQueue.enqueue({ op: 'deleteEdge', ...target(connectionId) });
   }
 
   /**
@@ -184,14 +189,26 @@ export class WorkflowStateService {
     const fromPortId = outputPortId(fromNode, fromPort);
     if (this.getGraphForTab(pageId).connections.some((c) => c.fromPort === fromPortId && c.toNode === toNode)) return of(null);
 
-    return this.workflowService.createEdge(workflowId, {
-      sourceNodeId: Number(fromNode),
-      targetNodeId: Number(toNode),
+    const connection: FlowConnection = {
+      id: this.registry.newRef(),
+      fromNode,
+      toNode,
+      fromPort: fromPortId,
+      toPort: inputPortId(toNode),
+    };
+    this.patchGraph(pageId, (g) => ({ ...g, connections: [...g.connections, connection] }));
+    const [source, targetNode] = [target(fromNode), target(toNode)];
+    this.saveQueue.enqueue({
+      op: 'createEdge',
+      ref: connection.id,
+      workflowId,
+      sourceId: source.id,
+      sourceRef: source.ref,
+      targetId: targetNode.id,
+      targetRef: targetNode.ref,
       sourcePort: fromPort,
-    }).pipe(
-      map(toConnection),
-      tap((conn) => this.patchGraph(pageId, (g) => ({ ...g, connections: [...g.connections, conn] }))),
-    );
+    });
+    return of(connection);
   }
 
   private findOrCreateTrigger(pageId: string, elementId: string, eventType: string): Observable<string> {
@@ -215,10 +232,38 @@ export class WorkflowStateService {
     );
   }
 
+  /**
+   * Things were saved: nodes and connections go by their real ids from now on, and so do the
+   * widgets nodes point at (an element's trigger, an action's target).
+   */
+  private adoptSavedIds(ids: ReadonlyMap<string, number>): void {
+    const swap = (id: string): string => (ids.has(id) ? String(ids.get(id)) : id);
+    const swapRefs = (values: Record<string, unknown>): Record<string, unknown> =>
+      Object.fromEntries(Object.entries(values).map(([key, value]) =>
+        [key, typeof value === 'string' && key in WORKFLOW_NODE_ID_KINDS ? swap(value) : value]));
+    const renameNode = (node: FlowNode): FlowNode => {
+      const renamed = { ...swapRefs(node as unknown as Record<string, unknown>), id: swap(node.id) } as unknown as FlowNode;
+      const config = (node as { config?: Record<string, unknown> }).config;
+      return config ? ({ ...renamed, config: swapRefs(config) } as unknown as FlowNode) : renamed;
+    };
+    const renameConnection = (c: FlowConnection): FlowConnection => {
+      const port = c.fromPort.slice(c.fromNode.length + 1);
+      const [fromNode, toNode] = [swap(c.fromNode), swap(c.toNode)];
+      return { id: swap(c.id), fromNode, toNode, fromPort: outputPortId(fromNode, port), toPort: inputPortId(toNode) };
+    };
+    this.graphs.update((all) => Object.fromEntries(Object.entries(all).map(([page, graph]) =>
+      [page, { ...graph, nodes: graph.nodes.map(renameNode), connections: graph.connections.map(renameConnection) }])));
+  }
+
   private patchGraph(pageId: string, update: (graph: PageWorkflow) => WorkflowGraph): void {
     this.graphs.update((all) => {
       const graph = all[pageId];
       return graph ? { ...all, [pageId]: { ...graph, ...update(graph) } } : all;
     });
   }
+}
+
+/** How a change names a node or connection: by id once saved, else by its temporary id. */
+function target(id: string): Pick<ChangeOperation, 'id' | 'ref'> {
+  return /^\d+$/.test(id) ? { id: Number(id) } : { ref: id };
 }

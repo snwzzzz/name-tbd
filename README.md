@@ -347,7 +347,9 @@ User (creator of branches)
 
 Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). `V1_0_16` turns saved nav menus' old default colors into Auto; `V1_0_17` gives saved buttons and links the new brand color. Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. The sample data (application `-1`, user `-1`, branch `-1`, page `-1`) is in `ntbd/src/test/resources/db/devdata/V1_0_3__add_test_data.sql`. Only dev runs and tests add that location (`spring.flyway.locations` in `ntbd/src/test/resources/config/application.properties`), so a real deploy starts with an empty database. `V1_0_18__accounts.sql` moves applications that existed before accounts into the shared workspace `-1`, with every existing user as an owner. `V1_0_19__application_lifecycle.sql` adds the default branch and "last edited by", and makes the foreign keys cascade, so deleting an application (one `DELETE`) deletes its branches and everything in them.
 
-**Duplicating** (`ApplicationCopier`) copies an application's default branch (pages, widgets, workflows, data sources; not its versions) into a new application in the same workspace. Every id stored inside the copy is rewritten to the copy's: widget parents and workflows, widget props of type `page`, `pages` and `dataSource`, and the widget and page ids in workflow nodes (`elementId`, and in action configs `targetId`, `tableId`, `detailId`, `inputId`, `detailPageId`). An id that pointed to nothing is cleared. `ApplicationDuplicateTest` checks each of them.
+**Soft delete.** Deleting a widget, workflow node or edge, or data source only marks it (`deleted_at`, `V1_0_20__soft_delete.sql`), so it can be restored with the same id and everything pointing at it works again. A `@SQLRestriction` on those entities hides marked rows from every JPA query (export, duplicate, access checks included); native SQL in `SoftDeleteRepository` still sees them. Rows deleted together share one `deleted_at`: a container takes the widgets inside it along, a node its edges, and a restore (`POST …/restore`) brings back exactly that group; something deleted on its own before stays deleted. A widget comes back only after its container, an edge only while both its nodes exist. `SoftDeletePurge` removes marked rows for good after `app.soft-delete.retention` (a day). All of it lives in `SoftDeleteService`.
+
+**Duplicating** (`ApplicationCopier`) copies an application's default branch (pages, widgets, workflows, data sources; not its versions) into a new application in the same workspace. Every id stored inside the copy is rewritten to the copy's: widget parents and workflows, and the widget props and workflow node settings that `shared/id-references.json` lists (read by the backend's `IdReferences` and the editor's `core/catalog/id-references.ts`; pasting widgets uses the same list). An id that pointed to nothing is cleared. `ApplicationDuplicateTest` checks each of them.
 
 ---
 
@@ -417,7 +419,7 @@ Angular 21: standalone components, signals (`signal`, `computed`, `effect`, `res
 | `editor/` | Editor shell pieces: navbar, sidebars, tabs, panels, prop and action editors, runtime adapters | Yes |
 | `pages/` | Editor screens (routes) | Yes |
 | `components/` | Generic UI building blocks | Used by both |
-| `_services/` | Editor state (pages, layouts, data, tabs, selection, preview, autosave…) and the signed-in user (`auth.service.ts`) | Yes |
+| `_services/` | Editor state (pages, layouts, data, tabs, selection, preview, saving…) and the signed-in user (`auth.service.ts`) | Yes |
 | `_guards/` | Route guards (`authGuard`: signed-in users only) | Yes |
 | `_constants/`, `_types/`, `_utils/`, `_directives/`, `_styles/` | Shared helpers. The editor-only registries in `_constants` are off-limits for the core. | Mixed |
 | `api/` | Generated backend client | Editor only |
@@ -490,9 +492,9 @@ Each widget is created with `ViewContainerRef.createComponent(WIDGET_COMPONENTS[
 | What | Service | How it's saved |
 |---|---|---|
 | Pages | `PagesStateService` | Loaded once; created from the Start screen |
-| Widgets and geometry | `LayoutStateService` | Per page; create, update and delete calls to `/api/ui-components` |
-| Prop edits | `PropsAutosaveService` | Debounced per widget, shortly after the last change. `Ctrl+S` saves now. Warns before closing the tab with unsaved changes. |
-| Workflows | `WorkflowStateService` | Graph per page (nodes and edges via `/api/workflows/…`); node edits are saved debounced |
+| Widgets and geometry | `LayoutStateService` | Per page, loaded in one request (`GET /api/pages/{id}/full`, which also seeds `WorkflowStateService`). Creates, moves, prop edits and deletes apply locally and go to the `SaveQueue` |
+| Workflows | `WorkflowStateService` | Graph per page; nodes and connections are added, changed and deleted locally and go to the `SaveQueue` |
+| Saving | `SaveQueue`, `IdRegistry` | See **Saving** below |
 | Data sources | `DataSourceStateService` | List plus details loaded on demand; import (CSV upload) and delete |
 
 ### 7.6 Preview
@@ -745,17 +747,18 @@ commands/        request bodies (NewPageCommand, UpdateUiComponentCommand, …)
 
 | Area | Endpoints |
 |---|---|
+| Page content | `GET /api/pages/{id}/full`: the page, its widgets with complete props (type defaults overlaid with their own) and its workflow, in one answer; the editor loads a page with it |
 | Applications | `POST /api/applications` (with its `main` branch), `GET /api/applications`, `GET`/`PATCH`/`DELETE /api/applications/{id}` (delete removes everything in it), `POST /api/applications/{id}/duplicate` |
-| Branches | `POST /api/branches`, `GET /api/branches`, `DELETE /api/branches/{id}` |
+| Branches | `POST /api/branches`, `GET /api/branches`, `DELETE /api/branches/{id}`, `POST /api/branches/{id}/changes` (the editor's batches of changes, see **Saving**) |
 | Versions | `POST /api/versions`, `GET /api/versions`, `GET /api/versions/latest` |
 | Users | `POST /api/users` |
-| Pages | `POST /api/pages`, `GET /api/pages`, `GET /api/pages/{id}`, `GET /api/pages/{id}/ui-components`, `GET /api/pages/{id}/workflow` (created on first access) |
-| Components | `POST /api/ui-components`, `GET /api/ui-components`, `GET`/`PUT`/`DELETE /api/ui-components/{id}`, `GET /api/ui-components/{id}/props` (with catalog defaults) |
+| Pages | `POST /api/pages`, `GET /api/pages?branchId=`, `GET /api/pages/{id}`, `GET /api/pages/{id}/full`, `GET /api/pages/{id}/ui-components`, `GET /api/pages/{id}/workflow` (created on first access) |
+| Components | `POST /api/ui-components`, `GET`/`PUT`/`DELETE /api/ui-components/{id}` (delete marks it, see soft delete), `POST /api/ui-components/{id}/restore`, `GET /api/ui-components/{id}/props` (with catalog defaults) |
 | Widget props | `GET /api/widget-props`, `GET /api/widget-props/{type}` (from the catalog) |
 | Workflows | `POST`/`GET /api/workflows`, `GET`/`DELETE /api/workflows/{id}`, `POST /api/workflows/{id}/execute` (server-side engine) |
-| Nodes | `POST`/`GET /api/workflows/{wid}/nodes`, `GET`/`PUT`/`DELETE /api/workflows/{wid}/nodes/{nid}` |
-| Edges | `POST`/`GET /api/workflows/{wid}/edges`, `GET`/`DELETE /api/workflows/{wid}/edges/{eid}` |
-| Data sources | `POST /api/data-sources` (import), `GET /api/data-sources?branchId=…`, `GET`/`DELETE /api/data-sources/{id}` |
+| Nodes | `POST`/`GET /api/workflows/{wid}/nodes`, `GET`/`PUT`/`DELETE /api/workflows/{wid}/nodes/{nid}`, `POST …/nodes/{nid}/restore` |
+| Edges | `POST`/`GET /api/workflows/{wid}/edges`, `GET`/`DELETE /api/workflows/{wid}/edges/{eid}`, `POST …/edges/{eid}/restore` |
+| Data sources | `POST /api/data-sources` (import), `GET /api/data-sources?branchId=…`, `GET`/`DELETE /api/data-sources/{id}`, `POST /api/data-sources/{id}/restore` |
 | **Export** | `GET /api/branches/{branchId}/definition`, `GET /api/branches/{branchId}/export?format=html`, `GET /api/export/formats` |
 
 ### 10.3 Data import
@@ -879,15 +882,25 @@ Pages carry their widgets' geometry in grid cells only (`x`, `y`, `w`, `h`): tur
 1. **Start screen → "Build a page"**: `POST /api/pages` on the application's default branch. A tab opens in Edit mode.
 2. **Drag a widget from the palette.**
    - The size comes from the catalog.
-   - `POST /api/ui-components` stores type, geometry and parent.
-   - The canvas creates the component with the catalog's default props.
-3. **Move or resize**: geometry is updated in cells with `PUT /api/ui-components/{id}`.
-4. **Change settings**: the properties panel edits props. The widget updates live, and `PropsAutosaveService` saves shortly after the last change (or now with `Ctrl+S`).
+   - It gets a temporary id and shows with the catalog's default props right away; a `createWidget` change goes to the `SaveQueue`.
+3. **Move or resize**: geometry in cells, saved as `updateWidget` changes (a widget's moves merge into its last place).
+4. **Change settings**: the properties panel edits props. The widget updates live; the props are saved with the next batch (or now with `Ctrl+S`).
+
+### 13.1a Saving
+
+The editor never waits for the backend while editing. Every change applies to its state right away and is queued in `SaveQueue`, which sends them together as one batch (`POST /api/branches/{id}/changes`, applied by `ChangeBatchService`, all or nothing):
+
+- **When:** a second after the editing pauses (`SAVE_IDLE_MS`), at the latest 15 seconds after the first unsent change (`SAVE_MAX_WAIT_MS`), and right away on `Ctrl+S` or when the tab goes into the background. Closing the tab with unsent changes warns and sends them with a `keepalive` request. Editing a page continuously sends at most 4 batches a minute (`save-queue.service.spec.ts` checks it with 50 widgets).
+- **Merging:** changes to the same thing merge while they wait: ten moves of a widget are sent as its last place, prop edits as the latest props, an update of a new widget as part of its create. A delete drops the waiting updates of what it deletes. An update never merges across a create it could point at.
+- **New things:** a new widget, node or connection gets a temporary id (`new_…`, `IdRegistry.newRef()`) and is used by it right away. Its create names it with that `ref`; later changes in the same batch may point at it by the ref, also inside a node's widget settings (`shared/id-references.json`). The answer maps each ref to the real id; `IdRegistry.mapped$` tells the layout, the workflow graph, the canvas, the selection and the changes still waiting to switch to it.
+- **When it fails:** while the backend can't be reached, the changes stay and are sent again (after 2, 5, 10, then every 30 seconds): "Offline – trying again". If the backend refuses a batch (something it points at is gone), it's dropped and the editor offers to reload. The batch's answer says which change failed (`index`).
+- **The indicator** (`SaveIndicator`, in the navbar and the properties panel) shows Saved / Unsaved changes / Saving… / Offline / Couldn't save.
+- Pages and data sources are still created and deleted with their own requests (not batched).
 
 ### 13.2 Adding behavior
 
 1. Right-click a button → **Add action**, or switch to Workflow mode.
-2. A trigger is created for the widget's event (`WIDGET_TRIGGERS`). The new action is connected to it, and nodes and edges are saved through `/api/workflows/{id}/nodes|edges`.
+2. A trigger is created for the widget's event (`WIDGET_TRIGGERS`). The new action is connected to it; nodes and connections show right away and are saved with the next batch.
 3. Pick the action type and fill in its settings (its editor from `ACTION_TYPES`).
 
 ### 13.3 Previewing
@@ -958,7 +971,7 @@ The backend needs no change: it reads the catalog.
 1. Use the new `type` in the catalog prop.
 2. Create an editor component extending `BasePropEditor` in `editor/prop-editors/`.
 3. Register it in `PROP_EDITORS` under that type name.
-4. If its value holds the id of a page, data source or widget, teach `ApplicationCopier.rewriteProp` (backend) to map it, so duplicated apps point to their own things.
+4. If its value holds the id of a page, data source or widget, list the type in `shared/id-references.json` (`widgetPropTypes`), so copies (paste, duplicate) point to their own things. The id-references specs on both sides fail until a new prop type is listed there or as plain.
 
 ### Add a workflow action
 
@@ -969,7 +982,7 @@ The backend needs no change: it reads the catalog.
 2. Register the handler in `ACTION_HANDLERS` (`core/workflow/action-handlers.ts`) under the action id.
 3. **Editor**: create a settings component in `editor/action-editors/` and add an `ACTION_TYPES` entry (id, label, `defaultConfig`, `editor`).
 4. Add a spec next to the handler (use `provideFakeApp`).
-5. If its config holds the id of a widget or page, add the key to `NODE_WIDGET_KEYS` / `NODE_PAGE_KEYS` in `ApplicationCopier` (backend), so duplicated apps point to their own.
+5. If its config holds the id of a widget or page, list the key in `shared/id-references.json` (`workflowNodeKeys`), so copies (paste, duplicate) point to their own. `_constants/id-references.spec.ts` fails for a config key ending in `Id` that isn't listed.
 
 ### Add a table operation
 

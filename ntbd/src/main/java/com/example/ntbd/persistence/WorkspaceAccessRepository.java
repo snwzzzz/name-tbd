@@ -48,6 +48,49 @@ public interface WorkspaceAccessRepository extends Repository<WorkspaceMember, W
             """)
     Optional<ResourceAccess> roleForUiComponent(Long componentId, Long userId);
 
+    /** A role and application from a native query (aliases quoted, so every database keeps their case). */
+    interface AccessRow {
+        String getRole();
+
+        Long getApplicationId();
+    }
+
+    String WIDGET_EVEN_IF_DELETED = """
+            select m.role as "role", a.id as "applicationId"
+            from ui_component c join page p on p.id = c.page_id join branch b on b.id = p.branch_id
+                join "application" a on a.id = b.application_id join workspace_member m on m.workspace_id = a.workspace_id
+            where c.id = :id and m.user_id = :userId
+            """;
+
+    /** Like roleForUiComponent, also for a deleted widget (to restore it). */
+    @Query(value = WIDGET_EVEN_IF_DELETED, nativeQuery = true)
+    Optional<AccessRow> accessToUiComponentEvenIfDeleted(Long id, Long userId);
+
+    @Query(value = """
+            select m.role as "role", a.id as "applicationId"
+            from node n join workflow w on w.id = n.workflow_id join branch b on b.id = w.branch_id
+                join "application" a on a.id = b.application_id join workspace_member m on m.workspace_id = a.workspace_id
+            where n.id = :id and m.user_id = :userId
+            """, nativeQuery = true)
+    Optional<AccessRow> accessToNodeEvenIfDeleted(Long id, Long userId);
+
+    @Query(value = """
+            select m.role as "role", a.id as "applicationId"
+            from edge e join node n on n.id = e.source_node_id join workflow w on w.id = n.workflow_id
+                join branch b on b.id = w.branch_id join "application" a on a.id = b.application_id
+                join workspace_member m on m.workspace_id = a.workspace_id
+            where e.id = :id and m.user_id = :userId
+            """, nativeQuery = true)
+    Optional<AccessRow> accessToEdgeEvenIfDeleted(Long id, Long userId);
+
+    @Query(value = """
+            select m.role as "role", a.id as "applicationId"
+            from data_source d join branch b on b.id = d.branch_id join "application" a on a.id = b.application_id
+                join workspace_member m on m.workspace_id = a.workspace_id
+            where d.id = :id and m.user_id = :userId
+            """, nativeQuery = true)
+    Optional<AccessRow> accessToDataSourceEvenIfDeleted(Long id, Long userId);
+
     /** Workflows without a branch belong to nobody (there are none since workflows require one). */
     @Query("""
             select new com.example.ntbd.persistence.ResourceAccess(m.role, a.id.id) from Workflow w join w.branch b join b.application a, WorkspaceMember m

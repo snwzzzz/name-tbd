@@ -14,11 +14,17 @@ import java.util.List;
 @Builder
 
 @Entity
+// Deleted rows (SoftDeleteService) are invisible to every query; native SQL still sees them (restore, purge)
+@org.hibernate.annotations.SQLRestriction("deleted_at is null")
 @Table(name = "\"data_source\"")
 public class DataSource extends AuditableEntity {
 
     @EmbeddedId
     private DataSourceId id;
+
+    /** When it was deleted (it's kept a while, so the deletion can be undone); null while it exists. */
+    @Column(name = "deleted_at")
+    private java.time.LocalDateTime deletedAt;
 
     @Column(nullable = false)
     private String name;

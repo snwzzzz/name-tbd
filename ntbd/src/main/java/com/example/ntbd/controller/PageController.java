@@ -22,6 +22,7 @@ public class PageController {
     private final PageService pageService;
     private final com.example.ntbd.service.UiComponentService uiComponentService;
     private final com.example.ntbd.service.WorkflowService workflowService;
+    private final com.example.ntbd.service.PageContentService pageContentService;
     private final WorkspaceAccess access;
 
     @PostMapping
@@ -47,6 +48,13 @@ public class PageController {
     public ResponseEntity<List<com.example.ntbd.dto.UiComponentDto>> getComponents(@PathVariable Long id) {
         access.requirePage(id, VIEWER);
         return ResponseEntity.ok(uiComponentService.findByPageId(id));
+    }
+
+    /** Everything the editor shows of the page in one answer: its widgets (props complete) and workflow. */
+    @GetMapping(value = "/{id}/full", produces = "application/json")
+    public ResponseEntity<com.example.ntbd.dto.PageContentDto> getPageContent(@PathVariable Long id) {
+        access.requirePage(id, VIEWER);
+        return ResponseEntity.ok(pageContentService.load(id));
     }
 
     /** The workflow holding this page's UI logic; created on first access. */

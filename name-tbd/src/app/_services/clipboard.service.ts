@@ -2,13 +2,16 @@ import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LayoutStateService } from './layout-state.service';
 import { WorkflowStateService } from './workflow-state.service';
+import { IdRegistry } from './id-registry.service';
 import { GRID_COLUMNS, GRID_ROWS } from '../_constants/artboard.constants';
 import { TRIGGER_SPACING_Y } from '../_constants/workflow.constants';
-import { LayoutItem, WidgetProps } from '../_types/layout.types';
+import { ComponentId, LayoutItem, WidgetProps } from '../_types/layout.types';
 import { ActionConfig, ActionNode, FlowNode, NewFlowNode } from '../_types/workflow.types';
 import { findInTree } from '../_utils/layout-tree.utils';
 import { splitPortId } from '../_utils/port.utils';
 import { findFreeSpot } from '../_utils/placement.utils';
+import { toComponentId } from '../_utils/component-id.utils';
+import { workflowKeysOf } from '../core/catalog/id-references';
 
 /** A copied widget: what it is, where it was and its props, with its children (containers). */
 interface CopiedWidget {
@@ -29,8 +32,8 @@ interface CopiedFlows {
   connections: { from: string; port: string; to: string }[];
 }
 
-/** Action settings that point at a widget: a copy of the action points at the widget's copy, when it was copied along. */
-const WIDGET_REFERENCES = ['targetId', 'tableId', 'detailId', 'inputId'];
+/** Node settings that point at a widget (shared/id-references.json): a copied node points at the widget's copy, when it was copied along. */
+const WIDGET_REFERENCES = workflowKeysOf('widget');
 
 export type PasteResult = { ids: string[] } | { noRoom: true };
 
@@ -43,6 +46,7 @@ export type PasteResult = { ids: string[] } | { noRoom: true };
 export class ClipboardService {
   private readonly layoutState = inject(LayoutStateService);
   private readonly workflows = inject(WorkflowStateService);
+  private readonly registry = inject(IdRegistry);
 
   private copied: { pageId: string; widgets: CopiedWidget[]; flows: Promise<CopiedFlows> } | null = null;
   readonly hasContent = signal(false);
@@ -70,7 +74,8 @@ export class ClipboardService {
   /**
    * Creates the copied widgets on the page, in the nearest place where they fit without covering
    * anything (keeping how they sit to each other, inside the page or their container), with their
-   * flows, and reloads its layout. Creates nothing when there's no such place.
+   * flows. They show right away and are saved with the next batch. Creates nothing when there's no
+   * such place.
    */
   async paste(pageId: string): Promise<PasteResult> {
     if (!this.copied) return { ids: [] };
@@ -96,22 +101,19 @@ export class ClipboardService {
     }
 
     const copies = new Map<string, string>();
-    const ids: string[] = [];
-    for (const { widget, parentId } of placed) ids.push(await this.create(pageId, widget, parentId, copies));
+    const items = placed.map(({ widget, parentId }) => this.newItem(widget, toComponentId(parentId), copies));
+    this.layoutState.addWidgets(pageId, items);
 
     await this.pasteFlows(pageId, await this.copied.flows, copies);
-    await firstValueFrom(this.layoutState.refreshLayout(pageId));
-    return { ids };
+    return { ids: items.map((item) => String(item.id)) };
   }
 
-  /** Creates the widget and its children; remembers each original's copy. */
-  private async create(pageId: string, widget: CopiedWidget, parentId: string | undefined, copies: Map<string, string>): Promise<string> {
-    const { type, x, y, w, h, props } = widget;
-    const dto = await firstValueFrom(this.layoutState.addComponent(pageId, { type, x, y, w, h, props: { ...props }, parentId }));
-    const id = String(dto.id);
+  /** A new widget (temporary id) copying this one, with copies of its children; remembers each original's copy. */
+  private newItem(widget: CopiedWidget, parentId: ComponentId | undefined, copies: Map<string, string>): LayoutItem {
+    const id = this.registry.newRef();
     copies.set(widget.id, id);
-    for (const child of widget.children) await this.create(pageId, child, id, copies);
-    return id;
+    const { type, x, y, w, h, props } = widget;
+    return { id, parentId, type, x, y, w, h, props: { ...props }, children: widget.children.map((child) => this.newItem(child, id, copies)) };
   }
 
   /** The flows started by these widgets' triggers: the triggers and every node they lead to. */
@@ -162,17 +164,23 @@ export class ClipboardService {
 
   /** A copied node pointing at the copies of the widgets it pointed at (when they were copied along). */
   private repoint(node: FlowNode, pageId: string, copies: Map<string, string>): FlowNode {
-    if (node.type === 'Trigger') return { ...node, elementId: node.elementId && (copies.get(node.elementId) ?? node.elementId) };
-    if (node.type !== 'Action') return node;
-    const config: Record<string, unknown> = { ...(node as ActionNode).config };
-    for (const key of WIDGET_REFERENCES) {
-      const copy = typeof config[key] === 'string' ? copies.get(config[key] as string) : undefined;
-      if (copy) config[key] = copy;
-    }
+    const repointed = repointWidgets(node as unknown as Record<string, unknown>, copies) as unknown as FlowNode;
+    if (node.type !== 'Action') return repointed;
+    const config = repointWidgets({ ...(node as ActionNode).config } as Record<string, unknown>, copies);
     // A copied detail section is on this page now
     if (typeof config['detailId'] === 'string' && [...copies.values()].includes(config['detailId'] as string)) config['detailPageId'] = pageId;
-    return { ...node, config: config as unknown as ActionConfig } as ActionNode;
+    return { ...repointed, config: config as unknown as ActionConfig } as ActionNode;
   }
+}
+
+/** The settings that point at copied widgets, pointing at the copies instead. */
+function repointWidgets(settings: Record<string, unknown>, copies: Map<string, string>): Record<string, unknown> {
+  const result = { ...settings };
+  for (const key of WIDGET_REFERENCES) {
+    const copy = typeof result[key] === 'string' ? copies.get(result[key] as string) : undefined;
+    if (copy) result[key] = copy;
+  }
+  return result;
 }
 
 const rectOf = (item: { x?: number; y?: number; w?: number; h?: number }) => ({ x: item.x ?? 0, y: item.y ?? 0, w: item.w ?? 1, h: item.h ?? 1 });

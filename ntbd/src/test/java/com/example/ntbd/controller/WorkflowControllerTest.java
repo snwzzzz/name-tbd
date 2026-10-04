@@ -51,6 +51,9 @@ public class WorkflowControllerTest {
     private WorkspaceAccess access;
 
     @MockitoBean
+    private com.example.ntbd.service.SoftDeleteService softDelete;
+
+    @MockitoBean
     private NodeService nodeService;
 
     @MockitoBean

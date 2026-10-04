@@ -59,5 +59,18 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST.value()));
     }
 
+    /** A batch of changes failed at change {@code index} (counting from 0); answered as that change's error would be. */
+    @ExceptionHandler(com.example.ntbd.Exception.ChangeFailedException.class)
+    public ResponseEntity<ChangeErrorResponse> handleChangeFailed(com.example.ntbd.Exception.ChangeFailedException ex) {
+        HttpStatus status = switch (ex.getCause()) {
+            case ResourceNotFoundException ignored -> HttpStatus.NOT_FOUND;
+            case com.example.ntbd.Exception.ForbiddenException ignored -> HttpStatus.FORBIDDEN;
+            case null, default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(new ChangeErrorResponse(ex.getMessage(), status.value(), ex.index()));
+    }
+
     public record ErrorResponse(String message, int status) {}
+
+    public record ChangeErrorResponse(String message, int status, int index) {}
 }

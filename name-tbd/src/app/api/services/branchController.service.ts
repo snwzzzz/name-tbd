@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestOptions, BranchDto, NewBranchCommand } from "../models";
+import { RequestOptions, BranchDto, NewBranchCommand, ChangeBatchCommand, ChangeBatchResultDto } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class BranchControllerService {
@@ -80,6 +80,37 @@ export class BranchControllerService {
 
         return this.httpClient.request('post', url, {
             body: newBranchCommand,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    applyChanges(id: number, changeBatchCommand: ChangeBatchCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<ChangeBatchResultDto>;
+    applyChanges(id: number, changeBatchCommand: ChangeBatchCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<ChangeBatchResultDto>>;
+    applyChanges(id: number, changeBatchCommand: ChangeBatchCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<ChangeBatchResultDto>>;
+    applyChanges(id: number, changeBatchCommand: ChangeBatchCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/branches/${id}/changes`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+        // Set Content-Type for JSON requests if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json');
+        }
+
+        return this.httpClient.request('post', url, {
+            body: changeBatchCommand,
             observe,
             headers,
             reportProgress: options?.reportProgress,

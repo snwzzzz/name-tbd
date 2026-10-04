@@ -1,0 +1,53 @@
+.save-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+
+  svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .dot {
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    background: var(--color-warning);
+  }
+
+  &.saved svg {
+    color: var(--color-success);
+  }
+
+  &.warning {
+    color: var(--color-warning-dark);
+  }
+
+  &.error {
+    color: var(--color-danger);
+  }
+}
+
+.action {
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+}

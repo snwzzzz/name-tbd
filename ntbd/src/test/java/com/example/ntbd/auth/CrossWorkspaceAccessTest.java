@@ -139,6 +139,7 @@ class CrossWorkspaceAccessTest {
                 "{\"applicationId\":%d,\"name\":\"x\",\"description\":\"\"}".formatted(t.app()));
         add.accept(GET, "/api/branches", "/api/branches?applicationId=" + t.app(), null);
         add.accept(DELETE, "/api/branches/{id}", "/api/branches/" + t.branch(), null);
+        add.accept(POST, "/api/branches/{id}/changes", "/api/branches/%d/changes".formatted(t.branch()), "{\"changes\":[]}");
 
         add.accept(GET, "/api/branches/{branchId}/definition", "/api/branches/%d/definition".formatted(t.branch()), null);
         add.accept(GET, "/api/branches/{branchId}/export", "/api/branches/%d/export".formatted(t.branch()), null);
@@ -148,6 +149,7 @@ class CrossWorkspaceAccessTest {
         add.accept(GET, "/api/data-sources", "/api/data-sources?branchId=" + t.branch(), null);
         add.accept(GET, "/api/data-sources/{id}", "/api/data-sources/" + t.dataSource(), null);
         add.accept(DELETE, "/api/data-sources/{id}", "/api/data-sources/" + t.dataSource(), null);
+        add.accept(POST, "/api/data-sources/{id}/restore", "/api/data-sources/%d/restore".formatted(t.dataSource()), null);
 
         add.accept(POST, "/api/pages", "/api/pages",
                 "{\"name\":\"x\",\"path\":\"/x\",\"branchId\":%d}".formatted(t.branch()));
@@ -155,6 +157,7 @@ class CrossWorkspaceAccessTest {
         add.accept(GET, "/api/pages/{id}", "/api/pages/" + t.page(), null);
         add.accept(GET, "/api/pages/{id}/ui-components", "/api/pages/%d/ui-components".formatted(t.page()), null);
         add.accept(GET, "/api/pages/{id}/workflow", "/api/pages/%d/workflow".formatted(t.page()), null);
+        add.accept(GET, "/api/pages/{id}/full", "/api/pages/%d/full".formatted(t.page()), null);
 
         add.accept(POST, "/api/ui-components", "/api/ui-components",
                 "{\"pageId\":%d,\"type\":\"label\"}".formatted(t.page()));
@@ -162,6 +165,7 @@ class CrossWorkspaceAccessTest {
         add.accept(GET, "/api/ui-components/{id}/props", "/api/ui-components/%d/props".formatted(t.component()), null);
         add.accept(PUT, "/api/ui-components/{id}", "/api/ui-components/" + t.component(), "{\"x\":1}");
         add.accept(DELETE, "/api/ui-components/{id}", "/api/ui-components/" + t.component(), null);
+        add.accept(POST, "/api/ui-components/{id}/restore", "/api/ui-components/%d/restore".formatted(t.component()), null);
 
         add.accept(POST, "/api/versions", "/api/versions",
                 "{\"branchId\":%d,\"applicationDefinition\":\"{}\",\"version\":\"9.9.9\"}".formatted(t.branch()));
@@ -179,11 +183,13 @@ class CrossWorkspaceAccessTest {
         add.accept(GET, "/api/workflows/{workflowId}/nodes/{nodeId}", wf + "/nodes/" + t.node(), null);
         add.accept(PUT, "/api/workflows/{workflowId}/nodes/{nodeId}", wf + "/nodes/" + t.node(), "{\"x\":1}");
         add.accept(DELETE, "/api/workflows/{workflowId}/nodes/{nodeId}", wf + "/nodes/" + t.node(), null);
+        add.accept(POST, "/api/workflows/{workflowId}/nodes/{nodeId}/restore", wf + "/nodes/%d/restore".formatted(t.node()), null);
         add.accept(POST, "/api/workflows/{workflowId}/edges", wf + "/edges",
                 "{\"sourceNodeId\":%d,\"targetNodeId\":%d,\"sourcePort\":\"out\"}".formatted(t.node(), t.otherNode()));
         add.accept(GET, "/api/workflows/{workflowId}/edges", wf + "/edges", null);
         add.accept(GET, "/api/workflows/{workflowId}/edges/{edgeId}", wf + "/edges/" + t.edge(), null);
         add.accept(DELETE, "/api/workflows/{workflowId}/edges/{edgeId}", wf + "/edges/" + t.edge(), null);
+        add.accept(POST, "/api/workflows/{workflowId}/edges/{edgeId}/restore", wf + "/edges/%d/restore".formatted(t.edge()), null);
         return routes;
     }
 

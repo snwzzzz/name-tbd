@@ -6,7 +6,7 @@ import { EditorTabs } from './editor-tabs/editor-tabs';
 import { ModeDropdown } from './mode-dropdown/mode-dropdown';
 import { TabsService } from '../_services/tabs.service';
 import { SidebarStateService } from '../_services/sidebar-state.service';
-import { PropsAutosaveService } from '../_services/props-autosave.service';
+import { SaveQueue } from '../_services/save-queue.service';
 import { RecentPagesService } from '../_services/recent-pages.service';
 import { ModalService } from '../_services/modal/modal.service';
 import { ShortcutsModal } from '../components/shortcuts-modal/shortcuts-modal';
@@ -23,7 +23,7 @@ import { isTyping, matchesShortcut } from '../_utils/keyboard.utils';
 })
 export class Editor {
   private readonly tabs = inject(TabsService);
-  private readonly autosave = inject(PropsAutosaveService);
+  private readonly saveQueue = inject(SaveQueue);
   private readonly modal = inject(ModalService);
   private readonly sidebars = inject(SidebarStateService);
 
@@ -40,7 +40,7 @@ export class Editor {
     'mode-edit': () => this.setMode('edit'),
     'mode-workflow': () => this.setMode('workflow'),
     'mode-data': () => this.setMode('data'),
-    'save': () => this.autosave.flush(),
+    'save': () => void this.saveQueue.flush(),
     'new-tab': () => this.tabs.addTab(),
     'close-tab': () => {
       const id = this.tabs.activeTabId();

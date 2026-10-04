@@ -135,6 +135,29 @@ export class UiComponentControllerService {
         });
     }
 
+    restoreComponent(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    restoreComponent(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    restoreComponent(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    restoreComponent(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/ui-components/${id}/restore`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+
+        return this.httpClient.request('post', url, {
+            body: null,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
     getComponentProps(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Record<string, any>>;
     getComponentProps(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Record<string, any>>>;
     getComponentProps(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Record<string, any>>>;

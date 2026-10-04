@@ -6,6 +6,8 @@ import { WorkflowStateService } from './workflow-state.service';
 import { LayoutItem } from '../_types/layout.types';
 import { FlowNode, NewFlowNode, PageWorkflow } from '../_types/workflow.types';
 import { outputPortId, inputPortId } from '../_utils/port.utils';
+import { flattenTree } from '../_utils/layout-tree.utils';
+import { IdRegistry } from './id-registry.service';
 
 const LAYOUT: LayoutItem[] = [
   { id: 1, type: 'button', x: 0, y: 0, w: 7, h: 3, props: { label: 'Save' } },
@@ -42,7 +44,7 @@ describe('ClipboardService', () => {
     created = [];
     nodes = [];
     connections = [];
-    let nextId = 100;
+    let nextRef = 100;
     let nextNode = 1;
     TestBed.configureTestingModule({
       providers: [
@@ -50,13 +52,12 @@ describe('ClipboardService', () => {
           provide: LayoutStateService,
           useValue: {
             getLayout: () => layout,
-            addComponent: (_page: string, item: LayoutItem) => {
-              created.push(item);
-              return of({ id: nextId++ });
-            },
-            refreshLayout: () => of([]),
+            // The new widgets, parents before their children (as they're saved)
+            addWidgets: (_page: string, items: LayoutItem[]) =>
+              created.push(...flattenTree(items).map(({ children: _children, ...item }) => item)),
           },
         },
+        { provide: IdRegistry, useValue: { newRef: () => `new_${nextRef++}` } },
         {
           provide: WorkflowStateService,
           useValue: {
@@ -82,11 +83,11 @@ describe('ClipboardService', () => {
 
     const result = await clipboard.paste('p');
 
-    expect(result).toEqual({ ids: ['100'] });
+    expect(result).toEqual({ ids: ['new_100'] });
     expect(created).toEqual([
       // Right below the original container (nothing there), the original isn't touched
-      { type: 'container', x: 0, y: 19, w: 16, h: 9, props: { background: '#eeeeee' }, parentId: undefined },
-      { type: 'label', x: 1, y: 1, w: 8, h: 3, props: { text: 'Hi' }, parentId: '100' },
+      { id: 'new_100', type: 'container', x: 0, y: 19, w: 16, h: 9, props: { background: '#eeeeee' }, parentId: undefined },
+      { id: 'new_101', type: 'label', x: 1, y: 1, w: 8, h: 3, props: { text: 'Hi' }, parentId: 'new_100' },
     ]);
   });
 
@@ -102,8 +103,8 @@ describe('ClipboardService', () => {
     expect(nodes.map((n) => n.type)).toEqual(['Trigger', 'Action', 'Trigger', 'Action']);
     expect(nodes.map((n) => n.position.y)).toEqual([620, 620, 820, 820]);
     const [trigger1, action1, trigger2] = nodes as unknown as Record<string, unknown>[];
-    expect(trigger1['elementId']).toBe('100');
-    expect(trigger2['elementId']).toBe('101');
+    expect(trigger1['elementId']).toBe('new_100');
+    expect(trigger2['elementId']).toBe('new_101');
     // The label it changes wasn't copied: still the original
     expect((action1['config'] as Record<string, unknown>)['targetId']).toBe('5');
     expect(connections).toEqual([['new1', 'out', 'new2'], ['new3', 'out', 'new4']]);
@@ -114,7 +115,7 @@ describe('ClipboardService', () => {
     clipboard.copy('p', ['4', '2']); // button 4 changes label 3, inside container 2
     await clipboard.paste('p');
     const action = nodes.find((n) => n.type === 'Action') as unknown as { config: Record<string, unknown> };
-    expect(action.config['targetId']).toBe('102'); // the copy of label 3
+    expect(action.config['targetId']).toBe('new_102'); // the copy of label 3
   });
 
   it('creates nothing when there is no free place, instead of stacking copies on top', async () => {

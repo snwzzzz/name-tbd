@@ -181,6 +181,35 @@ export interface NewBranchCommand {
     description?: string;
 }
 
+export interface ChangeBatchCommand {
+    changes?: Array<ChangeOperation>;
+}
+
+export interface ChangeOperation {
+    op?: string;
+    id?: number;
+    ref?: string;
+    pageId?: number;
+    workflowId?: number;
+    type?: string;
+    parentId?: number;
+    parentRef?: string;
+    x?: number;
+    y?: number;
+    w?: number;
+    h?: number;
+    props?: Record<string, Record<string, unknown>>;
+    sourceId?: number;
+    sourceRef?: string;
+    targetId?: number;
+    targetRef?: string;
+    sourcePort?: string;
+}
+
+export interface ChangeBatchResultDto {
+    ids?: Record<string, number>;
+}
+
 export interface NewApplicationCommand {
     workspaceId?: number;
     title?: string;
@@ -205,6 +234,18 @@ export interface WidgetPropDefinitionDto {
     label?: string;
     group?: string;
     options?: Array<string>;
+}
+
+export interface PageContentDto {
+    page?: PageDto;
+    components?: Array<UiComponentDto>;
+    workflow?: PageWorkflowDto;
+}
+
+export interface PageWorkflowDto {
+    id?: number;
+    nodes?: Array<NodeDto>;
+    edges?: Array<EdgeDto>;
 }
 
 export interface MeDto {

@@ -74,13 +74,6 @@ public class DataSourceService {
         return DataSourceMapper.toDto(getDataSource(id));
     }
 
-    @Transactional
-    public void delete(Long id) {
-        if (dataSourceRepository.deleteInBulk(new DataSource.DataSourceId(id)) == 0) {
-            throw new DataSourceNotFoundException(id);
-        }
-    }
-
     private DataSource getDataSource(Long id) {
         return dataSourceRepository.findById(new DataSource.DataSourceId(id))
                 .orElseThrow(() -> new DataSourceNotFoundException(id));

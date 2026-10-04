@@ -1,0 +1,21 @@
+<span class="save-indicator" role="status" aria-live="polite">
+  @switch (state()) {
+    @case ('pending') {
+      <span class="status"><span class="dot"></span> Unsaved changes</span>
+    }
+    @case ('saving') {
+      <span class="status"><span class="ui-spinner"></span> Saving…</span>
+    }
+    @case ('offline') {
+      <span class="status warning"><svg lucideCloudOff></svg> Offline – trying again</span>
+      <button type="button" class="action" (click)="retry()">Retry</button>
+    }
+    @case ('error') {
+      <span class="status error" [title]="error() ?? ''"><svg lucideCircleAlert></svg> Some changes couldn't be saved</span>
+      <button type="button" class="action" (click)="reload()">Reload</button>
+    }
+    @default {
+      <span class="status saved"><svg lucideCheck></svg> Saved</span>
+    }
+  }
+</span>

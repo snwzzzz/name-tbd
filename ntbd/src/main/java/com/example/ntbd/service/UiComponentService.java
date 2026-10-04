@@ -76,6 +76,21 @@ public class UiComponentService {
     }
 
     @Transactional
+    public List<UiComponentDto> findByPageIdWithDefaults(Long pageId) {
+        return uiComponentRepository.findByPage_Id(new Page.PageId(pageId)).stream()
+                .map(component -> withDefaults(UiComponentMapper.toDto(component)))
+                .toList();
+    }
+
+    /** The component with its type's default props, overlaid with its own (what findPropsById gives). */
+    private UiComponentDto withDefaults(UiComponentDto dto) {
+        Map<String, Object> props = new LinkedHashMap<>(widgetCatalog.defaultsOf(dto.type()));
+        if (dto.props() != null) props.putAll(dto.props());
+        return new UiComponentDto(dto.id(), dto.pageId(), dto.type(), props, dto.workflowId(), dto.parentId(),
+                dto.x(), dto.y(), dto.w(), dto.h());
+    }
+
+    @Transactional
     public UiComponentDto findById(Long id) {
         return uiComponentRepository.findById(new UiComponent.UiComponentId(id))
                 .map(UiComponentMapper::toDto)
@@ -129,14 +144,6 @@ public class UiComponentService {
         }
         
         return UiComponentMapper.toDto(uiComponentRepository.saveAndFlush(component));
-    }
-
-    @Transactional
-    public void deleteComponent(Long id) {
-        if (!uiComponentRepository.existsById(new UiComponent.UiComponentId(id))) {
-            throw new UiComponentNotFoundException("UI Component not found with id " + id);
-        }
-        uiComponentRepository.deleteById(new UiComponent.UiComponentId(id));
     }
 
     @Transactional

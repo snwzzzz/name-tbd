@@ -57,14 +57,6 @@ public class EdgeService {
                 .toList();
     }
 
-    @Transactional
-    public void deleteEdge(Long id) {
-        if (!edgeRepository.existsById(new Edge.EdgeId(id))) {
-            throw new EdgeNotFoundException(id);
-        }
-        edgeRepository.deleteById(new Edge.EdgeId(id));
-    }
-
     private static boolean inWorkflow(Node node, Long workflowId) {
         return node.getWorkflow() != null && node.getWorkflow().getId().id().equals(workflowId);
     }

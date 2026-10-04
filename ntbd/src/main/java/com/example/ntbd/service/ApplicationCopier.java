@@ -1,6 +1,7 @@
 package com.example.ntbd.service;
 
 import com.example.ntbd.Exception.ApplicationNotFoundException;
+import com.example.ntbd.catalog.IdReferences;
 import com.example.ntbd.catalog.WidgetCatalog;
 import com.example.ntbd.catalog.WidgetCatalogDocument;
 import com.example.ntbd.domain.*;
@@ -17,26 +18,14 @@ import java.util.*;
  * data sources in it, as the new application's default branch. Versions stay behind (the copy starts
  * its own history), and so do other branches.
  * <p>
- * Everything gets new ids, so every place that stores an id is rewritten to the copy's id:
- * <ul>
- *   <li>a widget's parent and workflow (columns);</li>
- *   <li>widget props of the catalog's prop types {@code page}, {@code pages} (a JSON array) and
- *       {@code dataSource};</li>
- *   <li>node props: {@link #NODE_WIDGET_KEYS} (widget ids) and {@link #NODE_PAGE_KEYS} (page ids), at
- *       the top level (triggers) or in {@code config} (actions).</li>
- * </ul>
- * An id that points to nothing in the source branch is cleared, so the copy never points into the original.
- * <b>A new prop type or action config holding an id must be added here</b>, or copies keep pointing to
- * the original's widgets.
+ * Everything gets new ids, so every place that stores an id is rewritten to the copy's id: a widget's
+ * parent and workflow (columns), and the widget props and workflow node settings that
+ * shared/id-references.json lists ({@link IdReferences}). An id that points to nothing in the source
+ * branch is cleared, so the copy never points into the original.
  */
 @RequiredArgsConstructor
 @Component
 public class ApplicationCopier {
-
-    /** Node props (or their {@code config}) holding a widget id; see FlowNode types in the editor. */
-    static final Set<String> NODE_WIDGET_KEYS = Set.of("elementId", "targetId", "tableId", "detailId", "inputId");
-    /** Node props (or their {@code config}) holding a page id. */
-    static final Set<String> NODE_PAGE_KEYS = Set.of("detailPageId");
 
     private final ApplicationRepository applicationRepository;
     private final BranchRepository branchRepository;
@@ -47,6 +36,7 @@ public class ApplicationCopier {
     private final EdgeRepository edgeRepository;
     private final DataSourceRepository dataSourceRepository;
     private final WidgetCatalog widgetCatalog;
+    private final IdReferences references;
     private final ObjectMapper objectMapper;
 
     /** Old id → new id, per kind of thing. */
@@ -208,12 +198,16 @@ public class ApplicationCopier {
     }
 
     private String rewriteProp(String propType, String value, IdMap ids) {
-        if (propType == null || value == null || value.isBlank()) return value;
-        return switch (propType) {
-            case "page" -> mapId(value, ids.pages);
-            case "dataSource" -> mapId(value, ids.dataSources);
-            case "pages" -> mapIdArray(value, ids.pages);
-            default -> value;
+        if (value == null || value.isBlank()) return value;
+        return references.ofPropType(propType).map(kind -> rewrite(kind, value, ids)).orElse(value);
+    }
+
+    private String rewrite(IdReferences.Kind kind, String value, IdMap ids) {
+        return switch (kind) {
+            case WIDGET -> mapId(value, ids.components);
+            case PAGE -> mapId(value, ids.pages);
+            case PAGE_LIST -> mapIdArray(value, ids.pages);
+            case DATA_SOURCE -> mapId(value, ids.dataSources);
         };
     }
 
@@ -232,9 +226,7 @@ public class ApplicationCopier {
         Map<String, Object> copy = new LinkedHashMap<>(values);
         copy.replaceAll((key, value) -> {
             if (value == null) return null;
-            if (NODE_WIDGET_KEYS.contains(key)) return mapId(value.toString(), ids.components);
-            if (NODE_PAGE_KEYS.contains(key)) return mapId(value.toString(), ids.pages);
-            return value;
+            return references.ofNodeKey(key).<Object>map(kind -> rewrite(kind, value.toString(), ids)).orElse(value);
         });
         return copy;
     }

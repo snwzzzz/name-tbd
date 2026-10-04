@@ -76,6 +76,32 @@ public class WorkspaceAccess {
         require("dataSourceId", id, least, repository::roleForDataSource, () -> new DataSourceNotFoundException(id));
     }
 
+    // ---- Deleted things, to restore them (same rules) ----
+
+    public void requireUiComponentEvenIfDeleted(Long id, WorkspaceRole least) {
+        require("componentId", id, least, evenIfDeleted(repository::accessToUiComponentEvenIfDeleted),
+                () -> new UiComponentNotFoundException("UI Component not found with id " + id));
+    }
+
+    public void requireNodeEvenIfDeleted(Long id, WorkspaceRole least) {
+        require("nodeId", id, least, evenIfDeleted(repository::accessToNodeEvenIfDeleted), () -> new NodeNotFoundException(id));
+    }
+
+    public void requireEdgeEvenIfDeleted(Long id, WorkspaceRole least) {
+        require("edgeId", id, least, evenIfDeleted(repository::accessToEdgeEvenIfDeleted), () -> new EdgeNotFoundException(id));
+    }
+
+    public void requireDataSourceEvenIfDeleted(Long id, WorkspaceRole least) {
+        require("dataSourceId", id, least, evenIfDeleted(repository::accessToDataSourceEvenIfDeleted),
+                () -> new DataSourceNotFoundException(id));
+    }
+
+    private static BiFunction<Long, Long, Optional<ResourceAccess>> evenIfDeleted(
+            BiFunction<Long, Long, Optional<WorkspaceAccessRepository.AccessRow>> query) {
+        return (id, userId) -> query.apply(id, userId)
+                .map(row -> new ResourceAccess(WorkspaceRole.valueOf(row.getRole()), row.getApplicationId()));
+    }
+
     private void require(String name, Long id, WorkspaceRole least,
                          BiFunction<Long, Long, Optional<ResourceAccess>> accessOf,
                          Supplier<? extends ResourceNotFoundException> notFound) {

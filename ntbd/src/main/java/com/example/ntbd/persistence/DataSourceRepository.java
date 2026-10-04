@@ -18,7 +18,4 @@ public interface DataSourceRepository extends JpaRepository<DataSource, DataSour
      * Deletes a data source in one statement; the database cascades it to its columns, rows and
      * cells, so they aren't loaded just to be deleted.
      */
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("delete from DataSource d where d.id = :id")
-    int deleteInBulk(@Param("id") DataSource.DataSourceId id);
 }

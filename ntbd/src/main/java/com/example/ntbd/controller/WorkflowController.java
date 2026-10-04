@@ -31,6 +31,7 @@ public class WorkflowController {
     private final NodeService nodeService;
     private final EdgeService edgeService;
     private final FlowEngine flowEngine;
+    private final com.example.ntbd.service.SoftDeleteService softDelete;
     private final WorkspaceAccess access;
 
     // ---- Workflow endpoints ----
@@ -105,7 +106,15 @@ public class WorkflowController {
     @DeleteMapping("/{workflowId}/nodes/{nodeId}")
     public ResponseEntity<Void> deleteNode(@PathVariable Long workflowId, @PathVariable Long nodeId) {
         access.requireNode(nodeId, EDITOR);
-        nodeService.deleteNode(nodeId);
+        softDelete.deleteNode(nodeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Brings back a deleted node, with the edges deleted along with it. */
+    @PostMapping("/{workflowId}/nodes/{nodeId}/restore")
+    public ResponseEntity<Void> restoreNode(@PathVariable Long workflowId, @PathVariable Long nodeId) {
+        access.requireNodeEvenIfDeleted(nodeId, EDITOR);
+        softDelete.restoreNode(nodeId);
         return ResponseEntity.noContent().build();
     }
 
@@ -134,7 +143,14 @@ public class WorkflowController {
     @DeleteMapping("/{workflowId}/edges/{edgeId}")
     public ResponseEntity<Void> deleteEdge(@PathVariable Long workflowId, @PathVariable Long edgeId) {
         access.requireEdge(edgeId, EDITOR);
-        edgeService.deleteEdge(edgeId);
+        softDelete.deleteEdge(edgeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{workflowId}/edges/{edgeId}/restore")
+    public ResponseEntity<Void> restoreEdge(@PathVariable Long workflowId, @PathVariable Long edgeId) {
+        access.requireEdgeEvenIfDeleted(edgeId, EDITOR);
+        softDelete.restoreEdge(edgeId);
         return ResponseEntity.noContent().build();
     }
 }

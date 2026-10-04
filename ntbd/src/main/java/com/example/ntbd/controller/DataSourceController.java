@@ -21,6 +21,7 @@ import static com.example.ntbd.domain.WorkspaceRole.VIEWER;
 public class DataSourceController {
 
     private final DataSourceService dataSourceService;
+    private final com.example.ntbd.service.SoftDeleteService softDelete;
     private final WorkspaceAccess access;
 
     /** Imports tabular data (e.g. the text of a CSV file) as a new data source. */
@@ -45,7 +46,15 @@ public class DataSourceController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDataSource(@PathVariable Long id) {
         access.requireDataSource(id, EDITOR);
-        dataSourceService.delete(id);
+        softDelete.deleteDataSource(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Brings back a deleted data source (widgets that showed it show it again). */
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restoreDataSource(@PathVariable Long id) {
+        access.requireDataSourceEvenIfDeleted(id, EDITOR);
+        softDelete.restoreDataSource(id);
         return ResponseEntity.noContent().build();
     }
 }

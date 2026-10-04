@@ -57,8 +57,8 @@ export interface SearchConfig {
 }
 
 /**
- * Config of any action. A config field holding the id of a widget or page must also be listed in the
- * backend's ApplicationCopier (NODE_WIDGET_KEYS / NODE_PAGE_KEYS), so duplicated apps point to their own.
+ * Config of any action. A config field holding the id of a widget or page must be listed in
+ * shared/id-references.json, so copies (paste, duplicate, restore) point to their own (id-references.spec checks).
  */
 export type ActionConfig = SetTextConfig | TableActionConfig | ShowDetailConfig | SearchConfig;
 
