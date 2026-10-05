@@ -7,10 +7,30 @@
 
       @for (def of group.defs; track def.id) {
         <div class="ui-field">
-          @if (def.propType !== 'boolean') {
-            <label class="ui-field-label">{{ def.label ?? def.propKey }}</label>
+          @if (def.propType !== 'boolean' || bound(def)) {
+            <div class="label-row">
+              <label class="ui-field-label">{{ def.label ?? def.propKey }}</label>
+              @if (bindable(def)) {
+                <button
+                  type="button"
+                  class="fx"
+                  [class.on]="bound(def)"
+                  [attr.aria-pressed]="bound(def)"
+                  [title]="bound(def) ? 'Use a fixed value' : 'Use an expression'"
+                  (click)="toggleExpression(def)">fx</button>
+              }
+            </div>
           }
 
+          @if (bound(def)) {
+            <app-expression-input
+              [label]="def.label ?? def.propKey"
+              [placeholder]="expressionPlaceholder"
+              [multiline]="def.propType === 'textarea'"
+              [scope]="scope()"
+              [value]="$any(value(def)) ?? ''"
+              (valueChange)="updateProp(def.propKey, $event)" />
+          } @else {
           @switch (def.propType) {
             @case ('string') {
               <input type="text" class="ui-input" [ngModel]="value(def)" (ngModelChange)="updateProp(def.propKey, $event)" />
@@ -30,10 +50,13 @@
                 (changed)="updateProp(def.propKey, $event)" />
             }
             @case ('boolean') {
-              <label class="ui-check">
-                <input type="checkbox" [ngModel]="checked(def)" (ngModelChange)="updateProp(def.propKey, $event)" />
-                {{ def.label ?? def.propKey }}
-              </label>
+              <div class="label-row">
+                <label class="ui-check">
+                  <input type="checkbox" [ngModel]="checked(def)" (ngModelChange)="updateProp(def.propKey, $event)" />
+                  {{ def.label ?? def.propKey }}
+                </label>
+                <button type="button" class="fx" aria-pressed="false" title="Use an expression" (click)="toggleExpression(def)">fx</button>
+              </div>
             }
             @case ('select') {
               <app-select [options]="options(def)" [ngModel]="value(def)" (ngModelChange)="updateProp(def.propKey, $event)" />
@@ -43,6 +66,7 @@
                 <ng-container *ngComponentOutlet="editor; inputs: { def: def, props: props(), itemId: itemId() }" />
               }
             }
+          }
           }
         </div>
       }

@@ -3,6 +3,7 @@ import { APP_DATA } from '../../core/ports/app-ports';
 import { TableData } from '../../_types/data-source.types';
 import { WidgetProps } from '../../_types/layout.types';
 import { propNumber, propText } from '../../_utils/widget-props.utils';
+import { itemsTableData } from '../../core/expressions/list-table';
 
 /** A widget's data source (picked in its `dataSourceId` prop): its id, and its rows once loaded. */
 export interface DataSourceBinding {
@@ -11,7 +12,11 @@ export interface DataSourceBinding {
   readonly table: Signal<TableData | null>;
 }
 
-/** Binds a widget to the data source its props pick, loading its rows. Call it while the widget is created. */
+/**
+ * Binds a widget to the data source its props pick, loading its rows. Call it while the widget is
+ * created. A widget whose `items` prop is bound to a list (e.g. `{{ users }}`, an HTTP answer)
+ * shows that list instead.
+ */
 export function bindDataSource(props: Signal<WidgetProps>, key = 'dataSourceId'): DataSourceBinding {
   const data = inject(APP_DATA);
   const id = computed(() => {
@@ -19,6 +24,8 @@ export function bindDataSource(props: Signal<WidgetProps>, key = 'dataSourceId')
     return Number.isInteger(value) ? value : null;
   });
   const table = computed(() => {
+    const items = key === 'dataSourceId' ? itemsTableData(props()) : null;
+    if (items) return items;
     const value = id();
     return value === null ? null : data.table(value);
   });

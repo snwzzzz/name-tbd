@@ -1,9 +1,10 @@
 import { EnvironmentProviders, Injectable, inject, makeEnvironmentProviders, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
-  APP_DATA, APP_LAYOUT, APP_NAVIGATION, APP_PAGES, APP_SESSION, AppLayout, AppNavigation, AppPages, AppSession,
-  PageInfo, WORKFLOW_SOURCE, WorkflowSource,
+  APP_DATA, APP_LAYOUT, APP_NAVIGATION, APP_PAGES, APP_SESSION, APP_VARIABLES, AppLayout, AppNavigation, AppPages, AppSession,
+  AppVariables, PageInfo, WORKFLOW_SOURCE, WorkflowSource,
 } from '../../app/core/ports/app-ports';
+import { VariableDefinition } from '../../flow-engine';
 import { MemoryAppData } from '../../app/core/ports/memory-app-data';
 import { definitionGraph } from '../../app/core/definition/app-definition';
 import { LayoutItem, WidgetProps } from '../../app/_types/layout.types';
@@ -110,6 +111,17 @@ class RuntimeWorkflows implements WorkflowSource {
   }
 }
 
+/** The variables as the definition has them (the app's, and each page's). */
+@Injectable({ providedIn: 'root' })
+class RuntimeVariables implements AppVariables {
+  private readonly definition = inject(APP_DEFINITION);
+  readonly app = signal<VariableDefinition[]>(this.definition.variables ?? []).asReadonly();
+
+  page(pageId: string): VariableDefinition[] {
+    return this.definition.pages.find((p) => String(p.id) === pageId)?.variables ?? [];
+  }
+}
+
 /** The runtime core's ports, run on the app definition (see runtime.config.ts). */
 export function provideAppRuntime(): EnvironmentProviders {
   return makeEnvironmentProviders([
@@ -119,5 +131,6 @@ export function provideAppRuntime(): EnvironmentProviders {
     { provide: APP_SESSION, useExisting: RuntimeSession },
     { provide: APP_LAYOUT, useExisting: RuntimeLayout },
     { provide: WORKFLOW_SOURCE, useExisting: RuntimeWorkflows },
+    { provide: APP_VARIABLES, useExisting: RuntimeVariables },
   ]);
 }

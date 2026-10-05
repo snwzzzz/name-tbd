@@ -19,9 +19,11 @@ public class BranchContentReader {
     private final NodeRepository nodeRepository;
     private final EdgeRepository edgeRepository;
     private final DataSourceRepository dataSourceRepository;
+    private final BranchRepository branchRepository;
 
     public BranchContent read(Long branchId) {
         Branch.BranchId branch = new Branch.BranchId(branchId);
+        List<VariableDefinition> variables = branchRepository.findById(branch).map(Branch::getVariables).orElse(List.of());
         List<PageContent> pages = pageRepository.findByBranch_Id(branch).stream()
                 .sorted(Comparator.comparing(p -> p.getId().id()))
                 .map(this::page)
@@ -33,7 +35,7 @@ public class BranchContentReader {
         List<DataSourceContent> dataSources = dataSourceRepository.findByBranch_IdOrderByNameAsc(branch).stream()
                 .map(BranchContentReader::dataSource)
                 .toList();
-        return new BranchContent(pages, workflows, dataSources);
+        return new BranchContent(pages, workflows, dataSources, variables);
     }
 
     private PageContent page(Page page) {
@@ -41,7 +43,7 @@ public class BranchContentReader {
                 .sorted(Comparator.comparing(c -> c.getId().id()))
                 .map(BranchContentReader::widget)
                 .toList();
-        return new PageContent(page.getId().id(), page.getName(), page.getPath(), page.isLayout(), widgets);
+        return new PageContent(page.getId().id(), page.getName(), page.getPath(), page.isLayout(), widgets, page.getVariables());
     }
 
     private static WidgetContent widget(UiComponent component) {

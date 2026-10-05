@@ -31,6 +31,7 @@ public class WorkflowController {
     private final NodeService nodeService;
     private final EdgeService edgeService;
     private final FlowEngine flowEngine;
+    private final com.example.ntbd.workflow.sidecar.ServerFlowRunner serverFlowRunner;
     private final com.example.ntbd.service.SoftDeleteService softDelete;
     private final WorkspaceAccess access;
 
@@ -68,6 +69,19 @@ public class WorkflowController {
         access.requireWorkflow(id, EDITOR);
         flowEngine.executeWorkflow(id, initialContext != null ? initialContext : Map.of());
         return ResponseEntity.accepted().build();
+    }
+
+    /**
+     * Runs the workflow on the server with the browser's engine (the flow sidecar): its flows that
+     * start without a widget, with the body as {@code payload}. Answers the run log, the steps taken
+     * and the variables after the run; rows the flow changed are saved. 503 without a sidecar.
+     */
+    @PostMapping(value = "/{id}/run", produces = "application/json")
+    public ResponseEntity<Map<String, Object>> runWorkflow(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, Object> payload) {
+        access.requireWorkflow(id, EDITOR);
+        return ResponseEntity.ok(serverFlowRunner.run(id, payload));
     }
 
     // ---- Node endpoints ----

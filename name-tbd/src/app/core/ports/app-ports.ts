@@ -2,6 +2,7 @@ import { InjectionToken, Signal } from '@angular/core';
 import { LayoutItem, WidgetProps } from '../../_types/layout.types';
 import { TableData } from '../../_types/data-source.types';
 import { WorkflowGraph } from '../../_types/workflow.types';
+import type { VariableDefinition } from '../../../flow-engine';
 
 // The ports of the runtime core: what widgets and workflow actions need from the app around
 // them. The editor (its preview) and the exported app each provide their own implementation
@@ -68,9 +69,17 @@ export interface WorkflowSource {
   graph(pageId: string): Promise<WorkflowGraph>;
 }
 
+/** The app's variables as defined (not their values): the app's own and each page's. */
+export interface AppVariables {
+  readonly app: Signal<VariableDefinition[]>;
+  /** A page's own variables (reading it is reactive). */
+  page(pageId: string): VariableDefinition[];
+}
+
 export const APP_DATA = new InjectionToken<AppData>('APP_DATA');
 export const APP_PAGES = new InjectionToken<AppPages>('APP_PAGES');
 export const APP_NAVIGATION = new InjectionToken<AppNavigation>('APP_NAVIGATION');
 export const APP_SESSION = new InjectionToken<AppSession>('APP_SESSION');
 export const APP_LAYOUT = new InjectionToken<AppLayout>('APP_LAYOUT');
 export const WORKFLOW_SOURCE = new InjectionToken<WorkflowSource>('WORKFLOW_SOURCE');
+export const APP_VARIABLES = new InjectionToken<AppVariables>('APP_VARIABLES');

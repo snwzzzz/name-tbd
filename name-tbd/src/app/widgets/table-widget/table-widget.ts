@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject } from '@angular/core';
 import { BaseWidget } from '../../_directives/base-widget.directive';
+import { itemsTableData } from '../../core/expressions/list-table';
 import { APP_DATA, APP_SESSION } from '../../core/ports/app-ports';
 import { TableSelectionService } from '../../core/services/table-selection.service';
 import { TableFilterService } from '../../core/services/table-filter.service';
@@ -47,15 +48,20 @@ export class TableWidget extends BaseWidget {
     const id = propNumber(this.props(), 'dataSourceId', NaN);
     return Number.isInteger(id) ? id : null;
   });
+  /** Rows from the `items` expression (e.g. an HTTP request's answer), instead of a data source. */
+  private readonly items = computed(() => itemsTableData(this.props()));
+  readonly fromItems = computed(() => !!this.items());
   /** The rows to show; null until loaded. */
   readonly data = computed<TableData | null>(() => {
+    const items = this.items();
+    if (items) return items;
     const id = this.dataSourceId();
     return id === null ? null : this.appData.table(id);
   });
   /** Whether the data source can't be shown (deleted, or failed to load). */
   readonly missing = computed(() => {
     const id = this.dataSourceId();
-    return id !== null && !this.data() && this.appData.loaded() && !this.appData.sources().some((s) => s.id === id);
+    return !this.items() && id !== null && !this.data() && this.appData.loaded() && !this.appData.sources().some((s) => s.id === id);
   });
 
   private readonly columnIndexes = computed(() =>

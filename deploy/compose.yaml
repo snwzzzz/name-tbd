@@ -1,4 +1,4 @@
-# Staging: the editor and the API behind Caddy (HTTPS), the backend, and PostgreSQL.
+# Staging: the editor and the API behind Caddy (HTTPS), the backend, the flow sidecar, and PostgreSQL.
 #   cp deploy/.env.example deploy/.env   # then fill it in
 #   docker compose -f deploy/compose.yaml --env-file deploy/.env up -d --build
 name: ntbd-staging
@@ -27,8 +27,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      flows:
+        condition: service_started
     environment:
       SPRING_PROFILES_ACTIVE: staging
+      FLOW_SIDECAR_URL: http://flows:8090
+      FLOW_SIDECAR_TOKEN: ${FLOW_SIDECAR_TOKEN:?Set FLOW_SIDECAR_TOKEN}
       DATABASE_URL: jdbc:postgresql://db:5432/ntbd
       DATABASE_USER: ntbd
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
@@ -40,6 +44,15 @@ services:
       MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
       SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-staging}
+
+  # Runs workflows on the server (POST /api/workflows/{id}/run) with the browser's engine
+  flows:
+    build:
+      context: ..
+      dockerfile: deploy/flows.Dockerfile
+    restart: unless-stopped
+    environment:
+      FLOW_SIDECAR_TOKEN: ${FLOW_SIDECAR_TOKEN}
 
   web:
     build:

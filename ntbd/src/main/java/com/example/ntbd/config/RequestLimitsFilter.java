@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 public class RequestLimitsFilter extends OncePerRequestFilter {
 
     private static final Set<String> WRITE_METHODS = Set.of("POST", "PUT", "PATCH", "DELETE");
-    private static final Pattern WORKFLOW_RUN = Pattern.compile("^/api/workflows/[^/]+/execute$");
+    private static final Pattern WORKFLOW_RUN = Pattern.compile("^/api/workflows/[^/]+/(execute|run)$");
 
     private final LimitsProperties limits;
     private final Cache<String, Bucket> buckets = Caffeine.newBuilder()

@@ -1,0 +1,74 @@
+[
+  {
+    "name": "approval: an amount over the limit needs approval and isn't saved",
+    "request": {
+      "triggerNodeId": 1,
+      "variables": {
+        "app": [{ "name": "approvalLimit", "type": "number", "initial": "500" }],
+        "page": [{ "name": "status", "type": "text", "initial": "\"Draft\"" }]
+      },
+      "data": [{ "id": 5, "name": "orders", "columns": ["customer", "amount", "status"], "rows": [] }],
+      "scope": { "orderForm": { "customer": "Ada", "amount": 750 } },
+      "workflow": {
+        "nodes": [
+          { "id": 1, "type": "Trigger", "props": { "triggerType": "element_click", "elementId": "33", "eventName": "element_click" } },
+          { "id": 2, "type": "Condition", "props": { "expression": "orderForm.amount > approvalLimit" } },
+          { "id": 3, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "status", "value": "Needs approval from {{ upper(orderForm.customer) }}" } } },
+          { "id": 4, "type": "Action", "props": { "actionType": "create_row", "config": { "dataSourceId": "5", "values": [
+            { "column": "customer", "value": "{{ orderForm.customer }}" },
+            { "column": "amount", "value": "{{ orderForm.amount }}" },
+            { "column": "status", "value": "approved" }
+          ] } } },
+          { "id": 5, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "status", "value": "Saved" } } }
+        ],
+        "edges": [
+          { "id": 1, "sourceNodeId": 1, "sourcePort": "out", "targetNodeId": 2 },
+          { "id": 2, "sourceNodeId": 2, "sourcePort": "true", "targetNodeId": 3 },
+          { "id": 3, "sourceNodeId": 2, "sourcePort": "false", "targetNodeId": 4 },
+          { "id": 4, "sourceNodeId": 4, "sourcePort": "out", "targetNodeId": 5 }
+        ]
+      }
+    },
+    "expect": {
+      "steps": ["1:out", "2:true", "3:out"],
+      "variables": { "status": "Needs approval from ADA", "approvalLimit": 500 },
+      "data": { "orders": [] }
+    }
+  },
+  {
+    "name": "approval: an amount within the limit is saved",
+    "request": {
+      "triggerNodeId": 1,
+      "variables": {
+        "app": [{ "name": "approvalLimit", "type": "number", "initial": "500" }],
+        "page": [{ "name": "status", "type": "text", "initial": "\"Draft\"" }]
+      },
+      "data": [{ "id": 5, "name": "orders", "columns": ["customer", "amount", "status"], "rows": [] }],
+      "scope": { "orderForm": { "customer": "Bob", "amount": 120.5 } },
+      "workflow": {
+        "nodes": [
+          { "id": 1, "type": "Trigger", "props": { "triggerType": "element_click", "elementId": "33", "eventName": "element_click" } },
+          { "id": 2, "type": "Condition", "props": { "expression": "orderForm.amount > approvalLimit" } },
+          { "id": 3, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "status", "value": "Needs approval" } } },
+          { "id": 4, "type": "Action", "props": { "actionType": "create_row", "config": { "dataSourceId": "5", "values": [
+            { "column": "customer", "value": "{{ orderForm.customer }}" },
+            { "column": "amount", "value": "{{ orderForm.amount }}" },
+            { "column": "status", "value": "approved" }
+          ] } } },
+          { "id": 5, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "status", "value": "Saved {{ size(data.orders) }} order(s)" } } }
+        ],
+        "edges": [
+          { "id": 1, "sourceNodeId": 1, "sourcePort": "out", "targetNodeId": 2 },
+          { "id": 2, "sourceNodeId": 2, "sourcePort": "true", "targetNodeId": 3 },
+          { "id": 3, "sourceNodeId": 2, "sourcePort": "false", "targetNodeId": 4 },
+          { "id": 4, "sourceNodeId": 4, "sourcePort": "out", "targetNodeId": 5 }
+        ]
+      }
+    },
+    "expect": {
+      "steps": ["1:out", "2:false", "4:out", "5:out"],
+      "variables": { "status": "Saved 1 order(s)" },
+      "data": { "orders": [["Bob", "120.5", "approved"]] }
+    }
+  }
+]

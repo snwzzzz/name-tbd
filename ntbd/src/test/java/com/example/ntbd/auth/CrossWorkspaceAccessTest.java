@@ -140,6 +140,8 @@ class CrossWorkspaceAccessTest {
         add.accept(GET, "/api/branches", "/api/branches?applicationId=" + t.app(), null);
         add.accept(DELETE, "/api/branches/{id}", "/api/branches/" + t.branch(), null);
         add.accept(POST, "/api/branches/{id}/changes", "/api/branches/%d/changes".formatted(t.branch()), "{\"changes\":[]}");
+        add.accept(GET, "/api/branches/{id}/variables", "/api/branches/%d/variables".formatted(t.branch()), null);
+        add.accept(PUT, "/api/branches/{id}/variables", "/api/branches/%d/variables".formatted(t.branch()), "[]");
 
         add.accept(GET, "/api/branches/{branchId}/definition", "/api/branches/%d/definition".formatted(t.branch()), null);
         add.accept(GET, "/api/branches/{branchId}/export", "/api/branches/%d/export".formatted(t.branch()), null);
@@ -158,6 +160,7 @@ class CrossWorkspaceAccessTest {
         add.accept(GET, "/api/pages/{id}/ui-components", "/api/pages/%d/ui-components".formatted(t.page()), null);
         add.accept(GET, "/api/pages/{id}/workflow", "/api/pages/%d/workflow".formatted(t.page()), null);
         add.accept(GET, "/api/pages/{id}/full", "/api/pages/%d/full".formatted(t.page()), null);
+        add.accept(PUT, "/api/pages/{id}/variables", "/api/pages/%d/variables".formatted(t.page()), "[]");
 
         add.accept(POST, "/api/ui-components", "/api/ui-components",
                 "{\"pageId\":%d,\"type\":\"label\"}".formatted(t.page()));
@@ -180,6 +183,7 @@ class CrossWorkspaceAccessTest {
         add.accept(GET, "/api/workflows", "/api/workflows?branchId=" + t.branch(), null);
         add.accept(DELETE, "/api/workflows/{id}", wf, null);
         add.accept(POST, "/api/workflows/{id}/execute", wf + "/execute", "{}");
+        add.accept(POST, "/api/workflows/{id}/run", wf + "/run", "{}");
         add.accept(POST, "/api/workflows/{workflowId}/nodes", wf + "/nodes", "{\"type\":\"Action\",\"props\":{}}");
         add.accept(GET, "/api/workflows/{workflowId}/nodes", wf + "/nodes", null);
         add.accept(GET, "/api/workflows/{workflowId}/nodes/{nodeId}", wf + "/nodes/" + t.node(), null);

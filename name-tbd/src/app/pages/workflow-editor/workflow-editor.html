@@ -37,6 +37,9 @@
             [node]="node"
             [pageItems]="pageItems()"
             [triggerItems]="triggerItems()"
+            [pageId]="tabId()"
+            [scope]="scope()"
+            [variables]="variables()"
             (fNodePositionChange)="onNodePositionChange(node, $event)"
             (changed)="updateNode($event)"
             (deleted)="deleteNode(node.id)"
@@ -73,7 +76,11 @@
             <button app-context-menu-item [icon]="icons.add" (click)="addActionAfter(menu.node.id)">Add action</button>
           }
           @case ('Action') {
-            <button app-context-menu-item [icon]="icons.add" (click)="addActionAfter(menu.node.id)">Add action after</button>
+            @for (port of portsOf(menu.node); track port.id) {
+              <button app-context-menu-item [icon]="icons.add" (click)="addActionAfter(menu.node.id, port.id)">
+                Add action {{ port.label ? 'on “' + port.label + '”' : 'after' }}
+              </button>
+            }
           }
           @case ('Condition') {
             <button app-context-menu-item [icon]="icons.addIfTrue" (click)="addActionAfter(menu.node.id, 'true')">Add action if true</button>

@@ -15,7 +15,7 @@ This document explains the whole system: how the repository is laid out, how the
 5. [The domain model](#5-the-domain-model)
 6. [The shared widget catalog](#6-the-shared-widget-catalog)
 7. [The frontend](#7-the-frontend)
-8. [The runtime core](#8-the-runtime-core)
+8. [The runtime core](#8-the-runtime-core) (with [expressions and variables](#85-expressions-and-variables))
 9. [The exported app (runtime build)](#9-the-exported-app-runtime-build)
 10. [The backend](#10-the-backend)
 11. [The export pipeline](#11-the-export-pipeline)
@@ -93,6 +93,8 @@ name-tbd/                     ← repository root
 │       │   ├── _directives/  ← base classes (BaseWidget, BasePropEditor, …)
 │       │   ├── _types/  _utils/  _styles/
 │       │   └── api/          ← GENERATED OpenAPI client (do not edit by hand)
+│       ├── flow-engine/      ← the flow engine and expressions: plain TypeScript, no Angular
+│       │   └── server/       ← the flow sidecar (Node), which runs it on the server
 │       ├── runtime/          ← the exported app (bootstrap, shell, routing, adapters)
 │       ├── styles.scss       ← editor global styles
 │       └── main.ts           ← editor bootstrap
@@ -102,7 +104,7 @@ name-tbd/                     ← repository root
         ├── main/java/com/example/ntbd/
         │   ├── catalog/      ← reads shared/widget-catalog.json
         │   ├── export/       ← app definition + export formats
-        │   ├── workflow/     ← server-side flow engine (Condition/Email/Webhook)
+        │   ├── workflow/     ← server-run flows: sidecar/ (the flow sidecar's client), legacy engine
         │   ├── datasource/   ← tabular data parsers (CSV)
         │   ├── controller/ service/ persistence/ domain/ dto/ mapper/ commands/
         │   └── config/       ← CORS, security
@@ -174,6 +176,8 @@ Open `http://localhost:4200` (the console, after signing in; in development use 
 | `npm run build:runtime` | Production build of the exported app into `ntbd/src/main/resources/export-runtime/`. |
 | `npm run watch:runtime` | The same, rebuilding on every change. Use it while working on widgets or the runtime. |
 | `npm test` | All frontend specs (Vitest, via `ng test`). Add `--watch=false` for a single run. |
+| `npm run build:sidecar` | Bundles the flow sidecar (section 10.4) into `dist/flow-sidecar/sidecar.mjs`; run it with `node`. |
+| `npm run test:sidecar` | Starts the sidecar's HTTP server and sends it every flow conformance fixture (section 16). |
 
 The workspace has two projects, so plain `ng build` asks which one. The npm scripts already name it.
 
@@ -197,6 +201,7 @@ Everything for a deploy is in `deploy/`: three containers, started with Docker C
 |---|---|
 | `web` | Caddy: serves the editor (`deploy/web.Dockerfile` builds it) and proxies `/api`, the sign-in paths and `/actuator/health` to the backend, so both share one origin. Gets the HTTPS certificate itself. |
 | `backend` | The Spring Boot jar (`deploy/backend.Dockerfile`), with the `staging` profile (`application-staging.properties`). |
+| `flows` | The flow sidecar (`deploy/flows.Dockerfile`): runs workflows on the server. Only the backend reaches it, with `FLOW_SIDECAR_TOKEN`. |
 | `db` | PostgreSQL 17, data in a Docker volume. |
 
 1. Point a domain at the server (ports 80 and 443 open).
@@ -247,6 +252,7 @@ Widgets and workflow actions never touch editor state directly. They inject **po
 | `APP_SESSION` | Whether the app is "live" (reacts to clicks, runs workflows), and on which page |
 | `APP_LAYOUT` | Each page's widgets, plus temporary prop overrides from workflows |
 | `WORKFLOW_SOURCE` | Each page's workflow graph |
+| `APP_VARIABLES` | The app's and each page's variable definitions (their values live in `VariablesService`) |
 
 Each host provides **adapters** for these ports:
 
@@ -265,6 +271,7 @@ Each host provides **adapters** for these ports:
            ─ session: live while previewing         ─ session: always live
            ─ layout: LayoutStateService             ─ layout: definition + overrides
            ─ workflows: WorkflowStateService        ─ workflows: from the definition
+           ─ variables: VariablesStateService       ─ variables: from the definition
 ```
 
 This is why the export behaves exactly like the preview: it *is* the same code.
@@ -290,8 +297,11 @@ New behavior is added by **adding an entry to a registry**, not by editing switc
 | `WIDGET_COMPONENTS` | `core/rendering/widget-components.ts` | Type → Angular component |
 | `WIDGET_ICONS` | `_constants/widget-registry.constants.ts` | Icon name → Lucide icon |
 | `PROP_EDITORS` | `_constants/prop-editors.constants.ts` | Custom prop type → editor component |
-| `ACTION_TYPES` | `_constants/workflow.constants.ts` | Workflow actions as the editor offers them |
-| `ACTION_HANDLERS` | `core/workflow/action-handlers.ts` | Action id → handler (what it does) |
+| `ACTION_TYPES` | `_constants/workflow.constants.ts` | Workflow actions as the editor offers them (group, settings editor, outputs) |
+| `ACTION_HANDLERS` | `core/workflow/action-handlers.ts` | Action id → handler, for actions that need the page |
+| `BUILTIN_ACTIONS` | `flow-engine/actions/builtin-actions.ts` | Actions the engine runs itself (variables, rows, HTTP), in the browser and on the server |
+| `LIBRARY` | `flow-engine/expressions/library.ts` | The expressions' standard library (text, math, dates, lists) |
+| `EXPRESSION_SCOPE` | `core/expressions/expression-scope.service.ts` | More names for every page's expressions (e.g. the signed-in user) |
 | `TABLE_OPERATIONS` | `core/workflow/actions/table/table-operations.ts` | Operations of the "Table action" |
 | `WIDGET_TRIGGERS` | `core/workflow/widget-triggers.ts` | Widget events that can start a flow |
 | `SIDEBAR_TABS` | `_constants/sidebar-tabs.constants.ts` | Sidebar panels |
@@ -472,10 +482,12 @@ The editor works with **tabs**, like an IDE. A tab id's kind is decided by `tabK
 - **Sidebars** (`editor/sidebar`): left and right sidebars show the tabs of `SIDEBAR_TABS`:
   - Components (palette)
   - Data (data sources)
+  - Variables (the app's and the open page's, section 8.5)
   - Layers (widget tree)
+  - Run log (every flow the preview ran, step by step, section 8.4)
 
   Tabs can be dragged between sidebars. Which tab is where, and which one is open, is kept across reloads (`SidebarStateService`). A sidebar tab can also open as a full editor tab (`panel-…`).
-- **Properties panel** (`editor/properties-panel`): settings of the selected widget, rendered from the catalog by `editor/dynamic-settings`. Prop types without a built-in input use their `PROP_EDITORS` editor.
+- **Properties panel** (`editor/properties-panel`): settings of the selected widget, rendered from the catalog by `editor/dynamic-settings`. Prop types without a built-in input use their `PROP_EDITORS` editor. On top, the widget's **name** (how expressions call it, `WidgetNameField`). A setting's **fx** button binds it to an expression instead of a fixed value (section 8.5); it's then an `ExpressionInput`, which completes names and says what's wrong as you type.
 - **Start screen** (`pages/welcome`): build a page, open a page, manage data, create the layout page, recent pages.
 
 ### 7.4 The canvas (Edit mode)
@@ -517,18 +529,21 @@ Each widget is created with `ViewContainerRef.createComponent(WIDGET_COMPONENTS[
 2. The canvas becomes static (no dragging). Widget events are forwarded to `WorkflowRuntimeService`, and **page-load** workflows run.
 3. Data changes go to **`PreviewDataService`**, which makes a copy of a data source on the first change. The real data is never touched.
 4. Following a link to another page keeps the preview going on that page (`continueOn`). The copied data, table selections and the rows shown in detail sections stay.
-5. Stopping the preview throws everything away. Workflow changes such as `set_text` are undone (`WorkflowRuntimeService.reset`), and the preview data, selections, detail records, typed input and table searches are reset.
+5. Stopping the preview throws everything away. Workflow changes such as `set_text` are undone (`WorkflowRuntimeService.reset`, which also stops the page's timers), and the preview data, selections, detail records, typed input, table searches, variables, page parameters and messages are reset. The **Run log** tab keeps the runs until it's cleared.
 
 ### 7.7 The workflow editor (Workflow mode)
 
 `pages/workflow-editor` shows the page's workflow as a node graph (Foblex Flow):
 
 - **Trigger** nodes start a flow:
-  - a widget event from `WIDGET_TRIGGERS` (button click, table row double-click, input typed into), of a widget on the page or on the layout page (a layout widget's events run the open page's flows, e.g. a search bar in the header);
-  - or page load (a trigger without an element).
-- **Action** nodes do something. Their type comes from `ACTION_TYPES`, and their settings are edited by the action's editor component (`editor/action-editors/*`).
-- **Condition** nodes exist in the model but are **not executed** by the browser runtime yet.
-- Edges connect an output port (e.g. `out`) to the next node.
+  - a widget event from `WIDGET_TRIGGERS` (button click, table row double-click, input typed into, a field changed, a form submitted), of a widget on the page or on the layout page (a layout widget's events run the open page's flows, e.g. a search bar in the header);
+  - page load (a trigger without an element);
+  - a **timer**, every N seconds while the page is open (`intervalSeconds`);
+  - a **variable changing** (`variable`), with its new value as `event.value`.
+- **Condition** nodes test an expression (`orderForm.amount > approvalLimit`) and go on through `true` or `false`. Conditions saved before expressions (field, operator, value) are read as the expression they mean (`conditionExpression`) and become one when edited.
+- **Action** nodes do something. Their type comes from `ACTION_TYPES` (grouped: Page, Forms, Data, Logic, Connections), and their settings are edited by the action's editor component (`editor/action-editors/*`). Settings that take a value are templates (text, or `{{ … }}`); a loop's list is an expression. Every expression field completes names: the page's (section 8.5) and the flow's own (`event`, `row`, `item`, `index`, `response`, `error`).
+- Most actions have one output, `out`; some have more (`ports`): **Check form** `valid` / `invalid`, **Loop** `each` / `out` ("For each", "Done"), **HTTP request** `out` / `error` ("Done", "Failed"). The right-click menu adds an action to each.
+- Edges connect an output port to the next node.
 
 ### 7.8 The data manager (Data mode and the Data sidebar)
 
@@ -562,8 +577,11 @@ core/
 ├── ports/            app-ports.ts (ports), memory-app-data.ts (in-memory AppData)
 ├── rendering/        widget-components.ts, text-sizes.ts, widget-grid/
 ├── services/         table-selection, detail-records, widget-events
-├── workflow/         workflow-runtime.service.ts, action-handlers.ts, widget-triggers.ts
-│   └── actions/      set-text/, table/ (+ table-operations), show-detail/
+├── workflow/         workflow-runtime.service.ts (the engine's browser host), action-handlers.ts,
+│   │                 widget-triggers.ts, run-log.service.ts
+│   └── actions/      set-text/, table/ (+ table-operations), show-detail/, navigate/, message/, form/, …
+├── expressions/      expression-scope.service.ts (what expressions see), widget-bindings.service.ts, list-table.ts
+├── variables/        variables.service.ts (variables' values while the app runs)
 ├── testing/          fake-app.ts: in-memory fakes for every port (specs only)
 └── runtime-boundary.spec.ts
 core/forms/           field-validation, form-fields (FIELD_KINDS), forms.service, file-value
@@ -613,28 +631,33 @@ The exported app uses it to draw pages and the layout page. The editor uses it f
 
 ### 8.4 The workflow engine
 
-`core/workflow/workflow-runtime.service.ts`:
+Flows run on the **flow engine** (`src/flow-engine`, section 8.5 has its expressions): plain TypeScript without Angular, so the server runs the same code (section 10.4). `flow-engine-boundary.spec.ts` keeps it that way: it may import only itself and the expression library.
 
-- **Starting flows.**
-  - `handleEvent(pageId, elementId, event)` starts every flow whose trigger matches that element and event.
-  - `handlePageLoad(pageId)` starts every flow whose trigger has no element (page load).
-- **Running.** From a trigger, every connected node runs. Branches run side by side, ordered by their vertical position in the editor. An action runs once the one before it has finished, and **only if that one returned `'continue'`**. `'stop'` (e.g. a cancelled form) ends the branch, and so does an error, which is logged.
-- **Handlers.** What each action does is its handler: `ACTION_HANDLERS[actionType]`, an injectable with `run(ActionRun)` and an optional `reset(pageId)`.
-- **Sessions.** `ActionRun.isCurrent()` tells a long-running action whether its session is still the current one. `reset(pageId)` (preview stopped) bumps a generation counter so waiting steps never apply. It also calls every handler's `reset`.
+- **The engine** (`flow-engine/engine.ts`, `FlowEngine`) walks a graph from a trigger: everything connected to an output runs, branches side by side (started top to bottom), each node once per run. An action's next nodes run once it has finished, through the port it returns (default `out`), and only if it didn't stop the flow (`'stop'`, e.g. a cancelled form). A failing action goes on through `error` if anything is connected to it (with `error` holding the message), else its branch ends. `run()` resolves when every branch has finished.
+- **Conditions** go on through `true` or `false`; a condition that fails or isn't true/false ends its branch.
+- **Loops** (`loop`) run their `each` branch once per item of a list (at most 1000), one after another, with `item` (or the name chosen) and `index`; then `out`.
+- **The host** (`FlowHost`) is what the engine needs from the app around it: the scope expressions see, the variables, the data, `fetch`, and the actions only it can do. In the browser that's `WorkflowRuntimeService` (`core/workflow/workflow-runtime.service.ts`): scope from `ExpressionScopeService`, variables from `VariablesService`, data through `APP_DATA`, fetch through `FLOW_FETCH`, actions from `ACTION_HANDLERS`. On the server it's `memoryHost` (`flow-engine/memory-host.ts`).
+- **Starting flows.** `handleEvent(pageId, elementId, event)` starts every flow whose trigger matches that element and event, with `event` (the widget's name and value) and, for tables and lists, `row` (the selected row). `handlePageLoad(pageId)` starts the page's own variables afresh, starts its timers (stopping other pages'), and runs its page-load flows. A variable's new value runs the open page's flows waiting for it (more than 20 such starts in a second are taken for a loop and stopped).
+- **Sessions.** `FlowRun.isCurrent()` tells a long-running action whether its session is still the current one. `reset(pageId)` (preview stopped) bumps a generation counter so waiting steps never apply, stops the page's timers, and calls every handler's `reset`.
+- **Run log.** Every step goes to `RunLogService` (the editor's Run log tab): the node, what it got (its settings with the expressions worked out), what it gave, the port it went on through, the loop item, how long it took, or why it failed.
 
 The **actions**:
 
-| Action (`actionType`) | Handler | Does |
+| Action (`actionType`) | Runs in | Does |
 |---|---|---|
+| `show_message` | `ShowMessageHandler` | A message over the app (`AppMessagesService`, drawn by `AppMessages` in the exported app and over the preview): info, success, warning or error. The text is a template. |
+| `navigate` | `NavigateHandler` | Opens a page with parameters: its expressions see them as `params.<name>` (`PageParamsService`). |
 | `set_text` | `SetTextHandler` | Shows other text on a label via `APP_LAYOUT.overrideProps`, optionally switching back after N seconds. Changes to one label queue up. |
-| `table` | `TableActionHandler` | Runs a `TABLE_OPERATIONS` entry on a table. |
-| `table` / `add_row` | `AddRowHandler` | Asks for a row in a form modal, then `APP_DATA.addRow`. |
-| `table` / `edit_row` | `EditRowHandler` | Needs exactly one selected row; edits it in the form modal. |
-| `table` / `delete_rows` | `DeleteRowsHandler` | Deletes all selected rows after one confirmation. |
 | `show_detail` | `ShowDetailHandler` | Sends the selected row to a detail section (`DetailRecordsService`), opening the detail's page if it's another one. |
-| `search` | `SearchHandler` | Filters one table, or every table on the page (`tableId: "all"`, a global search), by an input's text: every word must appear in one of the shown columns, ignoring case; empty shows all rows. Rows it hides are deselected. Start it **on type** with the input's "On input" trigger (debounced), or **on a button press** with a button's "On click". |
 | `open_modal` / `close_modal` | `OpenModalHandler` / `CloseModalHandler` | Opens a dialog over the page, or closes it. |
+| `validate_form` | `ValidateFormHandler` | Checks a form's fields like submitting does, without saving; goes on through `valid` or `invalid`. |
 | `submit_form` | `SubmitFormHandler` | Checks and saves a form like its button does; the flow goes on only when it was saved. |
+| `create_row` / `update_row` / `delete_row` | engine (`row.actions.ts`) | Adds a row (column values from templates), changes some columns of a row, deletes a row or a list of rows. A row is given as a row object (`{{ orders.selectedRow }}`, its `_id` counts) or an id. |
+| `table` | `TableActionHandler` | Runs a `TABLE_OPERATIONS` entry on a table: add or edit a row in a form dialog, delete the selected rows. |
+| `search` | `SearchHandler` | Filters one table, or every table on the page (`tableId: "all"`), by an input's text: every word must appear in one of the shown columns, ignoring case. Start it **on type** with the input's "On input" trigger (debounced), or **on a button press**. |
+| `set_variable` | engine (`set-variable.action.ts`) | Gives a variable a new value (a template; `{{ count + 1 }}` keeps its type). A value its type can't take fails the action. |
+| `loop` | engine | See above. |
+| `http_request` | engine (`http-request.action.ts`) | Calls a URL (http/https only; method, headers, a body: text, or a list/object sent as JSON). The answer's content (parsed when it's JSON) goes into a variable, and the nodes after it get `response` (`status`, `ok`, `data`). An answer that isn't OK, or none within 30 s, fails it. |
 
 Lists count as tables for the row actions (`core/rendering/row-widgets.ts`).
 
@@ -648,7 +671,34 @@ Shared runtime state lives in `core/services`:
 - `DetailRecordsService`: which row each detail section shows
 - `WidgetEventsService`: the event bus
 
-### 8.5 Testing the core
+### 8.5 Expressions and variables
+
+**Expressions** are [CEL](https://github.com/google/cel-spec) (the Common Expression Language), evaluated by `@marcbachmann/cel-js`, an interpreter: an expression can only compute a value from the names it's given; no code runs, also not in exported files, and the server runs the same library. On top of CEL (`flow-engine/expressions/`):
+
+- arithmetic between whole and decimal numbers (`amount * 2` with `amount` 2.5) and `"text" + number`, which plain CEL refuses; `1 / 2` stays whole-number division (`1.0 / 2` is 0.5);
+- a **standard library** (`LIBRARY`): text (`text`, `upper`, `lower`, `trim`, `replace`, `split`, `isEmpty`), math (`number`, `round`, `floor`, `ceil`, `abs`, `min`, `max`, `sum`, `avg`), dates (`now`, `today`, `date`, `formatDate`, `addDays`, `daysBetween`; dates as `yyyy-MM-dd` like date fields, local time unless a time zone is given), lists (`first`, `last`, `unique`, `sort`, `sortBy`, `reverse`, `append`, `remove`, `keys`, `values`) and `default`, `json`, `toJson`. CEL's own `size`, `has`, `contains`, `startsWith`, `matches`, `filter`, `map`, `exists`, `all`, `join` work too.
+
+A **template** is text with `{{ expression }}` parts (`Hello {{ customer.name }}`); just one `{{ … }}` gives the expression's own value (a number stays a number).
+
+**What an expression sees** on a page (`ExpressionScopeService.scope`), each read only when it's used, so a bound widget follows exactly what it reads:
+
+| Name | Is |
+|---|---|
+| a widget's name | A field: `.value` (a number field's a number or null, a checkbox's true/false, else text). A form: a value per column of its fields (`orderForm.amount`). A table or list: `.rows`, `.selectedRows`, `.selectedRow` (objects with a field per column and `_id`), `.search`. A label: `.text`; a button: `.label`. Widgets of the layout page count too. |
+| a variable's name | Its value now. |
+| `params` | The parameters the page was opened with (`navigate`). |
+| `data` | Every data source's rows by name (`data.orders`). A column whose cells are all numbers (or true/false) gives numbers (booleans). |
+| in flows | `event`, `row`, `item` and `index` (loops), `response` (after an HTTP request), `error` (after "Failed"). |
+
+A widget's **name** is its `name` prop: letters, digits and `_`, unique on its page. New widgets get their type and a number (`input3`; pasted copies a new one if theirs is taken), and migration V1_0_24 named the existing ones the same way. Variables hide widgets of the same name (the Variables panel says so). `EXPRESSION_SCOPE` contributors add names to every page (phase 6's signed-in user is meant to go there).
+
+**Bound widget settings.** A prop with `{{ … }}` in it shows the value (`BaseWidget`: `rawProps` is the input, `props()` the resolved values, `WidgetBindingsService`); values become text, as props are text (a list: JSON). One that fails shows as written while editing and empty while running. Tables and lists can show a list instead of a data source: their `items` prop (`{{ users }}`, e.g. an HTTP answer; `list-table.ts`).
+
+**The editor's help** (`flow-engine/expressions/analysis.ts`, on a description of the scope, `ExpressionScopeService.entries`): `checkExpression` / `checkTemplate` find syntax errors, unknown names and fields that don't exist (`orderForm has no "amout"`) with their place; `completions` offers names, fields after a dot, functions and methods. `ExpressionInput` (`components/expression-input`) shows both.
+
+**Variables** have a name, a type (text, number, true/false, list, object) and an initial value (JSON; plain text for text). The app's are stored on its branch, a page's on the page (`VariableDefinition`, JSON columns; `GET`/`PUT /api/branches/{id}/variables`, `PUT /api/pages/{id}/variables`); versions, duplicates and exports carry them. While the app runs, `VariablesService` holds their values (signals): a page sees its own and the app's; its own start afresh whenever it's opened; a value is converted to the variable's type, or refused (`coerceToType`). The **Variables** tab edits them, saved once valid, and shows their values while previewing.
+
+### 8.6 Testing the core
 
 `core/testing/fake-app.ts` gives specs a whole app in memory:
 
@@ -730,6 +780,7 @@ If anything fails, the page shows the reason instead of staying blank.
 | `APP_SESSION` | Always live. |
 | `APP_LAYOUT` | Page components from the definition, with prop overrides from workflows applied (a signal, so widgets update). |
 | `WORKFLOW_SOURCE` | `definitionGraph(page.workflow)`, converted once per page and cached. |
+| `APP_VARIABLES` | `definition.variables` and each page's `variables`. |
 
 ### 9.5 Data in the browser
 
@@ -777,13 +828,13 @@ commands/        request bodies (NewPageCommand, UpdateUiComponentCommand, …)
 |---|---|
 | Page content | `GET /api/pages/{id}/full`: the page, its widgets with complete props (type defaults overlaid with their own) and its workflow, in one answer; the editor loads a page with it |
 | Applications | `POST /api/applications` (with its `main` branch), `GET /api/applications`, `GET`/`PATCH`/`DELETE /api/applications/{id}` (delete removes everything in it), `POST /api/applications/{id}/duplicate` |
-| Branches | `POST /api/branches`, `GET /api/branches`, `DELETE /api/branches/{id}`, `POST /api/branches/{id}/changes` (the editor's batches of changes, see **Saving**) |
+| Branches | `POST /api/branches`, `GET /api/branches`, `DELETE /api/branches/{id}`, `POST /api/branches/{id}/changes` (the editor's batches of changes, see **Saving**), `GET`/`PUT /api/branches/{id}/variables` (the app's variables) |
 | Versions | `GET /api/versions?branchId=` (newest first, without content), `POST /api/versions` (save the branch now, `{branchId, label}`), `PATCH /api/versions/{id}` (rename), `POST /api/versions/{id}/restore`, `GET /api/versions/{id}/definition`, `GET /api/versions/{id}/preview` (the exported app as HTML, sandboxed) |
 | Users | `POST /api/users` |
-| Pages | `POST /api/pages`, `GET /api/pages?branchId=`, `GET /api/pages/{id}`, `GET /api/pages/{id}/full`, `GET /api/pages/{id}/ui-components`, `GET /api/pages/{id}/workflow` (created on first access) |
+| Pages | `POST /api/pages`, `GET /api/pages?branchId=`, `GET /api/pages/{id}` (with its `variables`), `GET /api/pages/{id}/full`, `GET /api/pages/{id}/ui-components`, `GET /api/pages/{id}/workflow` (created on first access), `PUT /api/pages/{id}/variables` |
 | Components | `POST /api/ui-components`, `GET`/`PUT`/`DELETE /api/ui-components/{id}` (delete marks it, see soft delete), `POST /api/ui-components/{id}/restore`, `GET /api/ui-components/{id}/props` (with catalog defaults) |
 | Widget props | `GET /api/widget-props`, `GET /api/widget-props/{type}` (from the catalog) |
-| Workflows | `POST`/`GET /api/workflows`, `GET`/`DELETE /api/workflows/{id}`, `POST /api/workflows/{id}/execute` (server-side engine) |
+| Workflows | `POST`/`GET /api/workflows`, `GET`/`DELETE /api/workflows/{id}`, `POST /api/workflows/{id}/run` (on the flow sidecar, section 10.4), `POST /api/workflows/{id}/execute` (legacy engine) |
 | Nodes | `POST`/`GET /api/workflows/{wid}/nodes`, `GET`/`PUT`/`DELETE /api/workflows/{wid}/nodes/{nid}`, `POST …/nodes/{nid}/restore` |
 | Edges | `POST`/`GET /api/workflows/{wid}/edges`, `GET`/`DELETE /api/workflows/{wid}/edges/{eid}`, `POST …/edges/{eid}/restore` |
 | Data sources | `POST /api/data-sources` (import), `GET /api/data-sources?branchId=…`, `GET`/`DELETE /api/data-sources/{id}`, `POST /api/data-sources/{id}/restore` |
@@ -797,16 +848,16 @@ commands/        request bodies (NewPageCommand, UpdateUiComponentCommand, …)
 2. The parser turns the content into a `ParsedTable` (columns and rows), or throws `IllegalArgumentException` (400) for invalid content.
 3. `DataSourceService` stores it as columns, rows and cells.
 
-### 10.4 The server-side flow engine
+### 10.4 Flows on the server: the flow sidecar
 
-Separate from the browser runtime, `workflow/FlowEngine` runs a workflow **on the server** (`POST /api/workflows/{id}/execute`, for `ACTIVE` workflows):
+The server runs flows with **the browser's engine** (section 8.4), in a small Node service next to the backend: the **flow sidecar** (`name-tbd/src/flow-engine/server`, `npm run build:sidecar`, the `flows` container). So a flow does the same in the preview, in an export and on the server, and the conformance fixtures prove it (section 16).
 
-- It walks from the start node along edges, one node at a time.
-- Each node type has a `NodeHandler` bean: `ConditionHandler`, `EmailHandler`, `WebhookHandler`.
-- Node configs are checked by `NodeConfigValidator`.
-- The workflow's status moves `ACTIVE → RUNNING → COMPLETED/FAILED`.
+- **`POST /run`** takes a `RunRequest` (`flow-engine/run-request.ts`: the workflow's nodes and edges, the trigger, the variables, the data, more scope) and answers a `RunResponse`: the run log, the steps, the variables and the data after it. `GET /health` answers `ok`. With `FLOW_SIDECAR_TOKEN` set, requests need `Authorization: Bearer <token>`.
+- **HTTP requests** from flows only go to public addresses (`public-fetch.ts`: the name is resolved first; private, loopback, link-local and metadata addresses are refused) and don't follow redirects. `FLOW_ALLOW_PRIVATE_URLS=true` lifts that for local development.
+- **The backend** (`workflow/sidecar/`): `POST /api/workflows/{id}/run` (`ServerFlowRunner`) sends the workflow's flows that start without a widget, the app's and page's variables, every data source of the branch and the request body (`payload` in expressions, `event` for the flow) to the sidecar (`FlowSidecarClient`, `app.flows.sidecar-url` / `app.flows.sidecar-token`, env `FLOW_SIDECAR_URL` / `FLOW_SIDECAR_TOKEN`), saves the rows the flow changed (`DataSourceService.replaceRows`), and answers the run log, steps and variables. Without a sidecar: 503. Counted like `execute` in the request limits.
+- Scheduled jobs and incoming webhooks are meant to start flows the same way (`ServerFlowRunner.run`); they have no triggers of their own yet.
 
-This engine is for backend automation. Page workflows in the editor and in exports run in the browser (section 8.4).
+The old Java engine (`workflow/FlowEngine`, node types `CONDITION`, `EMAIL`, `WEBHOOK`, `POST /api/workflows/{id}/execute`) is still there for workflows built for it; page workflows don't use it.
 
 ---
 
@@ -898,11 +949,12 @@ Pages carry their widgets' geometry in grid cells only (`x`, `y`, `w`, `h`): tur
     { "id": 1, "name": "people", "columns": ["id", "first_name"], "rows": [["1", "Anna"], ["2", "Lukas"]] }
   ],
   "dataRevision": "80569c033e4af4b1",
-  "theme": { "preset": "Custom", "primary": "#0f8a4f", "font": "Rounded" }   // null: the default preset
+  "theme": { "preset": "Custom", "primary": "#0f8a4f", "font": "Rounded" },  // null: the default preset
+  "variables": [ { "name": "approvalLimit", "type": "number", "initial": "500" } ]
 }
 ```
 
-`theme` (from `ThemeContributor`, the application's theme now) was added without a version bump: older exports have none, and the runtime falls back to the default preset.
+`theme` (from `ThemeContributor`, the application's theme now) was added without a version bump: older exports have none, and the runtime falls back to the default preset. The same goes for `variables` (`VariablesContributor`, the app's) and each page's `variables` (`PagesContributor`): older exports have none.
 
 **Workflows travel in the backend's neutral shape** (nodes with props, edges with node ids and port names). The frontend's port-id format stays a frontend detail: `definitionGraph()` converts them into the graph the workflow runtime runs.
 
@@ -1051,6 +1103,12 @@ The backend needs no change: it reads the catalog.
 4. Add a spec next to the handler (use `provideFakeApp`).
 5. If its config holds the id of a widget or page, list the key in `shared/id-references.json` (`workflowNodeKeys`), so copies (paste, duplicate) point to their own. `_constants/id-references.spec.ts` fails for a config key ending in `Id` that isn't listed.
 
+**Or an action the engine runs itself**, when it only needs expressions, variables, data or `fetch` (so the server runs it too): implement `ActionExecutor` in `flow-engine/actions/`, add it to `BUILTIN_ACTIONS`, and its `ACTION_TYPES` entry. An action with more outputs than `out` lists them in `ports` and returns `{ port }`. Add a conformance fixture for it (section 16). `workflow-actions.spec.ts` fails for an action the editor offers that nothing runs.
+
+### Add an expression function
+
+Add an entry to `LIBRARY` (`flow-engine/expressions/library.ts`): its name, signature and description (the autocomplete shows them) and CEL overloads with their code. Keep it pure: the server runs it too.
+
 ### Add a table operation
 
 Add a handler (like `AddRowHandler`) and an entry `{ id, label, handler }` to `TABLE_OPERATIONS`. The Table action's editor offers it automatically.
@@ -1106,7 +1164,11 @@ Widgets and actions don't change.
 | Runtime boundary | `core/runtime-boundary.spec.ts` |
 | Catalog parity | `core/catalog/widget-catalog.spec.ts` |
 | Widgets on the fake app | `widgets/*/*.spec.ts` |
-| Workflow engine and actions | `core/workflow/**/*.spec.ts` |
+| Workflow engine and actions | `flow-engine/engine.spec.ts` (branches, conditions, loops, errors, the run log, row and HTTP actions), `core/workflow/**/*.spec.ts` (handlers, triggers: timers, variable changes) |
+| Expressions | `flow-engine/expressions/*.spec.ts` (evaluation, the library, templates, errors with their place; the editor's checks and completions), `core/expressions/widget-bindings.spec.ts` (the scope, bound widgets) |
+| Flow conformance | The fixtures in `flow-engine/conformance/fixtures/*.json` (a flow, what it starts with, the steps, variables and rows it must end with) run on both hosts: the browser's (`core/workflow/browser-conformance.spec.ts`) and the server's (`flow-engine/conformance/server-conformance.spec.ts`; `npm run test:sidecar` sends them to the sidecar over HTTP) |
+| Engine boundary | `flow-engine/flow-engine-boundary.spec.ts` |
+| Logic in the exported app | `runtime/app/runtime-shell/runtime-logic.spec.ts`: the approval form (condition, variable, confirmation), bound labels, an API's answer in a table, a loop and a page opened with parameters |
 | Exported app end to end | `runtime/app/runtime-shell/runtime-shell.spec.ts` (boots the shell with a test app; checks layout, workflows, routing, tall pages, the theme, persisted data), `runtime-forms.spec.ts` (forms that validate, add and edit rows; dialogs; tabs) |
 | Every widget, exported and accessible | `runtime/app/widget-catalog.export.spec.ts`: each palette widget exported in a definition, drawn by the runtime shell, and checked with **axe-core** (WCAG 2.1 A/AA; contrast can't be measured in jsdom) |
 | Runtime routing and storage | `runtime/app/runtime-routes.spec.ts`, `app-storage.spec.ts` |
@@ -1121,7 +1183,7 @@ Widgets and actions don't change.
 | Services, controllers, mappers, repositories | `service/`, `controller/`, `mapper/`, `persistence/` |
 | Catalog | `catalog/WidgetCatalogTest`, `export/WidgetCatalogExportTest` (every widget type exported with all its settings; the theme in the definition) |
 | Export | `export/AppExportIntegrationTest` (real database content → definition → HTML download), `export/format/*` (inlining and escaping, formats registry, runtime lookup), `export/definition/AppDefinitionTest` |
-| Server-side engine | `workflow/*` |
+| Server-side engine | `workflow/*`; `service/VariablesAndServerFlowsTest` (variables saved, checked, exported and kept by versions; a run on the sidecar, its row changes saved) |
 
 **Export tests use a stand-in runtime** (`src/test/resources/export-runtime-test/`) and set `ntbd.export.runtime-locations` per test. They never need the frontend build, and the stand-in never leaks into a running backend.
 
@@ -1159,7 +1221,10 @@ The whole folder is regenerated each time. Commit it together with the backend c
 
 **Today:**
 - The editor always works on an application's default branch; there's no way to switch branches in the editor yet.
-- Condition nodes are stored and editable but not executed by the browser runtime.
+- Page parameters (`navigate`) live in memory: they aren't part of the page's address, so a reload or a shared link opens the page without them.
+- Timers run in the browser while a page is open. The server runs flows on request (`POST /api/workflows/{id}/run`); scheduled jobs and webhooks don't start them yet.
+- Expressions don't know the signed-in user yet (phase 6 adds it through `EXPRESSION_SCOPE`).
+- The expression engine adds about 115 kB (35 kB gzipped) to the exported app; its warning budget is 650 kB (`angular.json`).
 - There is no home-page setting: the export starts on the page at `/`, or else the first page.
 - Exported data lives in the export and in each visitor's browser. There's no shared live data yet.
 - Pages are designed for one desktop window width. They adapt to windows down to half its width; on smaller screens (phones) they scroll sideways. Real mobile layouts would need per-breakpoint geometry.

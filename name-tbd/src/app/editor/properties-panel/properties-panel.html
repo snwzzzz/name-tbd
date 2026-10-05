@@ -25,6 +25,7 @@
               <span class="item-id">#{{ section.id }}</span>
             </div>
           }
+          <app-widget-name-field [item]="section.item" [pageId]="pageId()" />
           @if (section.hasDynamicSettings) {
             <!-- Generated from the widget catalog's prop definitions -->
             <app-dynamic-settings [type]="section.item.type ?? ''" [props]="section.item.props" [itemId]="section.id" />

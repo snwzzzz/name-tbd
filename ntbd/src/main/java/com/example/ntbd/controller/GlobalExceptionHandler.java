@@ -52,6 +52,13 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getMessage(), HttpStatus.SERVICE_UNAVAILABLE.value()));
     }
 
+    @ExceptionHandler(com.example.ntbd.workflow.sidecar.FlowSidecarUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleFlowSidecarUnavailable(com.example.ntbd.workflow.sidecar.FlowSidecarUnavailableException ex) {
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ErrorResponse(ex.getMessage(), HttpStatus.SERVICE_UNAVAILABLE.value()));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity

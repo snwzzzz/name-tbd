@@ -24,6 +24,7 @@ public class PageController {
     private final com.example.ntbd.service.WorkflowService workflowService;
     private final com.example.ntbd.service.PageContentService pageContentService;
     private final WorkspaceAccess access;
+    private final com.example.ntbd.service.VariableService variableService;
 
     @PostMapping
     public ResponseEntity<PageDto> createPage(@RequestBody NewPageCommand command) {
@@ -55,6 +56,14 @@ public class PageController {
     public ResponseEntity<com.example.ntbd.dto.PageContentDto> getPageContent(@PathVariable Long id) {
         access.requirePage(id, VIEWER);
         return ResponseEntity.ok(pageContentService.load(id));
+    }
+
+    /** Replaces the page's own variables. */
+    @PutMapping(value = "/{id}/variables", produces = "application/json")
+    public ResponseEntity<List<com.example.ntbd.domain.VariableDefinition>> setPageVariables(
+            @PathVariable Long id, @RequestBody List<com.example.ntbd.domain.VariableDefinition> variables) {
+        access.requirePage(id, EDITOR);
+        return ResponseEntity.ok(variableService.setPageVariables(id, variables));
     }
 
     /** The workflow holding this page's UI logic; created on first access. */

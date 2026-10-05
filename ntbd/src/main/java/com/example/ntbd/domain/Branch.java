@@ -1,6 +1,7 @@
 package com.example.ntbd.domain;
 
 import com.example.ntbd.persistence.converter.VersionConverter;
+import com.example.ntbd.persistence.converter.VariablesConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -36,6 +37,12 @@ public class Branch extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "application_id", nullable = false)
     private Application application;
+
+    /** The app's variables (a page sees them next to its own). */
+    @Convert(converter = VariablesConverter.class)
+    @Column(name = "variables")
+    @Builder.Default
+    private List<VariableDefinition> variables = List.of();
 
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "branch")
     @Builder.Default

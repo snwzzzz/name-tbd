@@ -20,10 +20,13 @@ import { WorkflowNode } from './workflow-node/workflow-node';
 import { FlowNode, NewFlowNode, WorkflowContextMenu } from '../../_types/workflow.types';
 import { Point, Rect } from '../../_types/viewport.types';
 import {
-  ACTION_TYPES, WORKFLOW_FIT_PADDING, WORKFLOW_KEEP_VISIBLE, WORKFLOW_MAX_ZOOM, WORKFLOW_MIN_ZOOM,
+  ACTION_TYPES, FLOW_LOCALS, WORKFLOW_FIT_PADDING, actionPorts, WORKFLOW_KEEP_VISIBLE, WORKFLOW_MAX_ZOOM, WORKFLOW_MIN_ZOOM,
   WORKFLOW_NODE_HEIGHT, WORKFLOW_NODE_WIDTH, WORKFLOW_WORLD,
 } from '../../_constants/workflow.constants';
 import { splitPortId } from '../../_utils/port.utils';
+import { ExpressionScopeService } from '../../core/expressions/expression-scope.service';
+import { VariablesService } from '../../core/variables/variables.service';
+import { ScopeEntry } from '../../../flow-engine';
 import { flattenTree } from '../../_utils/layout-tree.utils';
 import { HistoryService } from '../../editor/commands/history.service';
 import { recordGraphChange } from '../../editor/commands/workflow-commands';
@@ -45,6 +48,8 @@ export class WorkflowEditor {
   private readonly history = inject(HistoryService);
   private readonly layoutState = inject(LayoutStateService);
   private readonly pages = inject(PagesStateService);
+  private readonly scopes = inject(ExpressionScopeService);
+  private readonly variablesService = inject(VariablesService);
   private readonly flowEl = viewChild.required<string, ElementRef<HTMLElement>>('flowEl', { read: ElementRef });
   private readonly controls = viewChild.required(ViewportControls);
 
@@ -67,6 +72,11 @@ export class WorkflowEditor {
     const layoutId = this.layoutPageId();
     return layoutId ? [...this.pageItems(), ...flattenTree(this.layoutState.getLayout(layoutId))] : this.pageItems();
   });
+
+  /** What the nodes' expressions can use: the page's names, then the flow's own values. */
+  readonly scope = computed<ScopeEntry[]>(() => [...this.scopes.entries(this.tabId()), ...FLOW_LOCALS]);
+  /** The variables the page sees (the "variable changes" trigger). */
+  readonly variables = computed(() => this.variablesService.visible(this.tabId()));
 
   // ─── Viewport (screen = pan + world × zoom) ──────────────────────────────
   readonly zoom = signal(1);
@@ -165,6 +175,11 @@ export class WorkflowEditor {
 
   closeContextMenu(): void {
     this.contextMenu.set(null);
+  }
+
+  /** An action node's outputs, for "Add action" (most have just one). */
+  portsOf(node: FlowNode) {
+    return node.type === 'Action' ? actionPorts(node.actionType) : [];
   }
 
   /** New action wired to one of the node's outputs. */
@@ -304,7 +319,7 @@ function newNode(type: FlowNode['type'], position: Point): NewFlowNode {
     case 'Trigger':
       return { type, position, triggerType: 'page_load' };
     case 'Condition':
-      return { type, position, condition: { field: '', operator: 'equals', value: '' } };
+      return { type, position, expression: '' };
     case 'Action': {
       const action = ACTION_TYPES[0];
       return { type, position, actionType: action.id, config: { ...action.defaultConfig } };

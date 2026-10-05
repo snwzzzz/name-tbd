@@ -1,4 +1,4 @@
-@if (source.id() === null) {
+@if (source.id() === null && !source.table()) {
   @if (!session.live()) {
     <div class="message">Pick a data source in the properties panel.</div>
   }

@@ -7,7 +7,7 @@
     <div class="table-title">{{ title }}</div>
   }
 
-  @if (dataSourceId() === null) {
+  @if (dataSourceId() === null && !fromItems()) {
     <!-- A hint for the editor; the running app shows an empty table -->
     @if (!previewing()) {
       <div class="table-message">Pick a data source in the properties panel.</div>

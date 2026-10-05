@@ -52,7 +52,9 @@ public class BranchContentWriter {
         IdMap ids = new IdMap();
         content.dataSources().forEach(source -> writeDataSource(source, branch, ids));
         content.pages().forEach(page -> ids.pages.put(page.id(), pageRepository.save(Page.builder()
-                .name(page.name()).path(page.path()).layout(page.layout()).branch(branch).build()).getId().id()));
+                .name(page.name()).path(page.path()).layout(page.layout()).branch(branch)
+                .variables(page.variables()).build()).getId().id()));
+        branch.setVariables(content.variables());
         content.workflows().forEach(workflow -> ids.workflows.put(workflow.id(), workflowRepository.save(Workflow.builder()
                 .name(workflow.name()).status(workflow.status()).branch(branch)
                 .page(pageRef(ids.pages.get(workflow.pageId())))

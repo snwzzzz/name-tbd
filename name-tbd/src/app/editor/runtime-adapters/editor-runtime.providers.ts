@@ -1,7 +1,7 @@
 import { EnvironmentProviders, Injectable, computed, inject, makeEnvironmentProviders } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
-  APP_DATA, APP_LAYOUT, APP_NAVIGATION, APP_PAGES, APP_SESSION, AppData, AppLayout, AppNavigation, AppPages,
+  APP_DATA, APP_LAYOUT, APP_NAVIGATION, APP_PAGES, APP_SESSION, APP_VARIABLES, AppData, AppLayout, AppNavigation, AppPages,
   AppSession, DataSourceInfo, PageInfo, WORKFLOW_SOURCE, WorkflowSource,
 } from '../../core/ports/app-ports';
 import { DataSourceStateService } from '../../_services/data-source-state.service';
@@ -12,6 +12,7 @@ import { PageNavigationService } from '../../_services/page-navigation.service';
 import { TabsService } from '../../_services/tabs.service';
 import { LayoutStateService } from '../../_services/layout-state.service';
 import { WorkflowStateService } from '../../_services/workflow-state.service';
+import { VariablesStateService } from '../../_services/variables-state.service';
 import { TableData } from '../../_types/data-source.types';
 import { toTableData } from '../../_utils/table.utils';
 
@@ -130,5 +131,10 @@ export function provideEditorRuntime(): EnvironmentProviders {
     { provide: APP_SESSION, useExisting: EditorAppSession },
     { provide: APP_LAYOUT, useExisting: EditorAppLayout },
     { provide: WORKFLOW_SOURCE, useExisting: EditorWorkflowSource },
+    { provide: APP_VARIABLES, useFactory: () => {
+      const variables = inject(VariablesStateService);
+      variables.ensureLoaded();
+      return variables;
+    } },
   ]);
 }

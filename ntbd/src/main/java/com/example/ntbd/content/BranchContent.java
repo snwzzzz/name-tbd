@@ -1,5 +1,6 @@
 package com.example.ntbd.content;
 
+import com.example.ntbd.domain.VariableDefinition;
 import com.example.ntbd.domain.WorkflowStatus;
 
 import java.util.List;
@@ -15,18 +16,40 @@ import java.util.Map;
  * reads the same. Ids are the branch's own; they only relate the parts to each other.
  *
  * @param format the shape of this record, stored with snapshots; bumped on changes that need a migration
+ * @param variables the app's variables (snapshots from before variables have none)
  */
 public record BranchContent(int format, List<PageContent> pages, List<WorkflowContent> workflows,
-                            List<DataSourceContent> dataSources) {
+                            List<DataSourceContent> dataSources, List<VariableDefinition> variables) {
 
     public static final int FORMAT = 1;
 
-    public BranchContent(List<PageContent> pages, List<WorkflowContent> workflows, List<DataSourceContent> dataSources) {
-        this(FORMAT, pages, workflows, dataSources);
+    public BranchContent {
+        variables = variables == null ? List.of() : variables;
     }
 
-    /** A page and its widgets (a flat list; a widget's parent is on the same page). */
-    public record PageContent(Long id, String name, String path, boolean layout, List<WidgetContent> widgets) {
+    public BranchContent(int format, List<PageContent> pages, List<WorkflowContent> workflows, List<DataSourceContent> dataSources) {
+        this(format, pages, workflows, dataSources, List.of());
+    }
+
+    public BranchContent(List<PageContent> pages, List<WorkflowContent> workflows, List<DataSourceContent> dataSources,
+                         List<VariableDefinition> variables) {
+        this(FORMAT, pages, workflows, dataSources, variables);
+    }
+
+    public BranchContent(List<PageContent> pages, List<WorkflowContent> workflows, List<DataSourceContent> dataSources) {
+        this(FORMAT, pages, workflows, dataSources, List.of());
+    }
+
+    /** A page, its widgets (a flat list; a widget's parent is on the same page) and its own variables. */
+    public record PageContent(Long id, String name, String path, boolean layout, List<WidgetContent> widgets,
+                              List<VariableDefinition> variables) {
+        public PageContent {
+            variables = variables == null ? List.of() : variables;
+        }
+
+        public PageContent(Long id, String name, String path, boolean layout, List<WidgetContent> widgets) {
+            this(id, name, path, layout, widgets, List.of());
+        }
     }
 
     /** A widget; {@code props} are its stored values (strings, as the properties table keeps them). */

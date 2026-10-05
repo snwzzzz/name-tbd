@@ -8,6 +8,7 @@ import { TabsService } from '../../_services/tabs.service';
 import { WidgetRegistryService } from '../../_services/widget-registry.service';
 import { widgetDefinition } from '../../_constants/widget-registry.constants';
 import { DynamicSettings } from '../dynamic-settings/dynamic-settings';
+import { WidgetNameField } from './widget-name-field';
 import { findInTree } from '../../_utils/layout-tree.utils';
 
 /**
@@ -17,7 +18,7 @@ import { findInTree } from '../../_utils/layout-tree.utils';
 @Component({
   selector: 'app-properties-panel',
   imports: [
-    NgComponentOutlet, DynamicSettings,
+    NgComponentOutlet, DynamicSettings, WidgetNameField,
     LucideMousePointerClick, SaveIndicator,
   ],
   templateUrl: './properties-panel.html',
@@ -46,6 +47,7 @@ export class PropertiesPanel {
     });
   });
 
-  /** Whether edits are waiting, being saved, saved, or failed to save. */
+  /** The page open in the editor. */
+  readonly pageId = computed(() => this.tabs.activeTabId() ?? '');
 
 }

@@ -1,5 +1,5 @@
 import { Injectable, Injector, inject } from '@angular/core';
-import { ActionHandler, ActionOutcome, ActionRun, TableActionConfig } from '../../../../_types/workflow.types';
+import { ActionHandler, ActionOutcome, ActionResult, ActionRun, TableActionConfig } from '../../../../_types/workflow.types';
 import { TABLE_OPERATIONS } from './table-operations';
 
 /** `table`: runs the operation chosen in the node (see TABLE_OPERATIONS) on its table. */
@@ -7,7 +7,7 @@ import { TABLE_OPERATIONS } from './table-operations';
 export class TableActionHandler implements ActionHandler {
   private readonly injector = inject(Injector);
 
-  run(run: ActionRun): Promise<ActionOutcome> {
+  run(run: ActionRun): Promise<ActionOutcome | ActionResult | void> {
     const { operation } = run.node.config as TableActionConfig;
     const op = TABLE_OPERATIONS.find((o) => o.id === operation);
     if (!op) {

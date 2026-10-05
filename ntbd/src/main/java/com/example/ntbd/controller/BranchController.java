@@ -23,6 +23,7 @@ public class BranchController {
     private final com.example.ntbd.service.ChangeBatchService changeBatchService;
     private final WorkspaceAccess access;
     private final com.example.ntbd.service.VersionControlService versionControlService;
+    private final com.example.ntbd.service.VariableService variableService;
 
     @PostMapping
     public ResponseEntity<BranchDto> createBranch(@RequestBody NewBranchCommand command) {
@@ -52,6 +53,21 @@ public class BranchController {
             org.slf4j.LoggerFactory.getLogger(BranchController.class).warn("Automatic version of branch {} failed", id, e);
         }
         return ResponseEntity.ok(result);
+    }
+
+    /** The app's variables (each page has its own too, see PageDto). */
+    @GetMapping(value = "/{id}/variables", produces = "application/json")
+    public ResponseEntity<List<com.example.ntbd.domain.VariableDefinition>> getAppVariables(@PathVariable Long id) {
+        access.requireBranch(id, VIEWER);
+        return ResponseEntity.ok(variableService.appVariables(id));
+    }
+
+    /** Replaces the app's variables. */
+    @PutMapping(value = "/{id}/variables", produces = "application/json")
+    public ResponseEntity<List<com.example.ntbd.domain.VariableDefinition>> setAppVariables(
+            @PathVariable Long id, @RequestBody List<com.example.ntbd.domain.VariableDefinition> variables) {
+        access.requireBranch(id, EDITOR);
+        return ResponseEntity.ok(variableService.setAppVariables(id, variables));
     }
 
     @DeleteMapping("/{id}")

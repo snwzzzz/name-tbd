@@ -16,6 +16,7 @@ import { ToastService } from '../../_services/toast.service';
 import { PROPERTIES_TAB_ID } from '../../_constants/sidebar.constants';
 import { TabsService } from '../../_services/tabs.service';
 import { WorkflowRuntimeService } from '../../core/workflow/workflow-runtime.service';
+import { AppMessages } from '../../core/rendering/app-messages/app-messages';
 import { PreviewSessionService } from '../../_services/preview-session.service';
 import { WidgetEventsService } from '../../core/services/widget-events.service';
 import { LayoutOverlay } from './layout-overlay/layout-overlay';
@@ -70,7 +71,7 @@ const BUTTON_ZOOM_STEP = 1.25;
  */
 @Component({
   selector: 'app-canvas',
-  imports: [ViewportControls, ZoomControls, ZoomButton, ContextMenu, ContextMenuItem, ContextMenuDivider, LayoutOverlay, AlignToolbar],
+  imports: [ViewportControls, ZoomControls, ZoomButton, ContextMenu, ContextMenuItem, ContextMenuDivider, LayoutOverlay, AlignToolbar, AppMessages],
   templateUrl: './canvas.html',
   styleUrl: './canvas.scss',
 })
@@ -574,7 +575,10 @@ export class Canvas implements AfterViewInit {
     this.syncLayout();
     // Dropped widgets start with their type's defaults (the live widget too); the drop can be undone
     if (tabId && created.length > 0) {
-      created.forEach(({ id, type }) => this.layoutState.applyTypeDefaults(tabId, id, type));
+      created.forEach(({ id, type }) => {
+        this.layoutState.applyTypeDefaults(tabId, id, type);
+        this.layoutState.nameNewWidget(tabId, id, type);
+      });
       const layout = this.layoutState.getLayout(tabId);
       const items = created.map(({ id }) => findInTree(layout, id)).filter((item): item is LayoutItem => !!item);
       this.history.record(new AddWidgets(tabId, items.map((item) => structuredClone(item))));

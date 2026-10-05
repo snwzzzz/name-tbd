@@ -74,6 +74,26 @@ public class DataSourceService {
         return DataSourceMapper.toDto(getDataSource(id));
     }
 
+    /** Replaces a data source's rows (e.g. after a flow ran on the server), keeping its columns. */
+    @Transactional
+    public void replaceRows(Long id, List<List<String>> rows) {
+        DataSource dataSource = getDataSource(id);
+        if (rows.size() > MAX_ROWS) {
+            throw new IllegalArgumentException("Data source would have " + rows.size() + " rows; at most " + MAX_ROWS + " are supported");
+        }
+        List<DataSourceColumn> columns = dataSource.getColumns().stream()
+                .sorted(java.util.Comparator.comparingInt(DataSourceColumn::getColumnIndex))
+                .toList();
+        dataSource.getRows().clear();
+        // The old rows go first, so new ones can take their indexes
+        dataSourceRepository.saveAndFlush(dataSource);
+        for (int i = 0; i < rows.size(); i++) {
+            List<String> values = rows.get(i).subList(0, Math.min(rows.get(i).size(), columns.size()));
+            dataSource.getRows().add(toRow(dataSource, i, values, columns));
+        }
+        dataSourceRepository.save(dataSource);
+    }
+
     private DataSource getDataSource(Long id) {
         return dataSourceRepository.findById(new DataSource.DataSourceId(id))
                 .orElseThrow(() -> new DataSourceNotFoundException(id));
@@ -82,6 +102,7 @@ public class DataSourceService {
     private static DataSourceRow toRow(DataSource dataSource, int rowIndex, List<String> values, List<DataSourceColumn> columns) {
         DataSourceRow row = DataSourceRow.builder().dataSource(dataSource).rowIndex(rowIndex).build();
         for (int i = 0; i < values.size(); i++) {
+            if (values.get(i) == null) continue;
             row.getCells().add(DataSourceCell.builder().row(row).column(columns.get(i)).value(values.get(i)).build());
         }
         return row;

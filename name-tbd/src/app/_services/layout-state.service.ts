@@ -11,6 +11,8 @@ import { catalogDefaults, catalogWidget } from '../core/catalog/widget-catalog';
 import { WorkflowStateService } from './workflow-state.service';
 import { SaveQueue } from './save-queue.service';
 import { IdRegistry } from './id-registry.service';
+import { propText } from '../_utils/widget-props.utils';
+import { widgetName } from '../core/expressions/expression-scope.service';
 
 /**
  * The widgets of each page (by page id = editor tab id). Changes apply here right away and go to
@@ -112,6 +114,19 @@ export class LayoutStateService {
    * copies. Each goes into its parent's children, or onto the page.
    */
   addWidgets(pageId: string, items: LayoutItem[]): void {
+    // Copies whose name is taken on the page get a new one (expressions name widgets)
+    const taken = new Set(flattenTree(this.getLayout(pageId)).map(widgetName));
+    const rename = (item: LayoutItem): LayoutItem => {
+      const named = { ...item, children: item.children?.map(rename) };
+      if (!taken.has(widgetName(item))) {
+        taken.add(widgetName(item));
+        return named;
+      }
+      const name = uniqueWidgetName(item.type, taken);
+      taken.add(name);
+      return { ...named, props: { ...item.props, name } };
+    };
+    items = items.map(rename);
     this.insert(pageId, items);
     for (const item of flattenTree(items)) this.createWidget(pageId, item);
   }
@@ -171,6 +186,15 @@ export class LayoutStateService {
    * Complete a new widget's props with its type's defaults (as loading a page does for stored ones),
    * without saving anything. Values already there win.
    */
+  /** Gives a widget just placed a name no other widget on the page has (its type and a number, e.g. `input3`). */
+  nameNewWidget(pageId: string, id: ComponentId, type: string | undefined): void {
+    const layout = this.getLayout(pageId);
+    const item = findInTree(layout, id);
+    if (!item || propText(item.props, 'name')) return;
+    const taken = new Set(flattenTree(layout).filter((other) => other !== item).map(widgetName));
+    this.patchItemProps(pageId, id, { ...item.props, name: uniqueWidgetName(type, taken) });
+  }
+
   applyTypeDefaults(pageId: string, id: ComponentId, type: string | undefined): void {
     const widget = catalogWidget(type);
     if (!widget) return;
@@ -228,4 +252,12 @@ function parent(parentId: ComponentId | undefined): Pick<ChangeOperation, 'paren
 
 function parentForCreate(parentId: ComponentId | undefined): Pick<ChangeOperation, 'parentId' | 'parentRef'> {
   return parentId == null ? {} : parent(parentId);
+}
+
+/** `type` and the smallest number that makes a name not taken yet. */
+export function uniqueWidgetName(type: string | undefined, taken: Set<string>): string {
+  const base = (type ?? 'widget').replace(/[^A-Za-z0-9_]/g, '') || 'widget';
+  let n = 1;
+  while (taken.has(`${base}${n}`)) n++;
+  return `${base}${n}`;
 }

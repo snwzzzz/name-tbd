@@ -62,19 +62,7 @@ export class FormsService {
     const form = findInTree(this.layout.items(pageId), formId);
     if (!form || form.type !== 'form') return false;
     const fields = this.fields(form);
-
-    let firstInvalid: string | null = null;
-    for (const field of fields) {
-      const id = String(field.id);
-      const error = validateField(fieldKind(field.type)!, field.props ?? {}, this.valueOf(field));
-      this.errors.set(id, error);
-      if (error && !firstInvalid) firstInvalid = id;
-    }
-    if (firstInvalid) {
-      this.say(formId, { text: 'Please check the highlighted fields.', kind: 'error' });
-      focusField(firstInvalid);
-      return false;
-    }
+    if (!this.validate(pageId, formId)) return false;
 
     const dataSourceId = propNumber(form.props, 'dataSourceId', NaN);
     if (!Number.isInteger(dataSourceId)) {
@@ -103,6 +91,29 @@ export class FormsService {
     }
     this.say(formId, { text: propText(form.props, 'successMessage') ?? 'Saved.', kind: 'success' });
     this.widgetEvents.fire({ pageId, elementId: formId, event: SUBMIT_EVENT });
+    return true;
+  }
+
+  /**
+   * Checks every field of the form, showing what's wrong under each (and a message on the form).
+   * Returns whether all are fine; false also for a form that isn't there.
+   */
+  validate(pageId: string, formId: string): boolean {
+    const form = findInTree(this.layout.items(pageId), formId);
+    if (!form || form.type !== 'form') return false;
+    let firstInvalid: string | null = null;
+    for (const field of this.fields(form)) {
+      const id = String(field.id);
+      const error = validateField(fieldKind(field.type)!, field.props ?? {}, this.valueOf(field));
+      this.errors.set(id, error);
+      if (error && !firstInvalid) firstInvalid = id;
+    }
+    if (firstInvalid) {
+      this.say(formId, { text: 'Please check the highlighted fields.', kind: 'error' });
+      focusField(firstInvalid);
+      return false;
+    }
+    if (this.message(formId)?.kind === 'error') this.say(formId, null);
     return true;
   }
 

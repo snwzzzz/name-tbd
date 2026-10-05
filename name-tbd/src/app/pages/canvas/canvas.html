@@ -75,3 +75,8 @@
     }
   </app-context-menu>
 }
+
+@if (previewMode()) {
+  <!-- The previewed app's messages (Show message) -->
+  <app-app-messages />
+}

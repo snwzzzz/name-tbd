@@ -47,6 +47,12 @@ export interface UiComponentDto {
     h?: number;
 }
 
+export interface VariableDefinition {
+    name?: string;
+    type?: string;
+    initial?: string;
+}
+
 export interface NewWorkflowCommand {
     branchId?: number;
     name?: string;
@@ -125,6 +131,7 @@ export interface PageDto {
     path?: string;
     branchId?: number;
     layout?: boolean;
+    variables?: Array<VariableDefinition>;
 }
 
 export interface NewDataSourceCommand {

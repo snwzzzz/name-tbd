@@ -1,9 +1,10 @@
 import { Provider, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
-  APP_DATA, APP_LAYOUT, APP_NAVIGATION, APP_PAGES, APP_SESSION, AppLayout, AppNavigation, AppPages, AppSession,
-  PageInfo, WORKFLOW_SOURCE, WorkflowSource,
+  APP_DATA, APP_LAYOUT, APP_NAVIGATION, APP_PAGES, APP_SESSION, APP_VARIABLES, AppLayout, AppNavigation, AppPages, AppSession,
+  AppVariables, PageInfo, WORKFLOW_SOURCE, WorkflowSource,
 } from '../ports/app-ports';
+import { VariableDefinition } from '../../../flow-engine';
 import { DataSourceSnapshot, MemoryAppData } from '../ports/memory-app-data';
 import { LayoutItem, WidgetProps } from '../../_types/layout.types';
 import { WorkflowGraph } from '../../_types/workflow.types';
@@ -68,11 +69,22 @@ export class FakeWorkflowSource implements WorkflowSource {
   }
 }
 
+export class FakeAppVariables implements AppVariables {
+  readonly app = signal<VariableDefinition[]>([]);
+  readonly pages = signal<Record<string, VariableDefinition[]>>({});
+
+  page(pageId: string): VariableDefinition[] {
+    return this.pages()[pageId] ?? [];
+  }
+}
+
 export interface FakeAppOptions {
   data?: DataSourceSnapshot[];
   pages?: PageInfo[];
   layouts?: Record<string, LayoutItem[]>;
   graphs?: Record<string, WorkflowGraph>;
+  /** The app's variables, and each page's (by page id). */
+  variables?: { app?: VariableDefinition[]; pages?: Record<string, VariableDefinition[]> };
 }
 
 /** Providers for every port, backed by the given app. */
@@ -83,6 +95,9 @@ export function provideFakeApp(options: FakeAppOptions = {}): Provider[] {
   Object.assign(layout.layouts, options.layouts);
   const workflows = new FakeWorkflowSource();
   Object.assign(workflows.graphs, options.graphs);
+  const variables = new FakeAppVariables();
+  variables.app.set(options.variables?.app ?? []);
+  variables.pages.set(options.variables?.pages ?? {});
 
   return [
     { provide: APP_DATA, useValue: new MemoryAppData(options.data ?? []) },
@@ -91,6 +106,7 @@ export function provideFakeApp(options: FakeAppOptions = {}): Provider[] {
     { provide: APP_SESSION, useValue: new FakeAppSession() },
     { provide: APP_LAYOUT, useValue: layout },
     { provide: WORKFLOW_SOURCE, useValue: workflows },
+    { provide: APP_VARIABLES, useValue: variables },
   ];
 }
 
@@ -103,5 +119,6 @@ export function fakeApp() {
     session: TestBed.inject(APP_SESSION) as FakeAppSession,
     layout: TestBed.inject(APP_LAYOUT) as FakeAppLayout,
     workflows: TestBed.inject(WORKFLOW_SOURCE) as FakeWorkflowSource,
+    variables: TestBed.inject(APP_VARIABLES) as FakeAppVariables,
   };
 }

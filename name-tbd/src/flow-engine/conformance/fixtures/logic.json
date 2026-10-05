@@ -1,0 +1,99 @@
+[
+  {
+    "name": "loop: sums the open orders' amounts, item by item, then goes on",
+    "request": {
+      "triggerNodeId": 1,
+      "variables": { "app": [{ "name": "total", "type": "number" }, { "name": "seen", "type": "list" }] },
+      "data": [{ "id": 5, "name": "orders", "columns": ["customer", "amount", "open"], "rows": [
+        ["Ada", "750", "true"], ["Bob", "20", "false"], ["Cy", "12.5", "true"]
+      ] }],
+      "workflow": {
+        "nodes": [
+          { "id": 1, "type": "Trigger", "props": { "triggerType": "page_load" } },
+          { "id": 2, "type": "Action", "props": { "actionType": "loop", "config": { "items": "data.orders.filter(o, o.open)", "as": "order" } } },
+          { "id": 3, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "total", "value": "{{ total + order.amount }}" } } },
+          { "id": 4, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "seen", "value": "{{ append(seen, string(index) + ':' + order.customer) }}" } } },
+          { "id": 5, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "total", "value": "{{ round(total, 1) }}" } } }
+        ],
+        "edges": [
+          { "id": 1, "sourceNodeId": 1, "sourcePort": "out", "targetNodeId": 2 },
+          { "id": 2, "sourceNodeId": 2, "sourcePort": "each", "targetNodeId": 3 },
+          { "id": 3, "sourceNodeId": 3, "sourcePort": "out", "targetNodeId": 4 },
+          { "id": 4, "sourceNodeId": 2, "sourcePort": "out", "targetNodeId": 5 }
+        ]
+      }
+    },
+    "expect": {
+      "steps": ["1:out", "2:each", "3:out", "4:out", "3:out", "4:out", "2:out", "5:out"],
+      "variables": { "total": 762.5, "seen": ["0:Ada", "1:Cy"] }
+    }
+  },
+  {
+    "name": "condition: one stored as field, operator and value still decides",
+    "request": {
+      "triggerNodeId": 1,
+      "variables": { "app": [{ "name": "count", "type": "number", "initial": "3" }, { "name": "result", "type": "text" }] },
+      "workflow": {
+        "nodes": [
+          { "id": 1, "type": "Trigger", "props": { "triggerType": "page_load" } },
+          { "id": 2, "type": "Condition", "props": { "condition": { "field": "count", "operator": "lessThan", "value": "5" } } },
+          { "id": 3, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "result", "value": "small" } } },
+          { "id": 4, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "result", "value": "big" } } }
+        ],
+        "edges": [
+          { "id": 1, "sourceNodeId": 1, "sourcePort": "out", "targetNodeId": 2 },
+          { "id": 2, "sourceNodeId": 2, "sourcePort": "true", "targetNodeId": 3 },
+          { "id": 3, "sourceNodeId": 2, "sourcePort": "false", "targetNodeId": 4 }
+        ]
+      }
+    },
+    "expect": { "steps": ["1:out", "2:true", "3:out"], "variables": { "result": "small" } }
+  },
+  {
+    "name": "errors: a bad condition and a value the variable's type can't take each stop their branch (top one first)",
+    "request": {
+      "triggerNodeId": 1,
+      "variables": { "app": [{ "name": "n", "type": "number" }, { "name": "after", "type": "boolean" }] },
+      "workflow": {
+        "nodes": [
+          { "id": 1, "type": "Trigger", "props": { "triggerType": "page_load" } },
+          { "id": 2, "type": "Action", "y": 100, "props": { "actionType": "set_variable", "config": { "variable": "n", "value": "not a number" } } },
+          { "id": 3, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "after", "value": "{{ true }}" } } },
+          { "id": 4, "type": "Condition", "props": { "expression": "missing > 1" } },
+          { "id": 5, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "after", "value": "{{ true }}" } } }
+        ],
+        "edges": [
+          { "id": 1, "sourceNodeId": 1, "sourcePort": "out", "targetNodeId": 2 },
+          { "id": 2, "sourceNodeId": 2, "sourcePort": "out", "targetNodeId": 3 },
+          { "id": 3, "sourceNodeId": 1, "sourcePort": "out", "targetNodeId": 4 },
+          { "id": 4, "sourceNodeId": 4, "sourcePort": "true", "targetNodeId": 5 }
+        ]
+      }
+    },
+    "expect": { "steps": ["1:out", "4:error", "2:error"], "variables": { "n": 0, "after": false } }
+  },
+  {
+    "name": "rows: update the first big order, delete the small ones",
+    "request": {
+      "triggerNodeId": 1,
+      "data": [{ "id": 7, "name": "orders", "columns": ["customer", "amount", "status"], "rows": [
+        ["Ada", "750", "open"], ["Bob", "20", "open"], ["Cy", "990", "open"], ["Dee", "5", "open"]
+      ] }],
+      "workflow": {
+        "nodes": [
+          { "id": 1, "type": "Trigger", "props": { "triggerType": "page_load" } },
+          { "id": 2, "type": "Action", "props": { "actionType": "update_row", "config": { "dataSourceId": "7", "row": "{{ first(data.orders.filter(o, o.amount > 500)) }}", "values": [{ "column": "status", "value": "approved" }] } } },
+          { "id": 3, "type": "Action", "props": { "actionType": "delete_row", "config": { "dataSourceId": "7", "row": "{{ data.orders.filter(o, o.amount < 100) }}" } } }
+        ],
+        "edges": [
+          { "id": 1, "sourceNodeId": 1, "sourcePort": "out", "targetNodeId": 2 },
+          { "id": 2, "sourceNodeId": 2, "sourcePort": "out", "targetNodeId": 3 }
+        ]
+      }
+    },
+    "expect": {
+      "steps": ["1:out", "2:out", "3:out"],
+      "data": { "orders": [["Ada", "750", "approved"], ["Cy", "990", "open"]] }
+    }
+  }
+]

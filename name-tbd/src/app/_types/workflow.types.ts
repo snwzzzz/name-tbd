@@ -2,32 +2,19 @@ import { Type } from '@angular/core';
 import { LucideIcon } from '@lucide/angular';
 import { Point } from './viewport.types';
 
-export type FlowNodeType = 'Trigger' | 'Condition' | 'Action';
-export type TriggerType = 'element_click' | 'page_load' | 'timer';
-
-export interface FlowNodeBase {
-  id: string;
-  position: Point;
-  type: FlowNodeType;
-}
-
-export interface TriggerNode extends FlowNodeBase {
-  type: 'Trigger';
-  triggerType: TriggerType;
-  elementId?: string;
-  eventName?: string;
-}
-
-export interface Condition {
-  field: string;
-  operator: string;
-  value: string;
-}
-
-export interface ConditionNode extends FlowNodeBase {
-  type: 'Condition';
-  condition: Condition;
-}
+// The graph types are the flow engine's (src/flow-engine), with actions' configs typed as the app's.
+export type {
+  FlowNodeType, TriggerType, TriggerNode, ConditionNode, FlowConnection, LegacyCondition,
+} from '../../flow-engine/graph';
+import type {
+  ActionNode as EngineActionNode, ConditionNode, FlowConnection, FlowRun, ActionExecutor, TriggerNode,
+} from '../../flow-engine';
+import type {
+  CreateRowConfig, DeleteRowConfig, HttpRequestConfig, LoopConfig, SetVariableConfig, UpdateRowConfig,
+} from '../../flow-engine/actions/configs';
+export type {
+  CreateRowConfig, DeleteRowConfig, HttpHeader, HttpRequestConfig, LoopConfig, RowValue, SetVariableConfig, UpdateRowConfig,
+} from '../../flow-engine/actions/configs';
 
 /** Config of a `set_text` action: temporarily replaces a label's text. */
 export interface SetTextConfig {
@@ -66,28 +53,46 @@ export interface SubmitFormConfig {
   formId: string;
 }
 
+/** Config of `validate_form`: the form whose fields are checked (the flow goes on through `valid` or `invalid`). */
+export interface ValidateFormConfig {
+  formId: string;
+}
+
+/** A value handed to the page a flow opens (`params.<name>` there). */
+export interface PageParam {
+  name: string;
+  /** Template. */
+  value: string;
+}
+
+/** Config of `navigate`: opens a page, with parameters. */
+export interface NavigateConfig {
+  pageId: string;
+  params: PageParam[];
+}
+
+export type MessageTone = 'info' | 'success' | 'warning' | 'error';
+
+/** Config of `show_message`: a short message over the app (a toast). */
+export interface ShowMessageConfig {
+  /** Template. */
+  message: string;
+  tone: MessageTone;
+}
+
 /**
  * Config of any action. A config field holding the id of a widget or page must be listed in
  * shared/id-references.json, so copies (paste, duplicate, restore) point to their own (id-references.spec checks).
  */
-export type ActionConfig = SetTextConfig | TableActionConfig | ShowDetailConfig | SearchConfig | ModalConfig | SubmitFormConfig;
+export type ActionConfig =
+  | SetTextConfig | TableActionConfig | ShowDetailConfig | SearchConfig | ModalConfig | SubmitFormConfig | ValidateFormConfig
+  | NavigateConfig | ShowMessageConfig | SetVariableConfig | LoopConfig | HttpRequestConfig | CreateRowConfig | UpdateRowConfig
+  | DeleteRowConfig;
 
-export interface ActionNode extends FlowNodeBase {
-  type: 'Action';
-  actionType: string;
-  config: ActionConfig;
-}
+export type ActionNode = EngineActionNode<ActionConfig>;
 
 export type FlowNode = TriggerNode | ConditionNode | ActionNode;
 export type NewFlowNode = Omit<TriggerNode, 'id'> | Omit<ConditionNode, 'id'> | Omit<ActionNode, 'id'>;
-
-export interface FlowConnection {
-  id: string;
-  fromNode: string;
-  toNode: string;
-  fromPort: string;
-  toPort: string;
-}
 
 export interface WorkflowGraph {
   nodes: FlowNode[];
@@ -102,28 +107,21 @@ export interface PageWorkflow extends WorkflowGraph {
 /** Everything a node stores besides its id, type and position. */
 export type NodeProps = Record<string, unknown>;
 
-export interface ConditionOperator {
-  id: string;
-  label: string;
-  requiresValue: boolean;
-}
+export type { ActionOutcome, ActionResult } from '../../flow-engine';
 
-/** Whether the flow goes on after an action (a cancelled modal stops it). */
-export type ActionOutcome = 'continue' | 'stop';
+/** One run of an action node (the engine's FlowRun, with the node typed as the app's). */
+export type ActionRun = FlowRun & { readonly node: ActionNode };
 
-/** One run of an action node while a page is previewed. */
-export interface ActionRun {
-  pageId: string;
-  node: ActionNode;
-  /** False once the preview was stopped: the action must not change anything any more. */
-  isCurrent(): boolean;
-}
-
-/** Runs one action type in the preview. Implementations are injectable services. */
-export interface ActionHandler {
-  run(run: ActionRun): Promise<ActionOutcome>;
+/** Runs one action type while the app runs. Implementations are injectable services. */
+export interface ActionHandler extends ActionExecutor {
   /** Undo what the action changed on the page (called when the preview stops). */
   reset?(pageId: string): void;
+}
+
+/** An output of an action node the flow can go on through (most have just `out`). */
+export interface ActionPort {
+  id: string;
+  label: string;
 }
 
 /** An action as the editor offers it (what it does is its handler, see ACTION_HANDLERS). */
@@ -133,6 +131,10 @@ export interface ActionType {
   defaultConfig: ActionConfig;
   /** A component extending BaseActionEditor for this action's config (typed loosely: inputs are invariant). */
   editor: Type<unknown>;
+  /** Its outputs, top to bottom (default: just `out`). */
+  ports?: ActionPort[];
+  /** The heading it's listed under in the action picker. */
+  group: string;
 }
 
 /** An event a widget type fires on the page that can start a flow (see WIDGET_TRIGGERS). */

@@ -110,6 +110,7 @@
       "resizable": true,
       "props": [
         { "key": "dataSourceId", "type": "dataSource", "label": "Data source", "group": "Data", "default": "" },
+        { "key": "items", "type": "string", "label": "Rows from an expression instead, e.g. {{ users }}", "default": "", "group": "Data" },
         { "key": "columns", "type": "columns", "label": "Columns", "group": "Data", "default": "[]" },
         { "key": "title", "type": "string", "label": "Title", "group": "Display", "default": "" },
         { "key": "maxRows", "type": "number", "label": "Max rows", "group": "Display", "default": "10" },
@@ -378,6 +379,7 @@
       "resizable": true,
       "props": [
         { "key": "dataSourceId", "type": "dataSource", "label": "Data source", "default": "", "group": "Data" },
+        { "key": "items", "type": "string", "label": "Rows from an expression instead, e.g. {{ users }}", "default": "", "group": "Data" },
         { "key": "titleColumn", "type": "column", "label": "Title column", "default": "", "group": "Data" },
         { "key": "subtitleColumn", "type": "column", "label": "Subtitle column", "default": "", "group": "Data" },
         { "key": "columns", "type": "columns", "label": "More fields", "default": "[]", "group": "Data" },

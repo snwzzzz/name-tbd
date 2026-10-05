@@ -6,6 +6,7 @@ import com.example.ntbd.content.BranchContent.NodeContent;
 import com.example.ntbd.content.BranchContent.PageContent;
 import com.example.ntbd.content.BranchContent.WidgetContent;
 import com.example.ntbd.content.BranchContent.WorkflowContent;
+import com.example.ntbd.domain.VariableDefinition;
 import com.example.ntbd.export.definition.AppDefinition;
 import com.example.ntbd.export.definition.AppDefinitionContributor;
 import com.example.ntbd.export.definition.ExportScope;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 
 /**
  * The app's pages: each with its widgets (as a tree, props completed with their type's defaults
- * from the widget catalog) and its workflow. Sections "homePageId" and "pages".
+ * from the widget catalog), its workflow and its own variables. Sections "homePageId" and "pages".
  */
 @Component
 @Order(100)
@@ -55,7 +56,8 @@ public class PagesContributor implements AppDefinitionContributor {
                 Objects.requireNonNullElse(page.path(), ""),
                 page.layout(),
                 components(page.widgets()),
-                workflow(workflow));
+                workflow(workflow),
+                page.variables());
     }
 
     private List<ComponentDefinition> components(List<WidgetContent> all) {
@@ -98,7 +100,8 @@ public class PagesContributor implements AppDefinitionContributor {
     }
 
     public record PageDefinition(Long id, String name, String path, boolean layout,
-                                 List<ComponentDefinition> components, WorkflowDefinition workflow) {
+                                 List<ComponentDefinition> components, WorkflowDefinition workflow,
+                                 List<VariableDefinition> variables) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -62,6 +62,9 @@ public class WorkflowControllerTest {
     @MockitoBean
     private FlowEngine flowEngine;
 
+    @MockitoBean
+    private com.example.ntbd.workflow.sidecar.ServerFlowRunner serverFlowRunner;
+
     // ---- POST /api/workflows ----
 
     @Test

@@ -7,6 +7,9 @@ import { TableFilterService } from '../core/services/table-filter.service';
 import { FieldErrorsService } from '../core/services/field-errors.service';
 import { ModalStateService } from '../core/services/modal-state.service';
 import { FormMessagesService } from '../core/services/form-messages.service';
+import { VariablesService } from '../core/variables/variables.service';
+import { PageParamsService } from '../core/services/page-params.service';
+import { AppMessagesService } from '../core/services/app-messages.service';
 
 /**
  * Whether (and which) page is being previewed on the canvas. Widgets use it to become
@@ -23,6 +26,9 @@ export class PreviewSessionService {
   private readonly fieldErrors = inject(FieldErrorsService);
   private readonly modals = inject(ModalStateService);
   private readonly formMessages = inject(FormMessagesService);
+  private readonly variables = inject(VariablesService);
+  private readonly params = inject(PageParamsService);
+  private readonly appMessages = inject(AppMessagesService);
 
   readonly pageId = signal<string | null>(null);
   readonly active = computed(() => this.pageId() !== null);
@@ -46,6 +52,9 @@ export class PreviewSessionService {
     this.fieldErrors.reset();
     this.modals.reset();
     this.formMessages.reset();
+    this.variables.reset();
+    this.params.reset();
+    this.appMessages.reset();
   }
 
   /** The preview goes on on this page once it's opened (see resumesOn). */
