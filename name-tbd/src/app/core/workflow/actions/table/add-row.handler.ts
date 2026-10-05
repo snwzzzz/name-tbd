@@ -16,7 +16,6 @@ export class AddRowHandler implements ActionHandler {
     const values = await this.tables.askForRow(target, `Add row to “${target.name}”`, 'Add row');
     if (!values || !run.isCurrent()) return 'stop';
 
-    this.appData.addRow(target.dataSourceId, values);
-    return 'continue';
+    return (await this.tables.save(() => this.appData.addRow(target.dataSourceId, values))) ? 'continue' : 'stop';
   }
 }

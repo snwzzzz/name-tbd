@@ -55,19 +55,36 @@ export class MemoryVariables implements FlowVariables {
   }
 }
 
-/** Data sources held in memory, changed in place. */
+/** One change a flow made to a data source's rows (the server applies these to the real data). */
+export type RowChange =
+  | { op: 'add'; dataSourceId: number; rowId: string; values: Record<string, string> }
+  | { op: 'update'; dataSourceId: number; rowId: string; values: Record<string, string> }
+  | { op: 'delete'; dataSourceId: number; rowIds: string[] };
+
+/**
+ * Data sources held in memory, changed in place. Every change is also recorded (`changes`), by row id
+ * and column name, so the server can apply exactly those to the real data, which others may have
+ * changed meanwhile, instead of replacing whole tables.
+ */
 export class MemoryData implements FlowData {
   private readonly tables = new Map<number, FlowTable & { name: string }>();
+  private readonly recorded: RowChange[] = [];
   private nextRow = 1;
 
-  constructor(sources: { id: number; name: string; columns: string[]; rows: (string | null)[][] }[] = []) {
+  constructor(sources: { id: number; name: string; columns: string[]; rows: (string | null)[][]; rowIds?: string[] }[] = []) {
     for (const source of sources) {
       this.tables.set(source.id, {
         name: source.name,
         columns: source.columns,
-        rows: source.rows.map((values, i) => ({ id: String(i), values })),
+        // Ids where the rows come from (database ids, keys); else their positions
+        rows: source.rows.map((values, i) => ({ id: source.rowIds?.[i] ?? String(i), values })),
       });
     }
+  }
+
+  /** The changes made so far, in order. */
+  changes(): RowChange[] {
+    return [...this.recorded];
   }
 
   async table(dataSourceId: number): Promise<FlowTable> {
@@ -78,22 +95,37 @@ export class MemoryData implements FlowData {
     const table = this.get(dataSourceId);
     const id = `new-${this.nextRow++}`;
     table.rows = [...table.rows, { id, values }];
+    this.recorded.push({ op: 'add', dataSourceId, rowId: id, values: byColumn(table.columns, values) });
     return id;
   }
 
   updateRow(dataSourceId: number, rowId: string, values: string[]): void {
     const table = this.get(dataSourceId);
+    const before = table.rows.find((r) => r.id === rowId);
     table.rows = table.rows.map((r) => (r.id === rowId ? { ...r, values } : r));
+    if (!before) return;
+    // Only the columns that changed, so the server leaves the others as they are now
+    const changed: Record<string, string> = {};
+    table.columns.forEach((column, i) => {
+      if ((before.values[i] ?? '') !== (values[i] ?? '')) changed[column] = values[i] ?? '';
+    });
+    if (Object.keys(changed).length) this.recorded.push({ op: 'update', dataSourceId, rowId, values: changed });
   }
 
   deleteRows(dataSourceId: number, rowIds: string[]): void {
     const table = this.get(dataSourceId);
     table.rows = table.rows.filter((r) => !rowIds.includes(r.id));
+    this.recorded.push({ op: 'delete', dataSourceId, rowIds: [...rowIds] });
   }
 
   /** Every data source with its rows (as values only, in order). */
   snapshot(): { id: number; name: string; columns: string[]; rows: (string | null)[][] }[] {
     return [...this.tables].map(([id, t]) => ({ id, name: t.name, columns: t.columns, rows: t.rows.map((r) => r.values) }));
+  }
+
+  /** Every data source with its rows' ids (as `snapshot`, plus ids). */
+  snapshotWithIds(): { id: number; name: string; columns: string[]; rows: (string | null)[][]; rowIds: string[] }[] {
+    return [...this.tables].map(([id, t]) => ({ id, name: t.name, columns: t.columns, rows: t.rows.map((r) => r.values), rowIds: t.rows.map((r) => r.id) }));
   }
 
   /** Rows as objects by data source name (like `data.orders` in expressions). */
@@ -139,4 +171,8 @@ export function memoryHost(options: MemoryHostOptions = {}): FlowHost & { variab
       return scope;
     },
   };
+}
+
+function byColumn(columns: string[], values: (string | null)[]): Record<string, string> {
+  return Object.fromEntries(columns.map((column, i) => [column, values[i] ?? '']));
 }

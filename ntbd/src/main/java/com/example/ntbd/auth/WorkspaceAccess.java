@@ -76,6 +76,14 @@ public class WorkspaceAccess {
         require("dataSourceId", id, least, repository::roleForDataSource, () -> new DataSourceNotFoundException(id));
     }
 
+    public void requireConnection(Long id, WorkspaceRole least) {
+        require("connectionId", id, least, repository::roleForConnection, () -> new ConnectionNotFoundException(id));
+    }
+
+    public void requireAppKey(Long id, WorkspaceRole least) {
+        require("appKeyId", id, least, repository::roleForAppKey, () -> new AppKeyNotFoundException(id));
+    }
+
     public void requireVersion(Long id, WorkspaceRole least) {
         require("versionId", id, least, repository::roleForVersion, () -> new VersionControlNotFoundException(id));
     }

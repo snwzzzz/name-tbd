@@ -1,6 +1,7 @@
 package com.example.ntbd.controller;
 
 import com.example.ntbd.auth.WorkspaceAccess;
+import com.example.ntbd.commands.LiveDataSourceCommand;
 import com.example.ntbd.commands.NewDataSourceCommand;
 import com.example.ntbd.dto.DataSourceDto;
 import com.example.ntbd.dto.DataSourceSummaryDto;
@@ -29,6 +30,29 @@ public class DataSourceController {
     public ResponseEntity<DataSourceDto> importDataSource(@RequestBody NewDataSourceCommand command) {
         access.requireBranch(command.branchId(), EDITOR);
         return ResponseEntity.status(HttpStatus.CREATED).body(dataSourceService.importDataSource(command));
+    }
+
+    /** Adds a live data source: rows read and written through one of the workspace's connections. */
+    @PostMapping("/live")
+    public ResponseEntity<DataSourceDto> createLiveDataSource(@RequestBody LiveDataSourceCommand command) {
+        access.requireBranch(command.branchId(), EDITOR);
+        access.requireConnection(command.connectionId(), VIEWER);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dataSourceService.createLive(command));
+    }
+
+    /** Changes what a live data source reads (connection, settings, key column, read-only, name). */
+    @PatchMapping("/{id}/live")
+    public ResponseEntity<DataSourceDto> updateLiveDataSource(@PathVariable Long id, @RequestBody LiveDataSourceCommand command) {
+        access.requireDataSource(id, EDITOR);
+        if (command.connectionId() != null) access.requireConnection(command.connectionId(), VIEWER);
+        return ResponseEntity.ok(dataSourceService.updateLive(id, command));
+    }
+
+    /** Asks a live data source's system for its columns again. */
+    @PostMapping("/{id}/refresh-schema")
+    public ResponseEntity<DataSourceDto> refreshSchema(@PathVariable Long id) {
+        access.requireDataSource(id, EDITOR);
+        return ResponseEntity.ok(dataSourceService.refreshSchema(id));
     }
 
     @GetMapping

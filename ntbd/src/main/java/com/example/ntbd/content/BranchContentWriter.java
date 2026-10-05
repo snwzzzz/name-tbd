@@ -32,6 +32,7 @@ public class BranchContentWriter {
     private final NodeRepository nodeRepository;
     private final EdgeRepository edgeRepository;
     private final DataSourceRepository dataSourceRepository;
+    private final com.example.ntbd.persistence.DataConnectionRepository connectionRepository;
     private final WidgetCatalog widgetCatalog;
     private final IdReferences references;
     private final ObjectMapper objectMapper;
@@ -65,7 +66,14 @@ public class BranchContentWriter {
     }
 
     private void writeDataSource(DataSourceContent source, Branch branch, IdMap ids) {
-        DataSource copy = DataSource.builder().name(source.name()).format(source.format()).branch(branch).build();
+        DataSource copy = DataSource.builder().name(source.name()).format(source.format()).branch(branch)
+                .kind(source.kind())
+                // The workspace's connection, if it's still there
+                .connection(source.connectionId() == null ? null : connectionRepository.findById(source.connectionId()).orElse(null))
+                .settings(source.settings())
+                .keyColumn(source.keyColumn())
+                .readOnly(source.readOnly())
+                .build();
         List<DataSourceColumn> columns = new ArrayList<>();
         for (int i = 0; i < source.columns().size(); i++) {
             DataSourceColumn column = DataSourceColumn.builder().dataSource(copy).columnIndex(i).name(source.columns().get(i)).build();

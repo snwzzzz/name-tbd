@@ -2,7 +2,6 @@ import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LucideDownload, LucideKeyboard, LucideMoon, LucideRedo2, LucideSearch, LucideSun, LucideUndo2 } from '@lucide/angular';
 import { ThemeService } from '../../_services/theme.service';
-import { appExportUrl } from '../../_constants/api.constants';
 import { SaveQueue } from '../../_services/save-queue.service';
 import { EditorContext } from '../../_services/editor-context.service';
 import { TabsService, tabKind } from '../../_services/tabs.service';
@@ -13,6 +12,7 @@ import { ModalService } from '../../_services/modal/modal.service';
 import { ShortcutsModal } from '../../components/shortcuts-modal/shortcuts-modal';
 import { UserMenu } from '../../components/user-menu/user-menu';
 import { SaveIndicator } from '../../components/save-indicator/save-indicator';
+import { ExportModal } from '../export-modal/export-modal';
 
 @Component({
   selector: 'app-navbar',
@@ -69,12 +69,7 @@ export class Navbar {
    * its own. Changes still waiting are sent first, so the export (and the version saved before it) has them.
    */
   async exportApp(): Promise<void> {
-    const url = appExportUrl(this.context.requireBranchId());
     await this.saveQueue.flush();
-    // A link, not window.open: after waiting, a new window would count as a popup
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = '';
-    link.click();
+    this.modal.open(ExportModal, { width: '500px', ariaLabel: 'Export App' });
   }
 }

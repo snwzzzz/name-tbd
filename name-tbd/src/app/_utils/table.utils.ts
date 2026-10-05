@@ -13,11 +13,12 @@ export function visibleColumnIndexes(allColumns: string[], chosen: string[]): nu
   return indexes.length > 0 ? indexes : allColumns.map((_, i) => i);
 }
 
-/** A loaded data source as table data; rows are identified by their position. */
-export function toTableData(source: { columns?: string[]; rows?: string[][] }): TableData {
+/** A loaded data source as table data; rows keep their ids (older exports have none: their position then). */
+export function toTableData(source: { columns?: string[]; rows?: string[][]; rowIds?: string[] | null; truncated?: boolean }): TableData {
   return {
     columns: source.columns ?? [],
-    rows: (source.rows ?? []).map((values, index) => ({ id: String(index), values })),
+    rows: (source.rows ?? []).map((values, index) => ({ id: source.rowIds?.[index] ?? String(index), values })),
+    ...(source.truncated ? { truncated: true } : {}),
   };
 }
 

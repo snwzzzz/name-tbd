@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestOptions, DataSourceSummaryDto, NewDataSourceCommand, DataSourceDto } from "../models";
+import { RequestOptions, DataSourceSummaryDto, NewDataSourceCommand, DataSourceDto, LiveDataSourceCommand } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class DataSourceControllerService {
@@ -103,6 +103,95 @@ export class DataSourceControllerService {
 
         return this.httpClient.request('post', url, {
             body: null,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    refreshSchema(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<DataSourceDto>;
+    refreshSchema(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<DataSourceDto>>;
+    refreshSchema(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<DataSourceDto>>;
+    refreshSchema(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/data-sources/${id}/refresh-schema`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('post', url, {
+            body: null,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    createLiveDataSource(liveDataSourceCommand: LiveDataSourceCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<DataSourceDto>;
+    createLiveDataSource(liveDataSourceCommand: LiveDataSourceCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<DataSourceDto>>;
+    createLiveDataSource(liveDataSourceCommand: LiveDataSourceCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<DataSourceDto>>;
+    createLiveDataSource(liveDataSourceCommand: LiveDataSourceCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/data-sources/live`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+        // Set Content-Type for JSON requests if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json');
+        }
+
+        return this.httpClient.request('post', url, {
+            body: liveDataSourceCommand,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    updateLiveDataSource(id: number, liveDataSourceCommand: LiveDataSourceCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<DataSourceDto>;
+    updateLiveDataSource(id: number, liveDataSourceCommand: LiveDataSourceCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<DataSourceDto>>;
+    updateLiveDataSource(id: number, liveDataSourceCommand: LiveDataSourceCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<DataSourceDto>>;
+    updateLiveDataSource(id: number, liveDataSourceCommand: LiveDataSourceCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/data-sources/${id}/live`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+        // Set Content-Type for JSON requests if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json');
+        }
+
+        return this.httpClient.request('patch', url, {
+            body: liveDataSourceCommand,
             observe,
             headers,
             reportProgress: options?.reportProgress,

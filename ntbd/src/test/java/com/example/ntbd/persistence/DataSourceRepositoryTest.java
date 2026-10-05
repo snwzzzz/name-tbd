@@ -50,6 +50,10 @@ public class DataSourceRepositoryTest {
     @Autowired
     private EntityManager entityManager;
 
+    /** Live data isn't part of this slice: every source here is embedded. */
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.example.ntbd.livedata.LiveDataService liveData;
+
     @Test
     void can_import_find_and_delete_a_data_source() {
         Branch branch = createBranch();
@@ -59,6 +63,8 @@ public class DataSourceRepositoryTest {
                 new NewDataSourceCommand(branchId, "People", "csv", "name,age\nAlice,30\nBob,25"));
         entityManager.clear();
 
+        org.mockito.Mockito.when(liveData.view(created.id())).thenReturn(new com.example.ntbd.livedata.LiveDataService.SourceView(
+                created.id(), null, "People", "embedded", false, null, List.of("name", "age"), null));
         DataSourceDto found = dataSourceService.findById(created.id());
         assertThat(found.columns()).containsExactly("name", "age");
         assertThat(found.rows()).containsExactly(List.of("Alice", "30"), List.of("Bob", "25"));

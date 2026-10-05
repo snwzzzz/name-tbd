@@ -1,17 +1,18 @@
 import { FlowEngine, FlowFetch, RunLogEntry } from './engine';
 import { StoredWorkflow, TriggerNode, graphOf } from './graph';
-import { MemoryData, MemoryVariables, memoryHost } from './memory-host';
+import { MemoryData, MemoryVariables, RowChange, memoryHost } from './memory-host';
 import { VariableDefinition } from './expressions/values';
 
 // One run of a flow on the server: what the backend sends the sidecar (flow-engine/server), and
 // what it answers. Pure, so the conformance fixtures run through exactly this code too.
 
-/** A data source with its rows (values only). */
+/** A data source with its rows (values only), and the rows' ids where they come from (else positions). */
 export interface DataSourceRows {
   id: number;
   name: string;
   columns: string[];
   rows: (string | null)[][];
+  rowIds?: string[];
 }
 
 export interface RunRequest {
@@ -39,6 +40,8 @@ export interface RunResponse {
   steps: string[];
   variables: { app: Record<string, unknown>; page: Record<string, unknown> };
   data: DataSourceRows[];
+  /** The changes the flow made to rows, in order (what the server applies to the real data). */
+  changes: RowChange[];
 }
 
 /** A step as conformance fixtures write it. */
@@ -63,5 +66,5 @@ export async function runRequest(request: RunRequest, fetch?: FlowFetch): Promis
     log.push(...(await engine.run(graph, trigger, { pageId, locals: request.locals })).entries);
   }
   const snapshot = variables.snapshot();
-  return { log, steps: log.map(stepOf), variables: { app: snapshot.app, page: snapshot.pages[pageId] ?? {} }, data: data.snapshot() };
+  return { log, steps: log.map(stepOf), variables: { app: snapshot.app, page: snapshot.pages[pageId] ?? {} }, data: data.snapshot(), changes: data.changes() };
 }

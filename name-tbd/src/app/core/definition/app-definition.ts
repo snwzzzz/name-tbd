@@ -23,6 +23,18 @@ export interface AppDefinition {
   theme?: AppTheme | null;
   /** The app's variables (exports before variables have none). */
   variables?: VariableDefinition[];
+  /** Live exports: where the data API is; their data sources' rows come from there (embedded exports have none). */
+  liveData?: LiveDataSettings | null;
+}
+
+/** How a live export reaches its data (LiveDataContributor.java). Never credentials: only this app's key. */
+export interface LiveDataSettings {
+  /** The server; the app calls `<apiUrl>/api/data/<sourceId>`. */
+  apiUrl: string;
+  /** The app key (opens only this app's data; can be revoked in the editor). */
+  key: string;
+  /** Keep the rows last read in the browser, and queue changes made while offline. */
+  offlineCache: boolean;
 }
 
 export interface DefinitionPage {

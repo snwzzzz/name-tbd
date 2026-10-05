@@ -46,7 +46,12 @@ class CrossWorkspaceAccessTest {
             "GET /api/widget-props",
             "GET /api/widget-props/{type}",
             "GET /api/export/formats",
-            "POST /api/dev/sign-in");
+            "POST /api/dev/sign-in",
+            // Carries no ids: what it finishes was remembered in the session that started it
+            "GET /api/connections/oauth/{provider}/callback");
+
+    /** Scoped routes that aren't plain reads (a GET that redirects to a sign-in, editors only): only checked for 404. */
+    private static final Set<String> NOT_PLAIN_READS = Set.of("GET /api/connections/oauth/{provider}/start");
 
     @Autowired private MockMvc mockMvc;
     @Autowired @Qualifier("requestMappingHandlerMapping") private RequestMappingHandlerMapping handlerMapping;
@@ -63,10 +68,13 @@ class CrossWorkspaceAccessTest {
     @Autowired private UserRepository userRepository;
     @Autowired private WorkspaceRepository workspaceRepository;
     @Autowired private WorkspaceMemberRepository memberRepository;
+    @Autowired private com.example.ntbd.livedata.ConnectionService connectionService;
+    @Autowired private com.example.ntbd.livedata.appkey.AppKeyService appKeyService;
 
     /** One user's workspace with one of everything in it. */
     private record Tenant(long userId, long workspaceId, long app, long branch, long page, long component,
-                          long workflow, long node, long otherNode, long edge, long dataSource, long version) {}
+                          long workflow, long node, long otherNode, long edge, long dataSource, long version,
+                          String rowId, long connection, long appKey) {}
 
     private Tenant a;
     private Tenant b;
@@ -114,7 +122,12 @@ class CrossWorkspaceAccessTest {
             long dataSource = dataSourceService.importDataSource(
                     new NewDataSourceCommand(branch, "People", "csv", "name\nAda")).id();
             long version = versionControlService.save(branch, "First").id();
-            return new Tenant(userId, workspaceId, app, branch, page, component, workflow, node, otherNode, edge, dataSource, version);
+            String rowId = dataSourceService.findById(dataSource).rowIds().getFirst();
+            long connection = connectionService.create(workspaceId, new ConnectionCommand(workspaceId, null, "API", "rest",
+                    Map.of("baseUrl", "https://api.example.com"), Map.of("authValue", "Bearer secret"))).id();
+            long appKey = appKeyService.create(app, "Export", true).info().id();
+            return new Tenant(userId, workspaceId, app, branch, page, component, workflow, node, otherNode, edge, dataSource, version,
+                    rowId, connection, appKey);
         } finally {
             TestSignIn.signOut();
         }
@@ -145,6 +158,30 @@ class CrossWorkspaceAccessTest {
 
         add.accept(GET, "/api/branches/{branchId}/definition", "/api/branches/%d/definition".formatted(t.branch()), null);
         add.accept(GET, "/api/branches/{branchId}/export", "/api/branches/%d/export".formatted(t.branch()), null);
+        add.accept(GET, "/api/branches/{branchId}/export/data", "/api/branches/%d/export/data".formatted(t.branch()), null);
+        add.accept(GET, "/api/applications/{applicationId}/app-keys", "/api/applications/%d/app-keys".formatted(t.app()), null);
+        add.accept(DELETE, "/api/app-keys/{id}", "/api/app-keys/" + t.appKey(), null);
+
+        String data = "/api/data/" + t.dataSource();
+        add.accept(GET, "/api/data/{sourceId}", data, null);
+        add.accept(GET, "/api/data/{sourceId}/row", data + "/row?id=" + t.rowId(), null);
+        add.accept(POST, "/api/data/{sourceId}/rows", data + "/rows", "{\"values\":{\"name\":\"x\"}}");
+        add.accept(PATCH, "/api/data/{sourceId}/rows", data + "/rows", "{\"id\":\"%s\",\"values\":{\"name\":\"x\"}}".formatted(t.rowId()));
+        add.accept(POST, "/api/data/{sourceId}/rows/delete", data + "/rows/delete", "{\"ids\":[\"%s\"]}".formatted(t.rowId()));
+
+        String connection = "/api/connections/" + t.connection();
+        String newConnection = "{\"workspaceId\":%d,\"name\":\"x\",\"kind\":\"rest\",\"settings\":{\"baseUrl\":\"https://api.example.com\"}}"
+                .formatted(t.workspaceId());
+        add.accept(GET, "/api/connections", "/api/connections?workspaceId=" + t.workspaceId(), null);
+        add.accept(POST, "/api/connections", "/api/connections", newConnection);
+        add.accept(POST, "/api/connections/test", "/api/connections/test", newConnection);
+        add.accept(GET, "/api/connections/{id}", connection, null);
+        add.accept(PATCH, "/api/connections/{id}", connection, "{\"name\":\"x\"}");
+        add.accept(DELETE, "/api/connections/{id}", connection, null);
+        add.accept(POST, "/api/connections/{id}/test", connection + "/test", null);
+        add.accept(POST, "/api/connections/{id}/targets", connection + "/targets", "{}");
+        add.accept(GET, "/api/connections/oauth/{provider}/start",
+                "/api/connections/oauth/google/start?branchId=" + t.branch(), null);
 
         add.accept(POST, "/api/data-sources", "/api/data-sources",
                 "{\"branchId\":%d,\"name\":\"x\",\"format\":\"csv\",\"content\":\"a\\n1\"}".formatted(t.branch()));
@@ -152,6 +189,10 @@ class CrossWorkspaceAccessTest {
         add.accept(GET, "/api/data-sources/{id}", "/api/data-sources/" + t.dataSource(), null);
         add.accept(DELETE, "/api/data-sources/{id}", "/api/data-sources/" + t.dataSource(), null);
         add.accept(POST, "/api/data-sources/{id}/restore", "/api/data-sources/%d/restore".formatted(t.dataSource()), null);
+        add.accept(POST, "/api/data-sources/live", "/api/data-sources/live",
+                "{\"branchId\":%d,\"name\":\"x\",\"connectionId\":%d,\"settings\":{\"path\":\"/x\"}}".formatted(t.branch(), t.connection()));
+        add.accept(PATCH, "/api/data-sources/{id}/live", "/api/data-sources/%d/live".formatted(t.dataSource()), "{}");
+        add.accept(POST, "/api/data-sources/{id}/refresh-schema", "/api/data-sources/%d/refresh-schema".formatted(t.dataSource()), null);
 
         add.accept(POST, "/api/pages", "/api/pages",
                 "{\"name\":\"x\",\"path\":\"/x\",\"branchId\":%d}".formatted(t.branch()));
@@ -242,7 +283,7 @@ class CrossWorkspaceAccessTest {
     void the_owner_reads_their_own_data_on_every_route() throws Exception {
         List<String> failures = new ArrayList<>();
         for (Route route : routes(b)) {
-            if (route.method() != HttpMethod.GET) continue;
+            if (route.method() != HttpMethod.GET || NOT_PLAIN_READS.contains(route.key())) continue;
             int status = call(b.userId(), route.method(), route.path(), route.body());
             if (status != 200) failures.add(route.method() + " " + route.path() + " -> " + status);
         }
@@ -252,6 +293,7 @@ class CrossWorkspaceAccessTest {
     @Test
     void a_viewer_reads_but_cannot_change() throws Exception {
         for (Route route : routes(b)) {
+            if (NOT_PLAIN_READS.contains(route.key())) continue;
             int status = call(viewerOfB, route.method(), route.path(), route.body());
             int expected = route.method() == HttpMethod.GET ? 200 : 403;
             assertThat(status).as(route.method() + " " + route.path()).isEqualTo(expected);

@@ -134,6 +134,19 @@ export interface PageDto {
     variables?: Array<VariableDefinition>;
 }
 
+export interface RowValues {
+    values?: Record<string, string>;
+}
+
+export interface LiveRow {
+    id?: string;
+    values?: Array<string>;
+}
+
+export interface RowIds {
+    ids?: Array<string>;
+}
+
 export interface NewDataSourceCommand {
     branchId?: number;
     name?: string;
@@ -148,6 +161,40 @@ export interface DataSourceDto {
     branchId?: number;
     columns?: Array<string>;
     rows?: Array<Array<string>>;
+    rowIds?: Array<string>;
+    kind?: string;
+    connectionId?: number;
+    settings?: Record<string, Record<string, unknown>>;
+    keyColumn?: string;
+    readOnly?: boolean;
+    truncated?: boolean;
+}
+
+export interface LiveDataSourceCommand {
+    branchId?: number;
+    name?: string;
+    connectionId?: number;
+    settings?: Record<string, Record<string, unknown>>;
+    keyColumn?: string;
+    readOnly?: boolean;
+}
+
+export interface ConnectionCommand {
+    workspaceId?: number;
+    branchId?: number;
+    name?: string;
+    kind?: string;
+    settings?: Record<string, Record<string, unknown>>;
+    secret?: Record<string, Record<string, unknown>>;
+}
+
+export interface ConnectionDto {
+    id?: number;
+    workspaceId?: number;
+    name?: string;
+    kind?: string;
+    settings?: Record<string, Record<string, unknown>>;
+    hasSecret?: boolean;
 }
 
 export interface NewBranchCommand {
@@ -238,6 +285,17 @@ export interface RenameVersionCommand {
     label?: string;
 }
 
+export interface RowChange {
+    id?: string;
+    values?: Record<string, string>;
+    base?: Record<string, string>;
+}
+
+export interface ChangedRow {
+    row?: LiveRow;
+    conflicts?: Record<string, string>;
+}
+
 export interface UpdateApplicationCommand {
     title?: string;
     description?: string;
@@ -289,6 +347,16 @@ export interface WorkspaceMembershipDto {
     role?: string;
 }
 
+export interface DataPage {
+    id?: number;
+    name?: string;
+    columns?: Array<string>;
+    keyColumn?: string;
+    readOnly?: boolean;
+    rows?: Array<LiveRow>;
+    truncated?: boolean;
+}
+
 export interface DataSourceSummaryDto {
     id?: number;
     name?: string;
@@ -296,6 +364,34 @@ export interface DataSourceSummaryDto {
     branchId?: number;
     columns?: Array<string>;
     rowCount?: number;
+    kind?: string;
+    connectionId?: number;
+    keyColumn?: string;
+    readOnly?: boolean;
+}
+
+export interface DataReport {
+    dataMode?: string;
+    sources?: Array<SourceReport>;
+}
+
+export interface SourceReport {
+    id?: number;
+    name?: string;
+    kind?: string;
+    columns?: Array<string>;
+    exportedColumns?: Array<string>;
+    allBecause?: string;
+}
+
+export interface AppKeyDto {
+    id?: number;
+    applicationId?: number;
+    hint?: string;
+    label?: string;
+    allowWrites?: boolean;
+    createdAt?: Date;
+    revokedAt?: Date;
 }
 
 /** Request Options for Angular HttpClient requests */

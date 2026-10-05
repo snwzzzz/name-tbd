@@ -82,6 +82,17 @@ export class TableActionsService {
     return this.modal.confirm({ title, message, confirmText, destructive: true });
   }
 
+  /** Runs a change; when it fails (e.g. the server refused it), tells the user why. Resolves to whether it worked. */
+  async save(change: () => Promise<void>): Promise<boolean> {
+    try {
+      await change();
+      return true;
+    } catch (err) {
+      await this.notice('Not saved', err instanceof Error ? err.message : String(err));
+      return false;
+    }
+  }
+
   async notice(title: string, message: string): Promise<void> {
     await this.modal.confirm({ title, message, confirmText: 'OK', hideCancel: true });
   }

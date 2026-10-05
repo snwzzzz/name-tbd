@@ -59,6 +59,20 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getMessage(), HttpStatus.SERVICE_UNAVAILABLE.value()));
     }
 
+    @ExceptionHandler(com.example.ntbd.Exception.ConnectorException.class)
+    public ResponseEntity<ErrorResponse> handleConnector(com.example.ntbd.Exception.ConnectorException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse(ex.getMessage(), HttpStatus.BAD_GATEWAY.value()));
+    }
+
+    @ExceptionHandler(com.example.ntbd.Exception.LiveDataUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleLiveDataUnavailable(com.example.ntbd.Exception.LiveDataUnavailableException ex) {
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ErrorResponse(ex.getMessage(), HttpStatus.SERVICE_UNAVAILABLE.value()));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity

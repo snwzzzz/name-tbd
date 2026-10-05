@@ -22,6 +22,17 @@
         (click)="togglePreview()">
         {{ previewMode() ? '■ Stop preview' : '▶ Preview' }}
       </button>
+      @if (previewMode()) {
+        <button
+          app-zoom-button
+          [active]="previewWritesRealData()"
+          [title]="previewWritesRealData()
+            ? 'The preview changes the real data (live sources: where they are kept). Click to try changes on a copy instead.'
+            : 'The preview changes a copy of the data, thrown away afterwards. Click to change the real data.'"
+          (click)="togglePreviewWrites()">
+          {{ previewWritesRealData() ? 'Real data' : 'Copy of data' }}
+        </button>
+      }
     </app-zoom-controls>
 
     @if (selectionCount() > 1 && !previewMode()) {

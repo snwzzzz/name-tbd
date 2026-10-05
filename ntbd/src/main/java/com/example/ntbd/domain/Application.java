@@ -42,6 +42,11 @@ public class Application extends AuditableEntity {
     @JoinColumn(name = "last_modified_by_id")
     private User lastModifiedBy;
 
+    /** The data choice last made when exporting (embed, live_cached, live; see export.definition.DataMode). */
+    @Column(name = "export_data_mode", nullable = false)
+    @Builder.Default
+    private String exportDataMode = "embed";
+
     @OneToMany(orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "application")
     private List<Branch> branches = List.of();
 

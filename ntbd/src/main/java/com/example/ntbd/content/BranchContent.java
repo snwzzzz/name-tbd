@@ -69,7 +69,29 @@ public record BranchContent(int format, List<PageContent> pages, List<WorkflowCo
     public record EdgeContent(Long id, Long sourceNodeId, String sourcePort, Long targetNodeId) {
     }
 
-    /** A data source; each row has a value per column, null where it has no cell. */
-    public record DataSourceContent(Long id, String name, String format, List<String> columns, List<List<String>> rows) {
+    /**
+     * A data source; each row has a value per column, null where it has no cell. A live source ({@code kind}
+     * other than "embedded") has no rows here: they are in the customer's system, reached through the
+     * workspace's connection {@code connectionId} with {@code settings} (JSON, never secrets). Copies keep the
+     * connection (it belongs to the workspace, not the branch).
+     *
+     * @param rowIds the rows' ids where they were read (database ids); copies give rows new ones
+     */
+    public record DataSourceContent(Long id, String name, String format, List<String> columns, List<List<String>> rows,
+                                    String kind, Long connectionId, String settings, String keyColumn, boolean readOnly,
+                                    List<String> rowIds) {
+        public DataSourceContent {
+            kind = kind == null ? com.example.ntbd.domain.DataSource.EMBEDDED : kind;
+            rows = rows == null ? List.of() : rows;
+        }
+
+        public DataSourceContent(Long id, String name, String format, List<String> columns, List<List<String>> rows) {
+            this(id, name, format, columns, rows, null, null, null, null, false, null);
+        }
+
+        @com.fasterxml.jackson.annotation.JsonIgnore
+        public boolean isEmbedded() {
+            return com.example.ntbd.domain.DataSource.EMBEDDED.equals(kind);
+        }
     }
 }

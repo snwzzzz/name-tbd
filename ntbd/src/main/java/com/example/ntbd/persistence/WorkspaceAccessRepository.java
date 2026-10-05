@@ -122,4 +122,16 @@ public interface WorkspaceAccessRepository extends Repository<WorkspaceMember, W
             where v.id.id = :versionId and m.workspace = a.workspace and m.user.id.id = :userId
             """)
     Optional<ResourceAccess> roleForVersion(Long versionId, Long userId);
+
+    @Query("""
+            select new com.example.ntbd.persistence.ResourceAccess(m.role, null) from DataConnection c, WorkspaceMember m
+            where c.id = :connectionId and m.workspace = c.workspace and m.user.id.id = :userId
+            """)
+    Optional<ResourceAccess> roleForConnection(Long connectionId, Long userId);
+
+    @Query("""
+            select new com.example.ntbd.persistence.ResourceAccess(m.role, a.id.id) from AppKey k join k.application a, WorkspaceMember m
+            where k.id = :appKeyId and m.workspace = a.workspace and m.user.id.id = :userId
+            """)
+    Optional<ResourceAccess> roleForAppKey(Long appKeyId, Long userId);
 }

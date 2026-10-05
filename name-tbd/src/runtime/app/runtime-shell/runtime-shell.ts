@@ -3,6 +3,7 @@ import { DOCUMENT } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { WidgetGrid } from '../../../app/core/rendering/widget-grid/widget-grid';
 import { AppMessages } from '../../../app/core/rendering/app-messages/app-messages';
+import { DataSyncBar } from '../data-sync-bar/data-sync-bar';
 import { WidgetEventsService } from '../../../app/core/services/widget-events.service';
 import { WorkflowRuntimeService } from '../../../app/core/workflow/workflow-runtime.service';
 import { CELL_SIZE, EXPORT_MIN_WIDTH, pageRows } from '../../../app/_constants/artboard.constants';
@@ -22,7 +23,7 @@ import { RuntimeLayout, RuntimeLocation } from '../runtime-adapters';
  */
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, WidgetGrid, AppMessages],
+  imports: [RouterOutlet, WidgetGrid, AppMessages, DataSyncBar],
   templateUrl: './runtime-shell.html',
   styleUrl: './runtime-shell.scss',
 })

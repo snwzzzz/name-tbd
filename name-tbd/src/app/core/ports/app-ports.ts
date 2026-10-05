@@ -14,9 +14,36 @@ export interface DataSourceInfo {
   name: string;
   columns: string[];
   rowCount: number;
+  /** Its rows are where the customer keeps them (read and written through the server), not in the app. */
+  live?: boolean;
+  /** The app may read it but not change it. */
+  readOnly?: boolean;
 }
 
-/** The app's data: data sources, their rows, and changes to them. */
+/** A change made on data someone else had changed meanwhile: it was saved anyway (last write wins). */
+export interface DataConflict {
+  dataSourceId: number;
+  rowId: string;
+  /** The values that were overwritten, by column. */
+  overwritten: Record<string, string>;
+  at: number;
+}
+
+/** How live data is doing: reachable, changes waiting to be sent, changes that overwrote someone else's. */
+export interface DataSync {
+  online: boolean;
+  /** Changes made while offline, not sent yet. */
+  pending: number;
+  conflicts: DataConflict[];
+  /** The last failure to read or save (null: none). */
+  error: string | null;
+}
+
+/**
+ * The app's data: data sources, their rows, and changes to them. Changes are async: a live data source
+ * saves them on the server (or queues them while offline); a failed change rejects with a message for the
+ * user, and the rows go back to how they were.
+ */
 export interface AppData {
   readonly sources: Signal<DataSourceInfo[]>;
   /** Whether `sources` is known (so a data source missing from it doesn't exist). */
@@ -27,9 +54,15 @@ export interface AppData {
   ensureTable(dataSourceId: number): void;
   /** A data source's rows, loading them first if needed. */
   loadTable(dataSourceId: number): Promise<TableData>;
-  addRow(dataSourceId: number, values: string[]): void;
-  updateRow(dataSourceId: number, rowId: string, values: string[]): void;
-  deleteRows(dataSourceId: number, rowIds: string[]): void;
+  addRow(dataSourceId: number, values: string[]): Promise<void>;
+  updateRow(dataSourceId: number, rowId: string, values: string[]): Promise<void>;
+  deleteRows(dataSourceId: number, rowIds: string[]): Promise<void>;
+  /** Live data's state (absent: the data is all in memory, always in sync). */
+  readonly sync?: Signal<DataSync>;
+  /** Reads a data source's rows again (live data; others need not). */
+  refresh?(dataSourceId: number): Promise<void>;
+  /** Forgets the conflicts shown so far. */
+  dismissConflicts?(): void;
 }
 
 /** A page of the app. */

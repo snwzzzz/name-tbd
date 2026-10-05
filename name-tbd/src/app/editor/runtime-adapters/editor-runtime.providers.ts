@@ -1,5 +1,5 @@
 import { EnvironmentProviders, Injectable, computed, inject, makeEnvironmentProviders } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import {
   APP_DATA, APP_LAYOUT, APP_NAVIGATION, APP_PAGES, APP_SESSION, APP_VARIABLES, AppData, AppLayout, AppNavigation, AppPages,
   AppSession, DataSourceInfo, PageInfo, WORKFLOW_SOURCE, WorkflowSource,
@@ -15,20 +15,33 @@ import { WorkflowStateService } from '../../_services/workflow-state.service';
 import { VariablesStateService } from '../../_services/variables-state.service';
 import { TableData } from '../../_types/data-source.types';
 import { toTableData } from '../../_utils/table.utils';
+import { DataApiControllerService } from '../../api/services/dataApiController.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 // The editor's adapters for the runtime core's ports: widgets and workflow actions run on the
 // editor's own state, and while previewing on the preview's copy of the data.
 
-/** The backend's data sources; while previewing, the preview's copy (changes never reach the backend). */
+/**
+ * The backend's data sources; while previewing, the preview's copy (changes never reach the backend), or
+ * with the preview's "write to real data" on, the real data (through the data API, like an exported app).
+ */
 @Injectable({ providedIn: 'root' })
 class EditorAppData implements AppData {
   private readonly state = inject(DataSourceStateService);
   private readonly previewData = inject(PreviewDataService);
   private readonly session = inject(PreviewSessionService);
+  private readonly dataApi = inject(DataApiControllerService);
 
   readonly loaded = this.state.loaded;
   readonly sources = computed<DataSourceInfo[]>(() =>
-    this.state.sources().map((s) => ({ id: s.id!, name: s.name ?? '', columns: s.columns ?? [], rowCount: s.rowCount ?? 0 })),
+    this.state.sources().map((s) => ({
+      id: s.id!,
+      name: s.name ?? '',
+      columns: s.columns ?? [],
+      rowCount: s.rowCount ?? 0,
+      live: !!s.kind && s.kind !== 'embedded',
+      readOnly: !!s.readOnly,
+    })),
   );
 
   constructor() {
@@ -51,16 +64,42 @@ class EditorAppData implements AppData {
     return this.table(id)!;
   }
 
-  addRow(id: number, values: string[]): void {
-    this.previewData.addRow(id, values);
+  async addRow(id: number, values: string[]): Promise<void> {
+    if (!this.previewData.writeThrough()) return this.previewData.addRow(id, values);
+    await this.real(id, () => this.dataApi.addRow(id, { values: this.byColumn(id, values) }));
   }
 
-  updateRow(id: number, rowId: string, values: string[]): void {
-    this.previewData.updateRow(id, rowId, values);
+  async updateRow(id: number, rowId: string, values: string[]): Promise<void> {
+    if (!this.previewData.writeThrough()) return this.previewData.updateRow(id, rowId, values);
+    await this.real(id, () => this.dataApi.changeRow(id, { id: rowId, values: this.changed(id, rowId, values) }));
   }
 
-  deleteRows(id: number, rowIds: string[]): void {
-    this.previewData.deleteRows(id, rowIds);
+  async deleteRows(id: number, rowIds: string[]): Promise<void> {
+    if (!this.previewData.writeThrough()) return this.previewData.deleteRows(id, rowIds);
+    await this.real(id, () => this.dataApi.deleteRows(id, { ids: rowIds }));
+  }
+
+  /** Changes the real data, then reads it again (others may have changed it too). */
+  private async real(id: number, change: () => Observable<unknown>): Promise<void> {
+    try {
+      await firstValueFrom(change());
+    } catch (err) {
+      const message = err instanceof HttpErrorResponse ? err.error?.message ?? err.message : String(err);
+      throw new Error(message);
+    }
+    await this.state.reload(id);
+  }
+
+  private byColumn(id: number, values: string[]): Record<string, string> {
+    const columns = this.table(id)?.columns ?? [];
+    return Object.fromEntries(columns.map((column, i) => [column, values[i] ?? '']));
+  }
+
+  /** Only the columns whose values changed, so changes others made to the rest stay. */
+  private changed(id: number, rowId: string, values: string[]): Record<string, string> {
+    const table = this.table(id);
+    const before = table?.rows.find((r) => r.id === rowId)?.values ?? [];
+    return Object.fromEntries((table?.columns ?? []).map((c, i) => [c, values[i] ?? '']).filter(([, v], i) => v !== (before[i] ?? '')));
   }
 }
 

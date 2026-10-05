@@ -76,7 +76,10 @@ public class BranchContentReader {
 
     private static DataSourceContent dataSource(DataSource source) {
         List<String> columns = source.getColumns().stream().map(DataSourceColumn::getName).toList();
-        List<List<String>> rows = source.getRows().stream().map(row -> {
+        List<DataSourceRow> ordered = source.getRows().stream()
+                .sorted(Comparator.comparingInt(DataSourceRow::getRowIndex).thenComparing(DataSourceRow::getId))
+                .toList();
+        List<List<String>> rows = ordered.stream().map(row -> {
             List<String> values = new ArrayList<>(Collections.nCopies(columns.size(), (String) null));
             for (DataSourceCell cell : row.getCells()) {
                 int index = cell.getColumn().getColumnIndex();
@@ -84,6 +87,9 @@ public class BranchContentReader {
             }
             return values;
         }).toList();
-        return new DataSourceContent(source.getId().id(), source.getName(), source.getFormat(), columns, rows);
+        return new DataSourceContent(source.getId().id(), source.getName(), source.getFormat(), columns, rows,
+                source.getKind(), source.getConnection() != null ? source.getConnection().getId() : null,
+                source.getSettings(), source.getKeyColumn(), source.isReadOnly(),
+                ordered.stream().map(row -> String.valueOf(row.getId())).toList());
     }
 }

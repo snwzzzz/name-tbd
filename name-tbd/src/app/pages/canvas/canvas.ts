@@ -1,3 +1,4 @@
+import { PreviewDataService } from '../../_services/preview-data.service';
 import {
   AfterViewInit, Component, ComponentRef, DestroyRef, ElementRef, HostListener, ViewContainerRef,
   computed, effect, inject, signal, untracked, viewChild,
@@ -172,6 +173,9 @@ export class Canvas implements AfterViewInit {
   // ─── Preview: widgets are locked and clicks run the page's workflows ─────
   readonly previewMode = signal(false);
   readonly previewKeys = shortcutKeys('preview');
+  private readonly previewData = inject(PreviewDataService);
+  /** Whether the preview changes the real data, not a copy (see PreviewDataService.writeThrough). */
+  readonly previewWritesRealData = this.previewData.writeThrough.asReadonly();
   private previewPageId: string | null = null;
 
   constructor() {
@@ -439,6 +443,12 @@ export class Canvas implements AfterViewInit {
   }
 
   // ─── Preview ─────────────────────────────────────────────────────────────
+  togglePreviewWrites(): void {
+    this.previewData.writeThrough.update((on) => !on);
+    // Either way, start from the real data: no copy from before
+    this.previewData.reset();
+  }
+
   togglePreview(): void {
     if (this.previewMode()) {
       this.stopPreview();

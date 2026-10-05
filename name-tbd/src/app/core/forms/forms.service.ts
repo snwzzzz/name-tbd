@@ -77,17 +77,22 @@ export class FormsService {
       return values;
     };
 
-    if (propText(form.props, 'mode') === FORM_EDIT_MODE) {
-      const row = this.rowToEdit(form, table.rows);
-      if (!row) {
-        this.say(formId, { text: 'Select a row to edit first.', kind: 'error' });
-        return false;
+    try {
+      if (propText(form.props, 'mode') === FORM_EDIT_MODE) {
+        const row = this.rowToEdit(form, table.rows);
+        if (!row) {
+          this.say(formId, { text: 'Select a row to edit first.', kind: 'error' });
+          return false;
+        }
+        await this.data.updateRow(dataSourceId, row.id, rowValues(row.values));
+      } else {
+        await this.data.addRow(dataSourceId, rowValues([]));
+        // Ready for the next one
+        this.values.clear(fields.map((field) => String(field.id)));
       }
-      this.data.updateRow(dataSourceId, row.id, rowValues(row.values));
-    } else {
-      this.data.addRow(dataSourceId, rowValues([]));
-      // Ready for the next one
-      this.values.clear(fields.map((field) => String(field.id)));
+    } catch (err) {
+      this.say(formId, { text: `Not saved: ${err instanceof Error ? err.message : err}`, kind: 'error' });
+      return false;
     }
     this.say(formId, { text: propText(form.props, 'successMessage') ?? 'Saved.', kind: 'success' });
     this.widgetEvents.fire({ pageId, elementId: formId, event: SUBMIT_EVENT });

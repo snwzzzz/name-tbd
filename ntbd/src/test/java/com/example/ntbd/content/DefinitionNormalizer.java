@@ -55,6 +55,8 @@ public final class DefinitionNormalizer {
         result.put("dataSources", dataSources.stream().map(d -> {
             Map<String, Object> copy = new LinkedHashMap<>(d);
             copy.put("id", label("data", d.get("id")));
+            // Row ids are database ids: new in every copy
+            copy.remove("rowIds");
             return copy;
         }).toList());
         return result;

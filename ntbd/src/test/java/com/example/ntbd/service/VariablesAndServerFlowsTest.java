@@ -131,6 +131,8 @@ class VariablesAndServerFlowsTest {
         answer.put("variables", Map.of("app", Map.of("approvalLimit", 500)));
         answer.put("data", List.of(Map.of("id", orders, "name", "orders", "columns", List.of("customer", "amount"),
                 "rows", List.of(List.of("Ada", "750"), List.of("Bob", "20")))));
+        answer.put("changes", List.of(Map.of("op", "add", "dataSourceId", orders, "rowId", "new-1",
+                "values", Map.of("customer", "Bob", "amount", "20"))));
         ArgumentCaptor<Map<String, Object>> sent = ArgumentCaptor.forClass(Map.class);
         when(sidecar.run(sent.capture())).thenReturn(answer);
 
@@ -140,8 +142,11 @@ class VariablesAndServerFlowsTest {
         assertThat(((Map<String, Object>) request.get("variables")).get("app")).isEqualTo(List.of(LIMIT));
         assertThat(request.get("scope")).isEqualTo(Map.of("payload", Map.of("amount", 20)));
         assertThat(((Map<?, ?>) request.get("workflow")).get("nodes")).asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.LIST).hasSize(1);
-        assertThat(result).containsEntry("steps", List.of("1:out")).doesNotContainKey("data");
-        assertThat(dataSourceService.findById(orders).rows()).hasSize(2);
+        assertThat(result).containsEntry("steps", List.of("1:out")).doesNotContainKey("data").doesNotContainKey("changes");
+        assertThat(dataSourceService.findById(orders).rows()).containsExactly(List.of("Ada", "750"), List.of("Bob", "20"));
+        // Rows travel with their ids (database ids), so the flow's changes hit the right rows
+        Map<?, ?> sentOrders = (Map<?, ?>) ((List<?>) request.get("data")).getFirst();
+        assertThat(sentOrders.get("rowIds")).isEqualTo(dataSourceService.findById(orders).rowIds().subList(0, 1));
     }
 
     @Test

@@ -1,0 +1,73 @@
+<div class="export-modal">
+  <h3 class="dialog-title">Export App</h3>
+
+  <div class="export-modes">
+    <label class="ui-radio">
+      <input type="radio" name="exportMode" value="embed" [ngModel]="selectedMode()" (ngModelChange)="selectedMode.set($event)" />
+      Embed data in the file
+    </label>
+    <label class="ui-radio">
+      <input type="radio" name="exportMode" value="cache" [ngModel]="selectedMode()" (ngModelChange)="selectedMode.set($event)" />
+      Live with offline cache
+    </label>
+    <label class="ui-radio">
+      <input type="radio" name="exportMode" value="live" [ngModel]="selectedMode()" (ngModelChange)="selectedMode.set($event)" />
+      Live only
+    </label>
+  </div>
+
+  @if (isEmbed()) {
+    <div class="embed-options">
+      <p class="warning">
+        Anyone with the exported file can read all embedded data.
+      </p>
+
+      <label class="ui-check">
+        <input type="checkbox" [ngModel]="allColumns()" (ngModelChange)="allColumns.set($event)" />
+        Export all columns, even unused ones
+      </label>
+
+      @if (dataReport()) {
+        <div class="sources-report">
+          <h4>Column Report</h4>
+          @for (source of dataReport()?.sources; track source.id) {
+            <div class="source-item">
+              <strong>{{ source.name }} ({{ source.kind }})</strong>
+              <div class="columns-list">
+                @if (source.exportedColumns && source.exportedColumns.length > 0) {
+                  <span>Exported: {{ source.exportedColumns.join(', ') }}</span>
+                } @else {
+                  <span>No columns exported.</span>
+                }
+                @if (source.allBecause) {
+                  <span class="all-because"> (All included because: {{ source.allBecause }})</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="live-options">
+      <h4>Active App Keys</h4>
+      @if (appKeys().length === 0) {
+        <p>No active app keys.</p>
+      }
+      @for (key of appKeys(); track key.id) {
+        <div class="app-key-item">
+          <div class="app-key-info">
+            <strong>{{ key.label || 'Unnamed Key' }}</strong>
+            <span class="hint">{{ key.hint }}</span>
+          </div>
+          <app-button color="error" variant="ghost" size="sm" (click)="revokeAppKey(key.id)">Revoke</app-button>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="dialog-actions">
+    <app-button color="neutral" variant="ghost" (click)="cancel()">Cancel</app-button>
+    <app-button (click)="exportApp()">Export</app-button>
+  </div>
+</div>

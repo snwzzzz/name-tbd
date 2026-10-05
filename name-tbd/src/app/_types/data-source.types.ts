@@ -17,10 +17,15 @@ export interface ColumnInfo {
   filledCount: number;
 }
 
-/** A table's data as the page shows it, each row with an id (for selection and edits). */
+/**
+ * A table's data as the page shows it, each row with an id (for selection and edits). Ids are where the
+ * rows come from (database ids, key column values), so they stay the same while others add or delete rows.
+ */
 export interface TableData {
   columns: string[];
   rows: TableRow[];
+  /** There were more rows than were read (live data sources answer a limited number). */
+  truncated?: boolean;
 }
 
 export interface TableRow {
