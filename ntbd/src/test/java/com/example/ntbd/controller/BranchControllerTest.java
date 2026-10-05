@@ -44,6 +44,9 @@ public class BranchControllerTest {
     private BranchService branchService;
 
     @MockitoBean
+    private com.example.ntbd.service.VersionControlService versionControlService;
+
+    @MockitoBean
     private WorkspaceAccess access;
 
     @MockitoBean

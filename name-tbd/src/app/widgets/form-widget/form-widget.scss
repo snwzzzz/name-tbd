@@ -1,65 +1,30 @@
+// Over the whole form, letting clicks through to its fields
 :host {
-  display: block;
-  width: 100%;
-  min-height: 100%;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   font-family: var(--widget-font);
+  font-size: var(--widget-text-size-small);
 }
 
-.form-widget {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  padding: 16px;
+.form-message {
+  position: absolute;
+  right: var(--widget-space);
+  bottom: var(--widget-space);
+  z-index: 2;
 }
 
-.form-title {
-  margin-bottom: 8px;
-  font-size: var(--widget-text-size);
-  font-weight: 600;
-}
-
-.inputs {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-// A Fluent input: hairline outline with a darker bottom edge that turns brand-colored on focus
-.form-input {
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--widget-stroke);
-  border-bottom-color: var(--widget-stroke-accessible);
+.bubble {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
   border-radius: var(--widget-radius);
-  background: var(--widget-bg);
-  color: var(--widget-fg);
-  font: inherit;
-
-  &:focus {
-    outline: none;
-    border-bottom: 2px solid var(--widget-brand);
-  }
-}
-
-// A Fluent secondary button
-.add-input {
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--widget-stroke);
-  border-radius: var(--widget-radius);
-  background: var(--widget-bg);
-  color: var(--widget-fg);
-  font: inherit;
+  background: color-mix(in srgb, var(--widget-success) 14%, var(--widget-bg));
+  color: color-mix(in srgb, var(--widget-success) 65%, var(--widget-fg));
   font-weight: 600;
-  cursor: pointer;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--widget-fg) 12%, transparent);
 
-  &:hover {
-    background: var(--widget-bg-hover);
-  }
-
-  &:active {
-    background: var(--widget-bg-pressed);
+  &.error {
+    background: color-mix(in srgb, var(--widget-danger) 12%, var(--widget-bg));
+    color: color-mix(in srgb, var(--widget-danger) 70%, var(--widget-fg));
   }
 }

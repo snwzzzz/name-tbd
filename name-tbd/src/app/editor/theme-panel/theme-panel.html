@@ -1,0 +1,55 @@
+<div class="panel">
+  <header class="header">
+    <h2>Theme</h2>
+    @if (settings.saving()) {
+      <span class="status">Saving…</span>
+    }
+  </header>
+  <p class="hint">The look of every widget in the app: the preview, the canvas and the export.</p>
+
+  <div class="presets" role="radiogroup" aria-label="Theme">
+    @for (preset of presets; track preset.name) {
+      <button
+        type="button"
+        role="radio"
+        class="preset"
+        [class.active]="current().preset === preset.name"
+        [attr.aria-checked]="current().preset === preset.name"
+        [style]="swatchStyle(preset.values)"
+        (click)="pickPreset(preset.name)">
+        <span class="swatch"><span class="sample-button">Aa</span></span>
+        <span class="name">{{ preset.name }}</span>
+      </button>
+    }
+  </div>
+
+  <section class="custom">
+    <h3>{{ isCustom() ? 'Custom theme' : 'Make it your own' }}</h3>
+    <label class="field">
+      <span>Primary color</span>
+      <app-color-field label="Primary color" [value]="current().primary" [defaultValue]="current().primary" emptyLabel="" (changed)="change('primary', $event)" />
+    </label>
+    <label class="field">
+      <span>Font</span>
+      <app-select size="sm" [options]="fonts" [ngModel]="current().font" (ngModelChange)="change('font', $event)" />
+    </label>
+    <label class="field">
+      <span>Corners</span>
+      <app-select size="sm" [options]="radii" [ngModel]="current().radius" (ngModelChange)="change('radius', $event)" />
+    </label>
+    <label class="field">
+      <span>Spacing</span>
+      <app-select size="sm" [options]="spacings" [ngModel]="current().spacing" (ngModelChange)="change('spacing', $event)" />
+    </label>
+  </section>
+
+  <section class="preview" [style]="previewStyle()" aria-label="Preview">
+    <h3>Preview</h3>
+    <div class="preview-card">
+      <span class="preview-title">Order #1024</span>
+      <span class="preview-badge">Paid</span>
+      <span class="preview-field">customer@example.com</span>
+      <span class="preview-button">Save</span>
+    </div>
+  </section>
+</div>

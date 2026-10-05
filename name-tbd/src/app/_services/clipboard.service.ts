@@ -3,15 +3,16 @@ import { firstValueFrom } from 'rxjs';
 import { LayoutStateService } from './layout-state.service';
 import { WorkflowStateService } from './workflow-state.service';
 import { IdRegistry } from './id-registry.service';
-import { GRID_COLUMNS, GRID_ROWS } from '../_constants/artboard.constants';
+import { GRID_COLUMNS, GRID_ROWS, pageRows } from '../_constants/artboard.constants';
 import { TRIGGER_SPACING_Y } from '../_constants/workflow.constants';
 import { ComponentId, LayoutItem, WidgetProps } from '../_types/layout.types';
 import { ActionConfig, ActionNode, FlowConnection, FlowNode, NewFlowNode } from '../_types/workflow.types';
-import { findInTree } from '../_utils/layout-tree.utils';
+import { findInTree, flattenTree } from '../_utils/layout-tree.utils';
 import { splitPortId } from '../_utils/port.utils';
 import { findFreeSpot } from '../_utils/placement.utils';
 import { toComponentId } from '../_utils/component-id.utils';
-import { workflowKeysOf } from '../core/catalog/id-references';
+import { WIDGET_PROP_ID_KINDS, workflowKeysOf } from '../core/catalog/id-references';
+import { catalogWidget } from '../core/catalog/widget-catalog';
 
 /** A copied widget: what it is, where it was and its props, with its children (containers). */
 interface CopiedWidget {
@@ -94,7 +95,8 @@ export class ClipboardService {
     }
     const placed: { widget: CopiedWidget; parentId?: string }[] = [];
     for (const { parent, widgets: group } of groups.values()) {
-      const room = parent ? { w: parent.w ?? 1, h: parent.h ?? 1 } : { w: GRID_COLUMNS, h: GRID_ROWS };
+      // A page grows downward, so there's always room below its lowest widget
+      const room = parent ? { w: parent.w ?? 1, h: parent.h ?? 1 } : { w: GRID_COLUMNS, h: pageRows(layout) + GRID_ROWS };
       const occupied = (parent ? parent.children ?? [] : layout).map(rectOf);
       const spot = findFreeSpot(group.map(rectOf), occupied, room);
       if (!spot) return { noRoom: true };
@@ -105,6 +107,8 @@ export class ClipboardService {
 
     const copies = new Map<string, string>();
     const items = placed.map(({ widget, parentId }) => this.newItem(widget, toComponentId(parentId), copies));
+    // A copy pointing at a widget copied along (a form at its table) points at that one's copy
+    for (const item of flattenTree(items)) item.props = withCopiedWidgetIds(item.type, item.props ?? {}, copies);
     this.layoutState.addWidgets(pageId, items);
 
     const flows = await this.pasteFlows(pageId, await this.copied.flows, copies);
@@ -206,4 +210,11 @@ function toCopy(item: LayoutItem): CopiedWidget {
     props: { ...item.props },
     children: (item.children ?? []).map(toCopy),
   };
+}
+
+/** A widget's props with the widget ids they hold (props of a widget-id type) pointing at copies made along. */
+function withCopiedWidgetIds(type: string | undefined, props: WidgetProps, copies: Map<string, string>): WidgetProps {
+  const keys = (catalogWidget(type)?.props ?? []).filter((p) => WIDGET_PROP_ID_KINDS[p.type] === 'widget').map((p) => p.key);
+  const changed = keys.filter((key) => copies.has(String(props[key] ?? '')));
+  return changed.length === 0 ? props : { ...props, ...Object.fromEntries(changed.map((key) => [key, copies.get(String(props[key]))!])) };
 }

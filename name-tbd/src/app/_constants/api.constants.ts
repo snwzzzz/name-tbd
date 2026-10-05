@@ -8,3 +8,6 @@ export const API_BASE_URL = '';
 /** Download URL of a branch's app, packaged in an export format (see ExportFormat.java). */
 export const appExportUrl = (branchId: number, format = 'html') =>
   `${API_BASE_URL}/api/branches/${branchId}/export?format=${encodeURIComponent(format)}`;
+
+/** A version of the app opened as the exported app, read-only, in a browser tab (see VersionControlController). */
+export const versionPreviewUrl = (versionId: number) => `${API_BASE_URL}/api/versions/${versionId}/preview`;

@@ -341,15 +341,15 @@ User (creator of branches)
 - **Workflow**: each page has (at most) one workflow, created on first access. Its **nodes** have a `type` (`Trigger`, `Condition`, `Action`), a position in the workflow editor, and their settings as a JSON `props` map. **Edges** connect a node's output port to another node.
 - **DataSource**: imported tabular data (CSV), stored normalized as columns, rows and cells. The editor works with it as `columns: string[]` plus `rows: string[][]`.
 
-**The grid.** Every page is an artboard of **1920 × 945 px**: exactly the page area of a maximized desktop browser on a 1920 × 1080 screen (minus the taskbar and the browser's toolbars). It is divided into **128 columns × 63 rows** of square 15 px cells, so the artboard's edges are the window's edges. Widget geometry is stored in cells, never in pixels. Containers have a nested grid with as many cells as the container is big. The grid is defined once, in `_constants/artboard.constants.ts`; the canvas, the layout overlay and the exported app all draw from it, and the backend never needs to know it.
+**The grid.** Every page is an artboard **1920 px wide**: exactly the page area of a maximized desktop browser on a 1920 × 1080 screen (minus the taskbar and the browser's toolbars). It is divided into **128 columns** of square 15 px cells, so the artboard's edges are the window's edges. A page is at least **one screen (63 rows, 945 px)** high and **grows downward** with its widgets (`pageRows`); the exported app scrolls like any website. Widget geometry is stored in cells, never in pixels, and a page's height is never stored: it follows its lowest widget. Containers have a nested grid with as many cells as the container is big (less their header rows, see section 6). The grid is defined once, in `_constants/artboard.constants.ts`; the canvas, the layout overlay and the exported app all draw from it, and the backend never needs to know it.
 
 ### Database migrations
 
-Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). `V1_0_16` turns saved nav menus' old default colors into Auto; `V1_0_17` gives saved buttons and links the new brand color. Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. The sample data (application `-1`, user `-1`, branch `-1`, page `-1`) is in `ntbd/src/test/resources/db/devdata/V1_0_3__add_test_data.sql`. Only dev runs and tests add that location (`spring.flyway.locations` in `ntbd/src/test/resources/config/application.properties`), so a real deploy starts with an empty database. `V1_0_18__accounts.sql` moves applications that existed before accounts into the shared workspace `-1`, with every existing user as an owner. `V1_0_19__application_lifecycle.sql` adds the default branch and "last edited by", and makes the foreign keys cascade, so deleting an application (one `DELETE`) deletes its branches and everything in them.
+Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init.sql` … `V1_0_14__browser_window_artboard.sql`). Changes to the grid come with a migration that moves saved widgets onto the new grid (`V1_0_13`, `V1_0_14`, `V1_0_15`). `V1_0_16` turns saved nav menus' old default colors into Auto; `V1_0_17` gives saved buttons and links the new brand color. Hibernate only **validates** the schema (`ddl-auto=validate`), so every schema change needs a new migration. The sample data (application `-1`, user `-1`, branch `-1`, page `-1`) is in `ntbd/src/test/resources/db/devdata/V1_0_3__add_test_data.sql`. Only dev runs and tests add that location (`spring.flyway.locations` in `ntbd/src/test/resources/config/application.properties`), so a real deploy starts with an empty database. `V1_0_18__accounts.sql` moves applications that existed before accounts into the shared workspace `-1`, with every existing user as an owner. `V1_0_19__application_lifecycle.sql` adds the default branch and "last edited by", and makes the foreign keys cascade, so deleting an application (one `DELETE`) deletes its branches and everything in them. `V1_0_22__app_theme.sql` adds the application's theme and lets buttons, links and labels still on the old default colors follow the theme; `V1_0_23__form_container.sql` turns saved instances of the retired form placeholder into (empty) form containers.
 
 **Soft delete.** Deleting a widget, workflow node or edge, or data source only marks it (`deleted_at`, `V1_0_20__soft_delete.sql`), so it can be restored with the same id and everything pointing at it works again. A `@SQLRestriction` on those entities hides marked rows from every JPA query (export, duplicate, access checks included); native SQL in `SoftDeleteRepository` still sees them. Rows deleted together share one `deleted_at`: a container takes the widgets inside it along, a node its edges, and a restore (`POST …/restore`) brings back exactly that group; something deleted on its own before stays deleted. A widget comes back only after its container, an edge only while both its nodes exist. `SoftDeletePurge` removes marked rows for good after `app.soft-delete.retention` (a day). All of it lives in `SoftDeleteService`.
 
-**Branch content** (`content/`): `BranchContent` is everything in a branch as stored: pages with their widgets (props as stored, without catalog defaults), workflows with nodes and edges, data sources with their rows. Its lists are ordered, so a branch always reads the same, and it carries a `format` number for when its shape changes. Duplicating, the export and (next) version snapshots all go through it:
+**Branch content** (`content/`): `BranchContent` is everything in a branch as stored: pages with their widgets (props as stored, without catalog defaults), workflows with nodes and edges, data sources with their rows. Its lists are ordered, so a branch always reads the same, and it carries a `format` number for when its shape changes. Duplicating, the export and versions all go through it:
 - `BranchContentReader.read(branchId)` loads it (soft-deleted things are left out).
 - `BranchContentWriter.write(content, branch)` writes it into a branch with new ids. Every id stored inside is rewritten to the new one: widget parents and workflows, a workflow's page, edges, and the widget props and workflow node settings that `shared/id-references.json` lists (read by the backend's `IdReferences` and the editor's `core/catalog/id-references.ts`; pasting widgets uses the same list). An id that pointed to nothing is cleared.
 - `BranchContentTest` writes a branch into another one and checks both export the same, with ids renumbered by `DefinitionNormalizer` (a test helper: it renumbers per kind, also inside props and node settings).
@@ -377,6 +377,7 @@ Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init
       "resizable": true,
       "palette": true,                      // false: no longer offered (old pages still show it)
       "container": false,                   // true: holds other widgets in a nested grid
+      "headerRows": 0,                      // a container's rows its component draws on (tab bar, title bar)
       "props": [
         { "key": "label", "type": "string", "label": "Label", "group": "Content", "default": "Click Me" },
         { "key": "textSize", "type": "select", "label": "Text size", "group": "Style",
@@ -394,6 +395,9 @@ Flyway migrations live in `ntbd/src/main/resources/db/migration/` (`V1_0_0__init
   - `columns`: pick and order columns
   - `page`: pick one page
   - `pages`: pick and order several pages
+  - `column`: pick one column of the widget's data source (chart labels, list titles, dropdown options)
+  - `field`: the column of its form's data source a field saves into
+  - `widget`: pick another widget on the page, of the types the prop's `options` list (a form's table)
 - **Values are stored as text**, so defaults are text too. For example a boolean is `"true"`, and lists are JSON text like `"[\"1\",\"2\"]"`.
 - `group` sections the properties panel. Groups appear in the order their first prop does.
 - **Position and size are not props.** They are fields of the component, set by dragging and resizing on the canvas.
@@ -481,10 +485,13 @@ The editor works with **tabs**, like an IDE. A tab id's kind is decided by `tabK
 - **Pan and zoom**: viewport controls, zoom buttons, fit to screen.
 - **Drag from the palette** to create a widget (size from the catalog). Containers get nested grids.
 - **Moving and resizing** updates geometry (cells). Only types marked `resizable` resize.
+- **Dragging several widgets**: dragging a selected widget takes the other selected widgets of the same grid (the page, or the same container) along by the same cells. GridStack drags one widget, so the others are shown moved with a CSS transform while dragging and placed once it's dropped (`startGroupDrag` / `dropGroupDrag` in the canvas, `moveGroup` in `align.utils.ts`); the whole group stops at the grid's edges, and a widget dropped into another container goes there alone. Pressing a selected widget keeps the selection; released without a drag, it's selected alone. One drag is one undo step.
+- **Align and distribute** (`align.utils.ts`, pure functions): with two or more widgets selected, a toolbar over the canvas (`AlignToolbar`) lines them up left, right, top, bottom or on a center line of their bounding box, or spaces three or more evenly (the first and last stay). Widgets only line up with others in the same grid; others it would overlap are pushed aside by GridStack. Each is one undo step (through the same `placeSelection` as Center).
 - **Selection** (`SelectionService`, a list of ids; `selectedId` is the one selected last) feeds the properties panel and the Layers panel. **Ctrl/⌘/Shift+click** adds a widget to the selection or takes it out, here and in Layers. The properties panel then stacks one section per widget, scrolling together. **Double-clicking** a widget (here or in the Layers panel) selects it and opens the Properties tab.
 - The **context menu** (right-click a widget; on the empty page: Paste):
   - "Add action" (one widget with a trigger): adds a flow for it and jumps to the workflow editor;
   - Copy, Duplicate, Paste (`ClipboardService`): widgets with their current props, containers with their children, and **the flows they start** (their triggers and everything after them). Pasted onto any page in the **nearest free place** where the whole group fits as it was (`placement.utils.ts`); nothing on the page moves, and the copies are selected. Copied triggers start from the copies, and actions pointing at a widget that was copied along point at its copy. When there's no free place, nothing is pasted and a message (`ToastService`) says why;
+  - with several widgets selected: Align left, Align top, and (three or more) Distribute horizontally / vertically (the rest is on the toolbar);
   - Center horizontally / vertically / on both axes, in what the widget is in (the page, or its container);
   - Delete.
 - **Center guides**: while a widget is dragged or resized centered in its grid (as near as its cells allow), a dashed line marks the grid's middle (`centering.utils.ts`).
@@ -559,7 +566,8 @@ core/
 │   └── actions/      set-text/, table/ (+ table-operations), show-detail/
 ├── testing/          fake-app.ts: in-memory fakes for every port (specs only)
 └── runtime-boundary.spec.ts
-widgets/              button, label, link, nav, table, detail, form, default
+core/forms/           field-validation, form-fields (FIELD_KINDS), forms.service, file-value
+widgets/              one folder per widget (see 8.2); _shared/ (BaseFieldWidget, bindDataSource)
 ```
 
 ### 8.2 Widgets
@@ -581,8 +589,14 @@ The widgets:
 | `nav` | `APP_PAGES`, `APP_NAVIGATION`, `APP_SESSION` | Links to chosen pages and marks the current one. A bar: square edges, filling its cells to their edges like a container (catalog `"flush": true`). Its text and current-page colors default to Auto: readable on its background; the Filled appearance marks the open page with a darker tone of the background (`color.utils.ts`). |
 | `table` | `APP_DATA`, `APP_SESSION` | Shows rows (chosen columns, max rows, striped). Click selects (single or multi); double-click fires `row_dblclick`. Shows only the rows matching its search (`TableFilterService`, set by the search action). |
 | `detail` | `APP_DATA`, `APP_SESSION` | Shows the row a workflow sent to it, with current values. While editing, shows its fields empty. |
-| `container` | none | Draws nothing itself: grids give it a nested grid, with its `background` color. |
-| `form` | none | Legacy (`palette: false`); still drawn on old pages. |
+| `select`, `checkbox`, `toggle`, `number`, `date`, `textarea`, `file` | `APP_SESSION` (+ `APP_DATA` for a dropdown's options from a column) | **Fields** (`BaseFieldWidget`): the value is kept in `InputValuesService` (a checkbox's is `'true'`/`'false'`, a file's a data URL with its name, `core/forms/file-value.ts`, up to 2 MB, inline), and each fires `value_change` ("On change"). They're labelled, keyboard-usable, and show a form's validation error under them (`FieldErrorsService`). |
+| `image`, `divider`, `icon`, `badge`, `progress`, `richtext` | none | Display: an image from a URL, a line, one of 30 icons (`core/rendering/icon-set.ts`, Lucide's drawings as data), a status pill in a theme tone, a progress bar, and Markdown text (`core/rendering/markdown.ts`, which escapes everything first). |
+| `chart` | `APP_DATA` | Bar, line or pie chart of a data source (labels from one column, values summed / counted / averaged per label, `chart-data.ts`), drawn as SVG by hand; hover shows a value, screen readers get a table. |
+| `list` | `APP_DATA`, `APP_SESSION` | A card per row (title, subtitle, badge, image, more fields). Selects rows like a table (so row actions and forms take it) and fires `item_click`; a search filters it. |
+| `container` | none | Draws nothing itself: grids give it a nested grid, with its `background` color and "Appearance" (plain, card, outline). |
+| `tabs` | none | Draws its tab bar (`headerRows`); its nested grid shows the widgets of the active tab (`ActiveTabsService`; each child's `tab` prop). Clicking a tab also works while editing, to lay out each tab. |
+| `modal` | `APP_SESSION` | A dialog laid out on the page like a container while editing; while the app runs it's hidden until **Open dialog** shows it over the page (`ModalStateService`). Escape, its close button or the backdrop close it. |
+| `form` | `APP_SESSION`, `APP_LAYOUT` | A container that saves its fields into a data source (`FormsService`): a button inside submits it ("In a form": Submit / Reset / Nothing). Every field is checked first (required, min, max, pattern from the catalog); then it **adds a row**, or **edits the row selected** in its table or list (and shows that row in its fields). Fires `form_submit`. |
 
 **Widgets never run workflows themselves.** They fire events through `WidgetEventsService` (`{ pageId, elementId, event }`). The host (the editor canvas, or the runtime shell) passes them to `WorkflowRuntimeService.handleEvent`. This keeps widgets independent of the workflow engine.
 
@@ -619,11 +633,18 @@ The **actions**:
 | `table` / `delete_rows` | `DeleteRowsHandler` | Deletes all selected rows after one confirmation. |
 | `show_detail` | `ShowDetailHandler` | Sends the selected row to a detail section (`DetailRecordsService`), opening the detail's page if it's another one. |
 | `search` | `SearchHandler` | Filters one table, or every table on the page (`tableId: "all"`, a global search), by an input's text: every word must appear in one of the shown columns, ignoring case; empty shows all rows. Rows it hides are deselected. Start it **on type** with the input's "On input" trigger (debounced), or **on a button press** with a button's "On click". |
+| `open_modal` / `close_modal` | `OpenModalHandler` / `CloseModalHandler` | Opens a dialog over the page, or closes it. |
+| `submit_form` | `SubmitFormHandler` | Checks and saves a form like its button does; the flow goes on only when it was saved. |
+
+Lists count as tables for the row actions (`core/rendering/row-widgets.ts`).
 
 Shared runtime state lives in `core/services`:
 - `TableSelectionService`: selected rows per table
 - `TableFilterService`: the search each table is filtered by
-- `InputValuesService`: what's typed into each input
+- `InputValuesService`: what's entered into each field
+- `FieldErrorsService`, `FormMessagesService`: what's wrong with each field, and each form's message
+- `ActiveTabsService`, `ModalStateService`: the tab each tabs widget shows, and the open dialogs
+- `AppThemeService`: the app's theme, for code that needs its values
 - `DetailRecordsService`: which row each detail section shows
 - `WidgetEventsService`: the event bus
 
@@ -689,6 +710,8 @@ If anything fails, the page shows the reason instead of staying blank.
 
 - **Exactly the canvas on a 1080p screen.** The artboard is drawn with the same `WidgetGrid` as the editor's layout overlay. In a 1920 × 945 window every widget sits where it sits on the canvas, edges included.
 - **A real website: zoomable.** Everything is in real CSS px, so the browser's zoom (Ctrl + / −, pinch) works as on any site.
+- **Tall pages.** The artboard is as high as the layout page or the shown page, whichever reaches further down (dialogs don't count); the window scrolls. Both grids have cell-high rows in px, so they line up row by row.
+- **Theme.** The definition's `theme` becomes CSS variables on the document (`themeVariables`), so every widget, and dialogs over the page, wear it.
 - **A bit responsive.** Rows keep the canvas's height in px; columns share the window's width. A narrower window (or zooming in) narrows the columns down to `EXPORT_MIN_WIDTH`, half the artboard (960 px, i.e. 200% zoom on a 1080p screen); below that the page scrolls sideways instead of squeezing further. A wider window (or zooming out) widens them.
 - **Layering.** The page layer lets clicks through its gaps (`pointer-events: none`, widgets `auto`), so the layout page's widgets underneath stay clickable.
 - **Page load.** `RuntimePage` sets the current page (`RuntimeLocation`) and runs the page's page-load workflows whenever its `pageId` changes.
@@ -755,7 +778,7 @@ commands/        request bodies (NewPageCommand, UpdateUiComponentCommand, …)
 | Page content | `GET /api/pages/{id}/full`: the page, its widgets with complete props (type defaults overlaid with their own) and its workflow, in one answer; the editor loads a page with it |
 | Applications | `POST /api/applications` (with its `main` branch), `GET /api/applications`, `GET`/`PATCH`/`DELETE /api/applications/{id}` (delete removes everything in it), `POST /api/applications/{id}/duplicate` |
 | Branches | `POST /api/branches`, `GET /api/branches`, `DELETE /api/branches/{id}`, `POST /api/branches/{id}/changes` (the editor's batches of changes, see **Saving**) |
-| Versions | `POST /api/versions`, `GET /api/versions`, `GET /api/versions/latest` |
+| Versions | `GET /api/versions?branchId=` (newest first, without content), `POST /api/versions` (save the branch now, `{branchId, label}`), `PATCH /api/versions/{id}` (rename), `POST /api/versions/{id}/restore`, `GET /api/versions/{id}/definition`, `GET /api/versions/{id}/preview` (the exported app as HTML, sandboxed) |
 | Users | `POST /api/users` |
 | Pages | `POST /api/pages`, `GET /api/pages?branchId=`, `GET /api/pages/{id}`, `GET /api/pages/{id}/full`, `GET /api/pages/{id}/ui-components`, `GET /api/pages/{id}/workflow` (created on first access) |
 | Components | `POST /api/ui-components`, `GET`/`PUT`/`DELETE /api/ui-components/{id}` (delete marks it, see soft delete), `POST /api/ui-components/{id}/restore`, `GET /api/ui-components/{id}/props` (with catalog defaults) |
@@ -874,9 +897,12 @@ Pages carry their widgets' geometry in grid cells only (`x`, `y`, `w`, `h`): tur
   "dataSources": [
     { "id": 1, "name": "people", "columns": ["id", "first_name"], "rows": [["1", "Anna"], ["2", "Lukas"]] }
   ],
-  "dataRevision": "80569c033e4af4b1"
+  "dataRevision": "80569c033e4af4b1",
+  "theme": { "preset": "Custom", "primary": "#0f8a4f", "font": "Rounded" }   // null: the default preset
 }
 ```
+
+`theme` (from `ThemeContributor`, the application's theme now) was added without a version bump: older exports have none, and the runtime falls back to the default preset.
 
 **Workflows travel in the backend's neutral shape** (nodes with props, edges with node ids and port names). The frontend's port-id format stays a frontend detail: `definitionGraph()` converts them into the graph the workflow runtime runs.
 
@@ -908,7 +934,7 @@ The editor never waits for the backend while editing. Every change applies to it
 
 Every change to a page (its canvas, widget settings, its workflow) can be undone (`Ctrl+Z`, the navbar's Undo button) and redone (`Ctrl+Shift+Z` or `Ctrl+Y`). The steps live in `HistoryService`, per page; Undo/Redo act on the open page, and their buttons name the step ("Undo Move").
 
-- **Commands** (`editor/commands/`): a step is a `Command` with `apply()` (also for redo) and `invert()`. So far: `MoveWidgets` (drags, resizes, into or out of a container, "Center"), `AddWidgets` (a drop, a paste with its flows) and `DeleteWidgets` (with what's inside; undo brings them back by their ids, thanks to soft delete), `SetWidgetProps` (the properties panel) and `ChangeGraph` (anything in the workflow editor, and the canvas's **Add action**).
+- **Commands** (`editor/commands/`): a step is a `Command` with `apply()` (also for redo) and `invert()`. So far: `MoveWidgets` (drags of one widget or several, resizes, into or out of a container, Center, Align, Distribute), `AddWidgets` (a drop, a paste with its flows) and `DeleteWidgets` (with what's inside; undo brings them back by their ids, thanks to soft delete), `SetWidgetProps` (the properties panel) and `ChangeGraph` (anything in the workflow editor, and the canvas's **Add action**).
 - **Recording:** the canvas still lets GridStack do the editing; afterwards it records what happened (`history.record`). Steps recorded within 150 ms are one step (a drop and the container growing for it; the moves of one drag; deleting a selection). A step is named after what isn't a move.
 - **Merging:** a command can merge the next one into itself (`merge`). Typing into a setting, or nudging a node, merges for `TYPING_MS` (1 s, `mergeWindowMs`): one step from before the first key to after the last.
 - **Workflow changes** are recorded by `recordGraphChange(history, workflows, pageId, label, change)`: it snapshots the graph, runs the change (waiting for it if it returns an Observable) and records the difference as a `ChangeGraph`. A new workflow edit just goes through it.
@@ -917,6 +943,25 @@ Every change to a page (its canvas, widget settings, its workflow) can be undone
 - **Applying:** undo and redo change the editor's state through `LayoutStateService` / `WorkflowStateService` (`placeWidgets`, `removeWidgets`, `restoreWidgets`, `restoreNodes`), which save through the `SaveQueue`, and `history.applied$` tells the canvas to rebuild the page from that state (locally, no requests).
 - **Ids:** commands keep the ids things had when they were recorded; a temporary id saved since is looked up in `IdRegistry` when the command applies.
 - The last 100 steps per page are kept; reloading the editor starts a fresh history.
+
+### 13.1c Versions
+
+A version is a snapshot of the whole branch (`BranchContent` as JSON in `version_control.content`), numbered 1, 2, 3, … per branch. `VersionControlService` makes them; the **History** sidebar tab (`HistoryPanel`, `VersionsService`) lists them.
+
+- **When:**
+
+  | Kind | Made | Kept |
+  |---|---|---|
+  | `MANUAL` | **Save version** in the History tab (optionally named) | always |
+  | `AUTO` | after a batch of changes, if the last automatic one is over 30 minutes old and something changed (`app.versions.auto-interval`) | the newest 50 (`app.versions.auto-keep`) |
+  | `BEFORE_EXPORT` | before a download from **Export**, if something changed | always |
+  | `RESTORE` | before a restore: the app as it was, named "Before restoring version N" | always |
+  | `LEGACY` | versions saved before V1_0_21 (free JSON, never written by the editor); not listed, can't be opened (409) | always |
+
+  "Something changed" compares the content's SHA-256 (`content_hash`) with the newest version's. Saving a version and exporting first send what the `SaveQueue` holds, so a version has what's on screen; Save version refuses while changes can't be sent.
+- **Restore:** makes the `RESTORE` version, then empties the branch (`BranchContentEraser`: pages, workflows and data sources, soft-deleted ones included; the database cascades the rest) and writes the version's content into it with `BranchContentWriter`, all in one transaction. Everything gets new ids, so the editor forgets its saved tabs and loads again on the page with the same path (undo history starts fresh). To take a restore back, restore its `RESTORE` version.
+- **Preview:** opens `GET /api/versions/{id}/preview` in a new browser tab: the version's export (the same HTML file as **Export**), read-only. It runs the exported app's inline code, so it gets its own Content-Security-Policy (`VersionControlController.PREVIEW_CSP`) instead of the API's, with `sandbox allow-scripts`: an opaque origin, without the editor's cookies or access to the API. Data changes in a preview aren't kept.
+- **Tested** by `VersionRestoreTest`: a restored version exports the same as the app when it was saved (ids renumbered by `DefinitionNormalizer`), a restore can be taken back, restore plus duplicate plus soft delete together, the 30-minute rule and retention.
 
 ### 13.2 Adding behavior
 
@@ -936,8 +981,8 @@ Every change to a page (its canvas, widget settings, its workflow) can be undone
 
 ### 13.5 Exporting
 
-1. **Navbar → Export** opens `GET /api/branches/-1/export?format=html`.
-2. The backend builds the definition, inlines the runtime, and sends `<app-name>.html`.
+1. **Navbar → Export** sends the changes still waiting (`SaveQueue.flush`), then downloads `GET /api/branches/{id}/export?format=html`.
+2. The backend saves a `BEFORE_EXPORT` version (if something changed), builds the definition, inlines the runtime, and sends `<app-name>.html`.
 3. Open the file anywhere. The runtime reads the embedded definition, routes to the home page, draws the layout page plus the page, and runs workflows exactly like the preview. Data changes stay in that browser.
 
 ---
@@ -953,6 +998,7 @@ Global styles are split into partials in `src/app/_styles/`. Both the editor (`s
 | `_fields.scss` | Form field look (`.ui-field`, `.ui-input`, `.ui-check`, …), used in modals |
 | `_modal.scss` | Modal backdrop and panel |
 | `_spinner.scss` | `.ui-spinner` |
+| `_widgets.scss` | The widgets' shared pieces: fields (`.w-field`, `.w-box`, `.w-error`), focus rings, fields inert while editing, container appearances |
 
 The editor adds GridStack's CSS, drag ghosts and the blueprint grid. The runtime adds only the CDK overlay CSS.
 
@@ -961,7 +1007,7 @@ The editor adds GridStack's CSS, drag ghosts and the blueprint grid. The runtime
 - Widget text uses `--widget-text-size` (default: normal), and hints use `--widget-text-size-small`.
 - A widget's **Text size** prop sets `--widget-text-size` on that widget (`BaseWidget`).
 
-**Brand color.** The widgets' main color (buttons, links, menus, focus rings: `--widget-brand`, `BRAND_COLOR`) is the editor's primary, `#2f89ff`, in both themes.
+**App theme.** Every widget reads the widget tokens (`--widget-brand`, `--widget-font`, `--widget-radius`, `--widget-radius-field`, `--widget-space`, …), never colors of its own (`widgets/widget-theme.spec.ts` fails on a hard-coded color). An application's **theme** sets them: one of the presets in `shared/app-themes.json` (Default, Fresh, Elegant) or a custom primary color, font, corners and spacing. It's stored on the application (`PATCH /api/applications/{id}` with `theme`, checked by `catalog/AppThemes`), edited in the **Theme** sidebar tab (`ThemePanel`, saved at once), applied to the canvas's artboard and, in exports, to the page (`core/rendering/app-theme.ts`). Colors left on Auto (`''`) follow it: buttons and links take the primary, labels and menus the text color.
 
 **Hover.** `--widget-hover-dim` / `--widget-active-dim` (brightness filters that work on any color) and `--widget-transition`. Hover and press states apply only while the app runs:
 - buttons darken;
@@ -977,13 +1023,13 @@ The editor adds GridStack's CSS, drag ghosts and the blueprint grid. The runtime
 ### Add a widget
 
 1. **Catalog**: add an entry to `shared/widget-catalog.json` (type, name, icon, category, size, props).
-2. **Component**: create `widgets/<name>-widget/` with a component extending `BaseWidget`. Read props with `this.text(key)` or the helpers in `_utils/widget-props.utils.ts`. Use ports (`inject(APP_DATA)`, …), never editor services. Size text with `var(--widget-text-size)`.
+2. **Component**: create `widgets/<name>-widget/` with a component extending `BaseWidget` (a field: `BaseFieldWidget`, and list its type in `FIELD_KINDS`; a data widget: `bindDataSource`). Read props with `this.text(key)` or the helpers in `_utils/widget-props.utils.ts`. Use ports (`inject(APP_DATA)`, …), never editor services. Size text with `var(--widget-text-size)`, and take colors, font, corners and spacing from the widget tokens so the theme applies. Label it, give it a role, and make it keyboard-usable while the app runs.
 3. **Register** the component in `WIDGET_COMPONENTS` (`core/rendering/widget-components.ts`).
 4. **Icon**: if it's new, add it to `WIDGET_ICONS`.
 5. **Optional**:
    - if it fires an event, add a `WIDGET_TRIGGERS` entry and fire through `WidgetEventsService`;
    - if it needs a custom prop type, see the next recipe.
-6. **Verify**: run the tests (the catalog parity and boundary specs check the wiring), then `npm run build:runtime` so exports include it.
+6. **Verify**: run the tests (the catalog parity and boundary specs check the wiring, `widget-catalog.export.spec.ts` exports it and runs axe-core on it, and the backend's `WidgetCatalogExportTest` exports its defaults), then `npm run build:runtime` so exports include it.
 
 The backend needs no change: it reads the catalog.
 
@@ -1061,7 +1107,8 @@ Widgets and actions don't change.
 | Catalog parity | `core/catalog/widget-catalog.spec.ts` |
 | Widgets on the fake app | `widgets/*/*.spec.ts` |
 | Workflow engine and actions | `core/workflow/**/*.spec.ts` |
-| Exported app end to end | `runtime/app/runtime-shell/runtime-shell.spec.ts` (boots the shell with a test app; checks layout, workflows, routing, persisted data) |
+| Exported app end to end | `runtime/app/runtime-shell/runtime-shell.spec.ts` (boots the shell with a test app; checks layout, workflows, routing, tall pages, the theme, persisted data), `runtime-forms.spec.ts` (forms that validate, add and edit rows; dialogs; tabs) |
+| Every widget, exported and accessible | `runtime/app/widget-catalog.export.spec.ts`: each palette widget exported in a definition, drawn by the runtime shell, and checked with **axe-core** (WCAG 2.1 A/AA; contrast can't be measured in jsdom) |
 | Runtime routing and storage | `runtime/app/runtime-routes.spec.ts`, `app-storage.spec.ts` |
 | Editor services and utils | `_services/*.spec.ts`, `_utils/*.spec.ts` |
 
@@ -1072,7 +1119,7 @@ Widgets and actions don't change.
 | Area | Tests |
 |---|---|
 | Services, controllers, mappers, repositories | `service/`, `controller/`, `mapper/`, `persistence/` |
-| Catalog | `catalog/WidgetCatalogTest` |
+| Catalog | `catalog/WidgetCatalogTest`, `export/WidgetCatalogExportTest` (every widget type exported with all its settings; the theme in the definition) |
 | Export | `export/AppExportIntegrationTest` (real database content → definition → HTML download), `export/format/*` (inlining and escaping, formats registry, runtime lookup), `export/definition/AppDefinitionTest` |
 | Server-side engine | `workflow/*` |
 
@@ -1115,7 +1162,10 @@ The whole folder is regenerated each time. Commit it together with the backend c
 - Condition nodes are stored and editable but not executed by the browser runtime.
 - There is no home-page setting: the export starts on the page at `/`, or else the first page.
 - Exported data lives in the export and in each visitor's browser. There's no shared live data yet.
-- Pages are designed for one desktop window size. They adapt to windows down to half its width; on smaller screens (phones) they scroll sideways. Real mobile layouts would need per-breakpoint geometry.
+- Pages are designed for one desktop window width. They adapt to windows down to half its width; on smaller screens (phones) they scroll sideways. Real mobile layouts would need per-breakpoint geometry.
+- Uploaded files are kept inline (data URLs, up to 2 MB each) in the app's data and its visitors' browser storage (a few MB in all); a server keeps them once apps are published.
+- Charts are drawn by the widget itself (SVG, one series) rather than with a chart library, to keep the single-file export small.
+- Widgets ship their most common settings only; more options come from design partners' requests.
 - Workspace members can't be invited yet; each user only has their personal workspace (plus, in development, the sample workspace).
 
 **Planned, and prepared for by the architecture:**

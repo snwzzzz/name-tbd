@@ -139,6 +139,11 @@ export class TabsService {
     });
   }
 
+  /** Forgets the tabs saved for this application (e.g. their pages are gone after a restore). */
+  forgetSaved(): void {
+    sessionStorage.removeItem(this.storageKey);
+  }
+
   private restoreTabs(): TabItem[] {
     try {
       const saved: unknown = JSON.parse(sessionStorage.getItem(this.storageKey) ?? 'null');

@@ -1,29 +1,61 @@
-<ng-container *ngTemplateOutlet="grid; context: { $implicit: items(), columns: columns, rows: rows, root: true }" />
+<ng-container *ngTemplateOutlet="grid; context: { $implicit: items(), columns: columns, rows: rootRows(), root: true }" />
 
-<!-- One grid of cells; containers nest their own grid (as many cells as they're big, no margins).
-     Like on the canvas, only the root grid's widgets are inset, and containers fill their cells.
-     minmax(0, 1fr): cells always share the space evenly, however wide their content (narrow windows). -->
+<!-- One grid of cells; containers nest their own grid (as many cells as they're big, less their
+     header rows, no margins). Like on the canvas, only the root grid's widgets are inset, and
+     containers fill their cells.
+     minmax(0, 1fr): cells always share the space evenly, however wide their content (narrow windows).
+     The root's rows are cell-high in px, so grids of different heights (the layout page's and a
+     taller page's) still line up row by row. -->
 <ng-template #grid let-items let-columns="columns" let-rows="rows" let-root="root">
   <div
     class="layout-grid"
     [class.root]="root"
     [style.grid-template-columns]="'repeat(' + columns + ', minmax(0, 1fr))'"
-    [style.grid-template-rows]="'repeat(' + rows + ', minmax(0, 1fr))'">
+    [style.grid-template-rows]="root ? 'repeat(' + rows + ', ' + cellSize + 'px)' : 'repeat(' + rows + ', minmax(0, 1fr))'">
     @for (item of items; track key(item)) {
-      <div
-        class="cell"
-        [style.grid-column]="((item.x ?? 0) + 1) + ' / span ' + (item.w ?? 1)"
-        [style.grid-row]="((item.y ?? 0) + 1) + ' / span ' + (item.h ?? 1)"
-        [style.padding.px]="root && !isContainer(item) && !isFlush(item.type) ? margin : 0"
-        [style.background]="isContainer(item) ? background(item) : null">
-        @if (isContainer(item)) {
-          <ng-container *ngTemplateOutlet="grid; context: { $implicit: item.children ?? [], columns: item.w ?? 1, rows: item.h ?? 1, root: false }" />
-        } @else {
-          <div class="widget">
-            <ng-container *ngComponentOutlet="component(item); inputs: { id: key(item), props: props(item) }" />
+      @if (isOverlay(item.type)) {
+        @if (isOpen(item)) {
+          <!-- A dialog over the page: a backdrop, and the dialog at its size in the middle of the window -->
+          <div class="modal-backdrop" (click)="closeOnBackdrop(item)"></div>
+          <div
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            [attr.aria-labelledby]="modalTitleId(item)"
+            [class]="'modal ' + containerClass(item)"
+            [style.--modal-w]="item.w ?? 1"
+            [style.height.px]="(item.h ?? 1) * cellSize"
+            [style.background]="background(item)">
+            <ng-container *ngTemplateOutlet="container; context: { $implicit: item }" />
           </div>
         }
-      </div>
+      } @else {
+        <div
+          class="cell"
+          [class]="isContainer(item) ? 'cell container ' + containerClass(item) : 'cell'"
+          [style.grid-column]="((item.x ?? 0) + 1) + ' / span ' + (item.w ?? 1)"
+          [style.grid-row]="((item.y ?? 0) + 1) + ' / span ' + (item.h ?? 1)"
+          [style.padding.px]="root && !isContainer(item) && !isFlush(item.type) ? margin : 0"
+          [style.background]="isContainer(item) ? background(item) : null">
+          @if (isContainer(item)) {
+            <ng-container *ngTemplateOutlet="container; context: { $implicit: item }" />
+          } @else {
+            <div class="widget">
+              <ng-container *ngComponentOutlet="component(item); inputs: { id: key(item), props: props(item) }" />
+            </div>
+          }
+        </div>
+      }
     }
+  </div>
+</ng-template>
+
+<!-- A container's inside: its frame over it, its nested grid below its header -->
+<ng-template #container let-item>
+  @if (frame(item.type); as frameComponent) {
+    <ng-container *ngComponentOutlet="frameComponent; inputs: { id: key(item), props: props(item) }" />
+  }
+  <div class="inner" [style.top.px]="headerHeight(item)" [attr.role]="item.type === 'tabs' ? 'tabpanel' : null">
+    <ng-container *ngTemplateOutlet="grid; context: { $implicit: children(item), columns: item.w ?? 1, rows: innerRows(item), root: false }" />
   </div>
 </ng-template>

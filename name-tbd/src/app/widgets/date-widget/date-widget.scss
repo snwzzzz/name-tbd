@@ -1,0 +1,12 @@
+// The field's look is shared (.w-field, .w-box in _styles/_widgets.scss)
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+// The browser's calendar button, in the field's colors
+input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}

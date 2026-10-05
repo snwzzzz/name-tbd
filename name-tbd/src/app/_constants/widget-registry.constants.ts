@@ -1,6 +1,9 @@
 import {
-  LucideComponent, LucideIcon, LucideLink, LucideMousePointerClick, LucideNavigation, LucidePanelsTopLeft, LucideSheet,
-  LucideSquareDashed, LucideTextCursorInput, LucideType,
+  LucideAppWindow, LucideCalendar, LucideChartColumn, LucideClipboardList, LucideComponent, LucideFileText, LucideGauge,
+  LucideHash, LucideIcon, LucideImage, LucideLayoutList, LucideLetterText, LucideLink, LucideMousePointerClick,
+  LucideNavigation, LucidePanelTop, LucidePanelsTopLeft, LucideSeparatorHorizontal, LucideSheet, LucideSmile,
+  LucideSquareCheck, LucideSquareChevronDown, LucideSquareDashed, LucideTag, LucideTextCursorInput, LucideToggleRight,
+  LucideType, LucideUpload,
 } from '@lucide/angular';
 import { PaletteCategory, PaletteItem, WidgetDefinition } from '../_types/widget.types';
 import { CatalogWidget, WIDGET_CATALOG, catalogDefaults } from '../core/catalog/widget-catalog';
@@ -22,6 +25,24 @@ export const WIDGET_ICONS: Record<string, LucideIcon> = {
   navigation: LucideNavigation,
   'panels-top-left': LucidePanelsTopLeft,
   'square-dashed': LucideSquareDashed,
+  'square-chevron-down': LucideSquareChevronDown,
+  'square-check': LucideSquareCheck,
+  'toggle-right': LucideToggleRight,
+  hash: LucideHash,
+  calendar: LucideCalendar,
+  'letter-text': LucideLetterText,
+  upload: LucideUpload,
+  image: LucideImage,
+  'separator-horizontal': LucideSeparatorHorizontal,
+  smile: LucideSmile,
+  tag: LucideTag,
+  gauge: LucideGauge,
+  'chart-column': LucideChartColumn,
+  'layout-list': LucideLayoutList,
+  'file-text': LucideFileText,
+  'panel-top': LucidePanelTop,
+  'app-window': LucideAppWindow,
+  'clipboard-list': LucideClipboardList,
 };
 
 export const DEFAULT_WIDGET_TYPE = 'default';
@@ -55,7 +76,7 @@ export const PALETTE_CATEGORIES: PaletteCategory[] = WIDGET_CATALOG.categories;
 
 /**
  * What the component list offers to drag onto the canvas, with the size it's dropped at.
- * Types marked `palette: false` (like the form) aren't offered, but saved pages still show them.
+ * Types marked `palette: false` aren't offered, but saved pages still show them.
  */
 export const PALETTE_ITEMS: PaletteItem[] = WIDGET_CATALOG.widgets
   .filter((w) => w.palette !== false)

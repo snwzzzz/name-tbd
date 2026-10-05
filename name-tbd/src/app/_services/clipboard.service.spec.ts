@@ -118,8 +118,20 @@ describe('ClipboardService', () => {
     expect(action.config['targetId']).toBe('new_102'); // the copy of label 3
   });
 
-  it('creates nothing when there is no free place, instead of stacking copies on top', async () => {
+  it('pastes below everything on a full page: a page grows downward', async () => {
     const full: LayoutItem[] = [{ id: 1, type: 'container', x: 0, y: 0, w: 128, h: 40, props: {} }, { id: 2, type: 'table', x: 0, y: 40, w: 128, h: 23, props: {} }];
+    const clipboard = setup(full);
+    clipboard.copy('p', ['2']);
+
+    await clipboard.paste('p');
+    expect(created.map(({ x, y }) => ({ x, y }))).toEqual([{ x: 0, y: 63 }]);
+  });
+
+  it('creates nothing when there is no free place in the container, instead of stacking copies on top', async () => {
+    const full: LayoutItem[] = [{
+      id: 1, type: 'container', x: 0, y: 0, w: 10, h: 4, props: {},
+      children: [{ id: 2, parentId: 1, type: 'label', x: 0, y: 0, w: 10, h: 4, props: {} }],
+    }];
     const clipboard = setup(full);
     clipboard.copy('p', ['2']);
 

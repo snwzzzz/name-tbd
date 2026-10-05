@@ -91,7 +91,7 @@ class ApplicationDuplicateTest {
         edgeService.createEdge(workflow, new NewEdgeCommand(setText, showDetail, "out"));
         edgeService.createEdge(workflow, new NewEdgeCommand(showDetail, search, "out"));
 
-        versionControlService.createVersion(new NewVersionControlCommand(null, branch, null, "{}", "1.0.0"));
+        versionControlService.save(branch, "First");
         TestSignIn.signOut();
     }
 
@@ -233,8 +233,7 @@ class ApplicationDuplicateTest {
     @Test
     void the_copy_starts_without_version_history() throws Exception {
         ApplicationDto copy = duplicate();
-        assertThat(versionRepository.findVersionControlByBranchOrderByCreatedAt(
-                new com.example.ntbd.domain.Branch.BranchId(copy.defaultBranchId()), Pageable.unpaged())).isEmpty();
+        assertThat(versionRepository.listByBranch(copy.defaultBranchId())).isEmpty();
     }
 
     @Test

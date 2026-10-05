@@ -1,4 +1,4 @@
-<div class="artboard" [style.min-width]="minWidth" [style.height.px]="height">
-  <app-widget-grid class="layout" [items]="layoutItems()" />
+<div class="artboard" [style.min-width]="minWidth" [style.height.px]="height()">
+  <app-widget-grid class="layout" [items]="layoutItems()" [rows]="rows()" />
   <router-outlet />
 </div>

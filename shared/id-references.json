@@ -4,7 +4,8 @@
   "widgetPropTypes": {
     "page": "page",
     "pages": "pageList",
-    "dataSource": "dataSource"
+    "dataSource": "dataSource",
+    "widget": "widget"
   },
   "workflowNodeKeys": {
     "elementId": "widget",
@@ -12,6 +13,8 @@
     "tableId": "widget",
     "detailId": "widget",
     "inputId": "widget",
+    "modalId": "widget",
+    "formId": "widget",
     "detailPageId": "page"
   }
 }

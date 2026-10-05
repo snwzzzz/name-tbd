@@ -41,7 +41,7 @@ describe('LayersPanel', () => {
   it('lists the widgets top to bottom, with containers holding their children', () => {
     const el: HTMLElement = mount().nativeElement;
 
-    expect(names(el)).toEqual(['Container', 'Text Label', 'Button']);
+    expect(names(el)).toEqual(['Container / Card', 'Text Label', 'Button']);
     expect(el.textContent).toContain('Save');
     expect(el.querySelector('.count')?.textContent?.trim()).toBe('3 widgets');
   });
@@ -57,7 +57,7 @@ describe('LayersPanel', () => {
 
     (el.querySelector('.toggle') as HTMLElement).click();
     fixture.detectChanges();
-    expect(names(el)).toEqual(['Container', 'Button']);
+    expect(names(el)).toEqual(['Container / Card', 'Button']);
     expect(selectedId()).toBe('1'); // folding doesn't select the container
   });
 

@@ -2,6 +2,7 @@ import { LayoutItem } from '../../_types/layout.types';
 import { FlowConnection, FlowNode, WorkflowGraph } from '../../_types/workflow.types';
 import { inputPortId, outputPortId } from '../../_utils/port.utils';
 import { DataSourceSnapshot } from '../ports/memory-app-data';
+import { AppTheme } from '../rendering/app-theme';
 
 // An app as a whole, as the backend exports it (AppDefinitionService.java and its contributors) and the exported app
 // runs it: pages with their widgets and workflows, and the data. Changes to its shape bump
@@ -18,6 +19,8 @@ export interface AppDefinition {
   homePageId: number | null;
   pages: DefinitionPage[];
   dataSources: DataSourceSnapshot[];
+  /** The app-wide theme (null or missing: the default preset); exports before themes have none. */
+  theme?: AppTheme | null;
 }
 
 export interface DefinitionPage {

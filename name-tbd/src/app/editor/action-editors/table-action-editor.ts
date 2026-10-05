@@ -7,6 +7,7 @@ import { SelectOption } from '../../_types/select.types';
 import { TableActionConfig } from '../../_types/workflow.types';
 import { propText } from '../../_utils/widget-props.utils';
 import { TABLE_OPERATIONS } from '../../core/workflow/actions/table/table-operations';
+import { isRowWidget } from '../../core/rendering/row-widgets';
 
 /** Settings of the table action: which data table on the page, and what to do with it. */
 @Component({
@@ -39,6 +40,6 @@ export class TableActionEditor extends BaseActionEditor<TableActionConfig> {
 
   readonly tableOptions = computed<SelectOption[]>(() =>
     this.pageItems()
-      .filter((i) => i.type === 'table' && typeof i.id === 'number')
-      .map((i) => ({ value: i.id!.toString(), label: `${propText(i.props, 'title') ?? 'Table'} (#${i.id})`, icon: LucideSheet })));
+      .filter((i) => isRowWidget(i.type) && typeof i.id === 'number')
+      .map((i) => ({ value: i.id!.toString(), label: `${propText(i.props, 'title') ?? (i.type === 'list' ? 'List' : 'Table')} (#${i.id})`, icon: LucideSheet })));
 }

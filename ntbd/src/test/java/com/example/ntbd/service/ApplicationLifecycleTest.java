@@ -164,7 +164,7 @@ class ApplicationLifecycleTest {
             long action = nodeService.createNode(new NewNodeCommand(workflow, "Action", Map.of(), 1.0, 0.0)).id();
             edgeService.createEdge(workflow, new NewEdgeCommand(trigger, action, "out"));
             dataSourceService.importDataSource(new NewDataSourceCommand(branchId, "People", "csv", "name\nAda"));
-            versionControlService.createVersion(new NewVersionControlCommand(null, branchId, null, "{}", "1.0.0"));
+            versionControlService.save(branchId, "First");
         } finally {
             TestSignIn.signOut();
         }

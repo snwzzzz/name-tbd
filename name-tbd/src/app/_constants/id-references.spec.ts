@@ -3,7 +3,7 @@ import { WIDGET_PROP_ID_KINDS, WORKFLOW_NODE_ID_KINDS, workflowKeysOf } from '..
 import { ACTION_TYPES } from './workflow.constants';
 
 /** Catalog prop types whose values are never ids (text, numbers, choices, column names). */
-const PLAIN_PROP_TYPES = ['string', 'number', 'boolean', 'color', 'select', 'columns'];
+const PLAIN_PROP_TYPES = ['string', 'number', 'boolean', 'color', 'select', 'textarea', 'columns', 'column', 'field'];
 
 describe('id references (shared/id-references.json)', () => {
   it('knows for every catalog prop type whether it holds an id', () => {

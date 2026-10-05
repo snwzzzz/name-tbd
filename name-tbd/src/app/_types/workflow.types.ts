@@ -56,11 +56,21 @@ export interface SearchConfig {
   tableId: string;           // id of a data table on this page, or 'all' (see SEARCH_ALL_TABLES)
 }
 
+/** Config of `open_modal` and `close_modal`: the modal dialog on this page. */
+export interface ModalConfig {
+  modalId: string;
+}
+
+/** Config of `submit_form`: the form on this page to check and save. */
+export interface SubmitFormConfig {
+  formId: string;
+}
+
 /**
  * Config of any action. A config field holding the id of a widget or page must be listed in
  * shared/id-references.json, so copies (paste, duplicate, restore) point to their own (id-references.spec checks).
  */
-export type ActionConfig = SetTextConfig | TableActionConfig | ShowDetailConfig | SearchConfig;
+export type ActionConfig = SetTextConfig | TableActionConfig | ShowDetailConfig | SearchConfig | ModalConfig | SubmitFormConfig;
 
 export interface ActionNode extends FlowNodeBase {
   type: 'Action';

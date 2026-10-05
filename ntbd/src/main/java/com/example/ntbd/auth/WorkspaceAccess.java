@@ -76,6 +76,10 @@ public class WorkspaceAccess {
         require("dataSourceId", id, least, repository::roleForDataSource, () -> new DataSourceNotFoundException(id));
     }
 
+    public void requireVersion(Long id, WorkspaceRole least) {
+        require("versionId", id, least, repository::roleForVersion, () -> new VersionControlNotFoundException(id));
+    }
+
     // ---- Deleted things, to restore them (same rules) ----
 
     public void requireUiComponentEvenIfDeleted(Long id, WorkspaceRole least) {

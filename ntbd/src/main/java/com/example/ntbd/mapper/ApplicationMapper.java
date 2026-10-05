@@ -18,7 +18,8 @@ public class ApplicationMapper  {
                 application.getDescription(),
                 application.getDefaultBranch() != null ? application.getDefaultBranch().getId().id() : null,
                 Timestamps.toInstant(application.getLastModified()),
-                displayName(application.getLastModifiedBy())
+                displayName(application.getLastModifiedBy()),
+                application.getTheme()
         );
     }
 

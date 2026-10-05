@@ -4,6 +4,7 @@ import com.example.ntbd.Exception.ApplicationNotFoundException;
 import com.example.ntbd.Exception.UserNotFoundException;
 import com.example.ntbd.Exception.WorkspaceNotFoundException;
 import com.example.ntbd.auth.CurrentUser;
+import com.example.ntbd.catalog.AppThemes;
 import com.example.ntbd.commands.DuplicateApplicationCommand;
 import com.example.ntbd.commands.NewApplicationCommand;
 import com.example.ntbd.commands.UpdateApplicationCommand;
@@ -37,6 +38,7 @@ public class ApplicationService {
     private final UserRepository userRepository;
     private final CurrentUser currentUser;
     private final ApplicationCopier copier;
+    private final AppThemes appThemes;
 
     /** A new application in the workspace, with its default branch; the signed-in user creates it. */
     @Transactional
@@ -89,6 +91,7 @@ public class ApplicationService {
                 .orElseThrow(() -> new ApplicationNotFoundException(id));
         if (command.title() != null) application.setTitle(requireTitle(command.title()));
         if (command.description() != null) application.setDescription(command.description().trim());
+        if (command.theme() != null) application.setTheme(appThemes.check(command.theme()));
         return ApplicationMapper.toDto(applicationRepository.saveAndFlush(application));
     }
 

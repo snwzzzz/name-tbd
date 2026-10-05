@@ -22,6 +22,7 @@ public class BranchController {
     private final BranchService branchService;
     private final com.example.ntbd.service.ChangeBatchService changeBatchService;
     private final WorkspaceAccess access;
+    private final com.example.ntbd.service.VersionControlService versionControlService;
 
     @PostMapping
     public ResponseEntity<BranchDto> createBranch(@RequestBody NewBranchCommand command) {
@@ -43,7 +44,14 @@ public class BranchController {
     public ResponseEntity<com.example.ntbd.dto.ChangeBatchResultDto> applyChanges(
             @PathVariable Long id, @RequestBody com.example.ntbd.commands.ChangeBatchCommand command) {
         access.requireBranch(id, EDITOR);
-        return ResponseEntity.ok(changeBatchService.apply(id, command));
+        com.example.ntbd.dto.ChangeBatchResultDto result = changeBatchService.apply(id, command);
+        // Saved already: an automatic version must never make the save fail
+        try {
+            versionControlService.autoSnapshot(id);
+        } catch (RuntimeException e) {
+            org.slf4j.LoggerFactory.getLogger(BranchController.class).warn("Automatic version of branch {} failed", id, e);
+        }
+        return ResponseEntity.ok(result);
     }
 
     @DeleteMapping("/{id}")

@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApplicationControllerService } from '../api/services/applicationController.service';
 import { ApplicationDto } from '../api/models';
+import { AppThemeService } from '../core/services/app-theme.service';
 
 /**
  * The application the editor works on (route `/apps/:appId/edit`) and its branch: the pages,
@@ -14,6 +15,7 @@ import { ApplicationDto } from '../api/models';
 @Injectable({ providedIn: 'root' })
 export class EditorContext {
   private readonly api = inject(ApplicationControllerService);
+  private readonly appTheme = inject(AppThemeService);
 
   readonly app = signal<ApplicationDto | null>(null);
   readonly appId = computed(() => this.app()?.id ?? null);
@@ -21,7 +23,11 @@ export class EditorContext {
   readonly branchId = computed(() => this.app()?.defaultBranchId ?? null);
 
   load(appId: number): Observable<ApplicationDto> {
-    return this.api.getApplication(appId).pipe(tap((app) => this.app.set(app)));
+    return this.api.getApplication(appId).pipe(tap((app) => {
+      this.app.set(app);
+      // Its theme, for the canvas and the widgets on it
+      this.appTheme.theme.set(app.theme ?? null);
+    }));
   }
 
   /** The branch to read and write; only called inside the editor, where it's always known. */

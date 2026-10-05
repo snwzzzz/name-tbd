@@ -7,6 +7,7 @@ import { WidgetEventsService } from '../../core/services/widget-events.service';
 import { ROW_DOUBLE_CLICK_EVENT } from '../../_constants/widget-events.constants';
 import { TableData } from '../../_types/data-source.types';
 import { propBool, propNumber } from '../../_utils/widget-props.utils';
+import { cellText } from '../../core/forms/file-value';
 import { parseColumnList, rowMatches, visibleColumnIndexes } from '../../_utils/table.utils';
 
 export const TABLE_DEFAULT_MAX_ROWS = 10;
@@ -67,7 +68,7 @@ export class TableWidget extends BaseWidget {
   private readonly matchingRows = computed(() => {
     const query = this.query();
     return (this.data()?.rows ?? [])
-      .map((row) => ({ id: row.id, values: this.columnIndexes().map((i) => row.values[i] ?? '') }))
+      .map((row) => ({ id: row.id, values: this.columnIndexes().map((i) => cellText(row.values[i])) }))
       .filter((row) => rowMatches(row.values, query));
   });
   readonly rows = computed(() => this.matchingRows().slice(0, this.maxRows()));

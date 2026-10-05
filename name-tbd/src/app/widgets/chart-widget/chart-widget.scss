@@ -1,0 +1,177 @@
+// Pie slices take the categorical palette in this fixed order (the dataviz reference palette,
+// validated for color vision deficiencies; dark steps for the dark theme). Bars and lines are one
+// series: the chart's color, else the theme's.
+:host {
+  --slot-1: #2a78d6;
+  --slot-2: #eb6834;
+  --slot-3: #1baf7a;
+  --slot-4: #eda100;
+  --slot-5: #e87ba4;
+  --slot-6: #008300;
+  --slot-7: #4a3aa7;
+  --slot-8: #e34948;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--widget-fg);
+  font-family: var(--widget-font);
+  font-size: var(--widget-text-size);
+}
+
+:host-context([data-theme='dark']) {
+  --slot-1: #3987e5;
+  --slot-2: #d95926;
+  --slot-3: #199e70;
+  --slot-4: #c98500;
+  --slot-5: #d55181;
+  --slot-7: #9085e9;
+  --slot-8: #e66767;
+}
+
+.chart {
+  position: relative;
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--widget-space);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.title {
+  font-weight: 600;
+}
+
+.note,
+.empty {
+  color: var(--widget-fg-secondary);
+  font-size: var(--widget-text-size-small);
+}
+
+.plot {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sample svg {
+  opacity: 0.55;
+}
+
+// Recessive hairline grid and axis labels in secondary ink
+.grid {
+  stroke: var(--widget-stroke-subtle);
+  stroke-width: 1;
+}
+
+.axis {
+  fill: var(--widget-fg-secondary);
+  font-size: 11px;
+}
+
+.bar {
+  fill: var(--series, var(--widget-brand));
+}
+
+.line {
+  fill: none;
+  stroke: var(--series, var(--widget-brand));
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+// Points carry a 2px ring in the surface color, so they stay legible on the line
+.dot {
+  fill: var(--series, var(--widget-brand));
+  stroke: var(--widget-bg);
+  stroke-width: 2;
+
+  &.active {
+    r: 6;
+  }
+}
+
+// A 2px gap in the surface color between slices
+.slice {
+  stroke: var(--widget-bg);
+  stroke-width: 2;
+}
+
+.bar,
+.slice {
+  transition: opacity var(--widget-transition);
+
+  &.dim {
+    opacity: 0.45;
+  }
+}
+
+.hit {
+  fill: transparent;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--widget-stroke-subtle);
+  border-radius: var(--widget-radius);
+  background: var(--widget-bg);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--widget-fg) 14%, transparent);
+  font-size: var(--widget-text-size-small);
+  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 8px));
+  pointer-events: none;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--widget-text-size-small);
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .active .name {
+    font-weight: 600;
+  }
+}
+
+.swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+}
+
+.amount {
+  color: var(--widget-fg-secondary);
+}

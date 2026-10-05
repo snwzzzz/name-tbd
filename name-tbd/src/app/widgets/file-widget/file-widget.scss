@@ -1,0 +1,80 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.drop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-style: dashed;
+
+  &.dragging {
+    border-color: var(--widget-brand);
+    background: var(--widget-brand-selected-bg);
+  }
+}
+
+// The hidden file input keeps the keyboard focus; its label shows the ring
+input:focus-visible + .pick {
+  outline: 2px solid var(--widget-focus-ring);
+  outline-offset: 2px;
+}
+
+.pick {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--widget-fg-secondary);
+  cursor: pointer;
+
+  :host(:not(.live)) & {
+    pointer-events: none;
+  }
+
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+svg {
+  flex-shrink: 0;
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.thumb {
+  height: 70%;
+  max-width: 30%;
+  object-fit: cover;
+  border-radius: 0.25rem;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.remove {
+  display: flex;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--widget-fg-secondary);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--widget-bg-hover);
+  }
+}

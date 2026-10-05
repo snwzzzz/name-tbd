@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class IdReferencesTest {
 
     /** Catalog prop types whose values are never ids (text, numbers, choices, column names). */
-    private static final Set<String> PLAIN_PROP_TYPES = Set.of("string", "number", "boolean", "color", "select", "columns");
+    private static final Set<String> PLAIN_PROP_TYPES = Set.of("string", "number", "boolean", "color", "select", "textarea", "columns", "column", "field");
 
     private final IdReferences references = new IdReferences();
 

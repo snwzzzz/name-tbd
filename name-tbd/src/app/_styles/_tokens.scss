@@ -89,8 +89,11 @@
   // 4px corners, hairline strokes, neutral greys and one brand blue). Only widgets use them;
   // the editor's own UI has the tokens above.
   // =====================================================
+  // The app's theme (core/rendering/app-theme.ts) overrides brand, font, radius and spacing
   --widget-font: 'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', sans-serif;
-  --widget-radius: 0.25rem;                  // 4px
+  --widget-radius: 0.25rem;                  // 4px: buttons, cards
+  --widget-radius-field: 0.5rem;             // inputs and other fields
+  --widget-space: 0.5rem;                    // the base gap inside widgets (cards, lists, charts)
   --widget-brand: var(--color-primary);          // the editor's primary, #2f89ff (BRAND_COLOR)
   --widget-brand-selected-bg: color-mix(in srgb, var(--color-primary) 12%, #ffffff);
   --widget-bg: #ffffff;
@@ -104,6 +107,9 @@
   --widget-fg-secondary: #616161;
   --widget-fg-disabled: #bdbdbd;
   --widget-focus-ring: #000000;
+  --widget-danger: #c50f1f;
+  --widget-success: #107c10;
+  --widget-warning: #bc4b09;
 }
 
 // =====================================================
@@ -174,4 +180,7 @@
   --widget-fg-secondary: #d6d6d6;
   --widget-fg-disabled: #5c5c5c;
   --widget-focus-ring: #ffffff;
+  --widget-danger: #f1707b;
+  --widget-success: #54b054;
+  --widget-warning: #fa9e5c;
 }

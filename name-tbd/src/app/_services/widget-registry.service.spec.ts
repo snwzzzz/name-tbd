@@ -5,7 +5,7 @@ describe('WidgetRegistryService', () => {
   it("lists the widget type's settings from the catalog, without position and size", () => {
     const props = TestBed.inject(WidgetRegistryService).getPropsForWidget('button');
 
-    expect(props.map((p) => p.propKey)).toEqual(['label', 'color', 'textSize']);
+    expect(props.map((p) => p.propKey)).toEqual(['label', 'formAction', 'variant', 'color', 'textSize']);
     expect(props.find((p) => p.propKey === 'label')).toMatchObject({ widgetType: 'button', label: 'Label', defaultValue: 'Click Me' });
   });
 

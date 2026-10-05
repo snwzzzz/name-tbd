@@ -66,7 +66,7 @@ class CrossWorkspaceAccessTest {
 
     /** One user's workspace with one of everything in it. */
     private record Tenant(long userId, long workspaceId, long app, long branch, long page, long component,
-                          long workflow, long node, long otherNode, long edge, long dataSource) {}
+                          long workflow, long node, long otherNode, long edge, long dataSource, long version) {}
 
     private Tenant a;
     private Tenant b;
@@ -113,8 +113,8 @@ class CrossWorkspaceAccessTest {
             long edge = edgeService.createEdge(workflow, new NewEdgeCommand(node, otherNode, "out")).id();
             long dataSource = dataSourceService.importDataSource(
                     new NewDataSourceCommand(branch, "People", "csv", "name\nAda")).id();
-            versionControlService.createVersion(new NewVersionControlCommand(null, branch, null, "{}", "1.0.0"));
-            return new Tenant(userId, workspaceId, app, branch, page, component, workflow, node, otherNode, edge, dataSource);
+            long version = versionControlService.save(branch, "First").id();
+            return new Tenant(userId, workspaceId, app, branch, page, component, workflow, node, otherNode, edge, dataSource, version);
         } finally {
             TestSignIn.signOut();
         }
@@ -167,10 +167,12 @@ class CrossWorkspaceAccessTest {
         add.accept(DELETE, "/api/ui-components/{id}", "/api/ui-components/" + t.component(), null);
         add.accept(POST, "/api/ui-components/{id}/restore", "/api/ui-components/%d/restore".formatted(t.component()), null);
 
-        add.accept(POST, "/api/versions", "/api/versions",
-                "{\"branchId\":%d,\"applicationDefinition\":\"{}\",\"version\":\"9.9.9\"}".formatted(t.branch()));
+        add.accept(POST, "/api/versions", "/api/versions", "{\"branchId\":%d,\"label\":\"x\"}".formatted(t.branch()));
         add.accept(GET, "/api/versions", "/api/versions?branchId=" + t.branch(), null);
-        add.accept(GET, "/api/versions/latest", "/api/versions/latest?branchId=" + t.branch(), null);
+        add.accept(PATCH, "/api/versions/{id}", "/api/versions/" + t.version(), "{\"label\":\"x\"}");
+        add.accept(POST, "/api/versions/{id}/restore", "/api/versions/%d/restore".formatted(t.version()), null);
+        add.accept(GET, "/api/versions/{id}/definition", "/api/versions/%d/definition".formatted(t.version()), null);
+        add.accept(GET, "/api/versions/{id}/preview", "/api/versions/%d/preview".formatted(t.version()), null);
 
         String wf = "/api/workflows/" + t.workflow();
         add.accept(POST, "/api/workflows", "/api/workflows", "{\"branchId\":%d,\"name\":\"x\"}".formatted(t.branch()));

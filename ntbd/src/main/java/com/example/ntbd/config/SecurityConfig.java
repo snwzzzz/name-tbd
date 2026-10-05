@@ -50,7 +50,8 @@ import java.util.List;
  *   <li>Limits: request size and rate limits ({@link RequestLimitsFilter}); every request gets an id
  *       and a log line ({@link RequestContextFilter}).</li>
  *   <li>Headers: Spring's defaults (nosniff, frame denial, no caching, HSTS over HTTPS), no referrer, and
- *       for API answers a Content-Security-Policy that allows nothing. The editor's own CSP is the proxy's
+ *       for API answers a Content-Security-Policy that allows nothing (a version's preview has its own,
+ *       sandboxed: VersionControlController.PREVIEW_CSP). The editor's own CSP is the proxy's
  *       (deploy/Caddyfile).</li>
  * </ul>
  */
@@ -98,7 +99,11 @@ public class SecurityConfig {
                     .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy",
                             "camera=(), microphone=(), geolocation=(), payment=()"))
                     .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
-                            PathPatternRequestMatcher.withDefaults().matcher("/api/**"),
+                            new org.springframework.security.web.util.matcher.AndRequestMatcher(
+                                    PathPatternRequestMatcher.withDefaults().matcher("/api/**"),
+                                    new org.springframework.security.web.util.matcher.NegatedRequestMatcher(
+                                            PathPatternRequestMatcher.withDefaults().matcher(
+                                                    com.example.ntbd.controller.VersionControlController.PREVIEW_PATH))),
                             new StaticHeadersWriter("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'"))))
             .authorizeHttpRequests(auth -> {
                 auth.requestMatchers("/oauth2/**", "/login/**", "/error", "/actuator/health").permitAll();

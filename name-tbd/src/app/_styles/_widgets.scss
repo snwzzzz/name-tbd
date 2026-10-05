@@ -1,0 +1,122 @@
+// The widgets' shared pieces, global so each widget's own styles stay small: the look of fields
+// (label, box, error message), keyboard focus rings, and fields being inert while editing.
+// Shared by the editor (src/styles.scss) and the exported app (src/runtime/styles.scss).
+// Everything reads the widget tokens (_tokens.scss), which the app's theme sets.
+
+// A visible ring wherever the keyboard is, in every widget (BaseWidget gives hosts .app-widget)
+.app-widget :focus-visible {
+  outline: 2px solid var(--widget-focus-ring);
+  outline-offset: 2px;
+}
+
+// While editing, fields can't be used: the canvas gets the clicks (to select and move the widget).
+// Tabs stay clickable, to lay out each tab.
+.app-widget:not(.live) :is(input, select, textarea, label, button:not([role='tab']), a, [role='switch'], [role='option']) {
+  pointer-events: none;
+}
+
+// A container's "Appearance" (core/rendering/containers.ts): a card lifts off the page, an
+// outline only draws its edge
+.container-card,
+.container-outline {
+  border: 1px solid var(--widget-stroke-subtle);
+  border-radius: calc(var(--widget-radius) * 2);
+  overflow: hidden;
+}
+
+.container-card {
+  background: var(--widget-bg);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--widget-fg) 8%, transparent),
+    0 4px 12px color-mix(in srgb, var(--widget-fg) 6%, transparent);
+}
+
+.container-outline {
+  border-color: var(--widget-stroke);
+}
+
+// A field: its label above, the box, and the error message under it
+.w-field {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--widget-fg);
+  font-family: var(--widget-font);
+  font-size: var(--widget-text-size);
+}
+
+.w-label {
+  flex-shrink: 0;
+  padding-left: 0.125rem;
+  color: var(--widget-fg-secondary);
+  font-size: var(--widget-text-size-small);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.w-required::after {
+  content: ' *';
+  color: var(--widget-danger);
+}
+
+// The box a value is entered in: rounded, a quiet border that darkens on hover, a ring in the
+// brand color while focused, red while wrong
+.w-box {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 0 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--widget-fg) 16%, transparent);
+  border-radius: var(--widget-radius-field);
+  background: var(--widget-bg);
+  color: inherit;
+  font: inherit;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--widget-fg) 6%, transparent);
+  transition:
+    border-color var(--widget-transition),
+    box-shadow var(--widget-transition);
+
+  &::placeholder {
+    color: color-mix(in srgb, var(--widget-fg) 45%, transparent);
+  }
+
+  .live &:hover {
+    border-color: color-mix(in srgb, var(--widget-fg) 30%, transparent);
+  }
+
+  &:focus,
+  &:focus-within {
+    outline: none;
+    border-color: var(--widget-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--widget-brand) 22%, transparent);
+  }
+
+  .invalid & {
+    border-color: var(--widget-danger);
+  }
+}
+
+.w-error {
+  flex-shrink: 0;
+  padding-left: 0.125rem;
+  color: var(--widget-danger);
+  font-size: var(--widget-text-size-small);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Only for screen readers
+.w-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

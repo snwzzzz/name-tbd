@@ -1,29 +1,52 @@
-import { Component, ElementRef, inject, signal } from '@angular/core';
-import { GridItemHTMLElement, GridStack } from 'gridstack';
+import { Component, computed, effect, inject, untracked } from '@angular/core';
 import { BaseWidget } from '../../_directives/base-widget.directive';
+import { APP_LAYOUT, APP_SESSION } from '../../core/ports/app-ports';
+import { FORM_EDIT_MODE, FormsService } from '../../core/forms/forms.service';
+import { TableSelectionService } from '../../core/services/table-selection.service';
+import { findInTree } from '../../_utils/layout-tree.utils';
+import { propText } from '../../_utils/widget-props.utils';
+import { bindDataSource } from '../_shared/data-source-binding';
 
-type GridHostElement = HTMLElement & { gridstack?: GridStack };
-
+/**
+ * What a form draws over its fields (they sit in its nested grid): the message after submitting
+ * (saved, or what's wrong). A form that edits the selected row shows that row's values in its
+ * fields whenever another row is selected. Submitting is a button's job (FormsService).
+ */
 @Component({
   selector: 'app-form-widget',
-  templateUrl: './form-widget.html',
+  template: `
+    <div class="form-message" role="status" aria-live="polite">
+      @if (message(); as message) {
+        <span class="bubble" [class.error]="message.kind === 'error'">{{ message.text }}</span>
+      }
+    </div>
+  `,
   styleUrl: './form-widget.scss',
 })
 export class FormWidget extends BaseWidget {
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly session = inject(APP_SESSION);
+  private readonly forms = inject(FormsService);
+  private readonly layout = inject(APP_LAYOUT);
+  private readonly selection = inject(TableSelectionService);
+  private readonly source = bindDataSource(this.props);
 
-  readonly inputs = signal<number[]>([1]);
+  readonly message = computed(() => this.forms.message(this.id()));
 
-  addInput(): void {
-    this.inputs.update((inputs) => [...inputs, inputs.length + 1]);
-    // Grow the grid item once the browser has laid out the new input
-    setTimeout(() => this.resizeGridItemToContent(), 0);
-  }
-
-  private resizeGridItemToContent(): void {
-    const item = this.host.nativeElement.closest<GridItemHTMLElement>('.grid-stack-item');
-    const gridEl = this.host.nativeElement.closest<GridHostElement>('.grid-stack');
-    const grid = item?.gridstackNode?.grid ?? gridEl?.gridstack;
-    if (item && grid) grid.resizeToContent(item);
+  constructor() {
+    super();
+    // Editing the selected row: show it in the fields when the selection changes
+    effect(() => {
+      const pageId = this.session.pageId();
+      const tableId = propText(this.props(), 'tableId');
+      if (!this.session.live() || !pageId || !tableId || propText(this.props(), 'mode') !== FORM_EDIT_MODE) return;
+      const selected = this.selection.selected(tableId);
+      const table = this.source.table();
+      if (selected.length !== 1 || !table) return;
+      untracked(() => {
+        const form = findInTree(this.layout.items(pageId), this.id());
+        const row = form && this.forms.rowToEdit(form, table.rows);
+        if (form && row) this.forms.showRow(form, table.columns, row);
+      });
+    });
   }
 }

@@ -35,6 +35,7 @@ public class ApplicationCopier {
                 .workspace(source.getWorkspace())
                 .title(title)
                 .description(source.getDescription())
+                .theme(source.getTheme())
                 .lastModifiedBy(user)
                 .build());
         Branch branch = branchRepository.save(Branch.builder()

@@ -24,6 +24,10 @@ public class Application extends AuditableEntity {
     @Column(nullable = false)
     private String description;
 
+    /** The app-wide theme (null: the default preset); see AppTheme. */
+    @Column(name = "theme")
+    private AppTheme theme;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "workspace_id", nullable = false)
     private Workspace workspace;

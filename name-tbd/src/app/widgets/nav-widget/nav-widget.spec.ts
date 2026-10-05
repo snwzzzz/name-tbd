@@ -67,7 +67,7 @@ describe('NavWidget', () => {
     TestBed.resetTestingModule();
 
     const plain = mount({ pages: '["1"]' }).querySelector('nav') as HTMLElement;
-    expect(plain.style.color).toBe('rgb(36, 36, 36)');
+    expect(plain.style.color).toBe('var(--widget-fg)');
     expect(plain.style.getPropertyValue('--nav-accent')).toBe('#2f89ff');
     TestBed.resetTestingModule();
 

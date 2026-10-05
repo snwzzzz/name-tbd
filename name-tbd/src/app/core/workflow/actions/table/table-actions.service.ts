@@ -9,6 +9,7 @@ import { TableData, TableRow } from '../../../../_types/data-source.types';
 import { findInTree } from '../../../../_utils/layout-tree.utils';
 import { propBool, propNumber, propText } from '../../../../_utils/widget-props.utils';
 import { describeColumns } from '../../../../_utils/data-source.utils';
+import { isRowWidget } from '../../../rendering/row-widgets';
 
 /** The data table an action works on, with its data. */
 export interface TableTarget {
@@ -31,7 +32,7 @@ export class TableActionsService {
   async target({ pageId, node }: ActionRun): Promise<TableTarget | null> {
     const { tableId } = node.config as TableActionConfig;
     const item = tableId ? findInTree(this.layout.items(pageId), tableId) : null;
-    if (item?.type !== 'table') {
+    if (!item || !isRowWidget(item.type)) {
       await this.notice('No table', 'This action has no table. Pick one in the workflow editor.');
       return null;
     }

@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { LucideDownload, LucideKeyboard, LucideMoon, LucideRedo2, LucideSearch, LucideSun, LucideUndo2 } from '@lucide/angular';
 import { ThemeService } from '../../_services/theme.service';
 import { appExportUrl } from '../../_constants/api.constants';
+import { SaveQueue } from '../../_services/save-queue.service';
 import { EditorContext } from '../../_services/editor-context.service';
 import { TabsService, tabKind } from '../../_services/tabs.service';
 import { HistoryService } from '../commands/history.service';
@@ -25,6 +26,7 @@ export class Navbar {
   private readonly context = inject(EditorContext);
   private readonly tabs = inject(TabsService);
   private readonly history = inject(HistoryService);
+  private readonly saveQueue = inject(SaveQueue);
 
   /** The open page (undo and redo act on it), null on the Start tab or a panel. */
   private readonly pageId = computed(() => {
@@ -62,8 +64,17 @@ export class Navbar {
     this.theme.toggle();
   }
 
-  /** Download the whole app (all pages, the layout, workflows and data) as one HTML file that runs on its own. */
-  exportApp(): void {
-    window.open(appExportUrl(this.context.requireBranchId()), '_blank');
+  /**
+   * Download the whole app (all pages, the layout, workflows and data) as one HTML file that runs on
+   * its own. Changes still waiting are sent first, so the export (and the version saved before it) has them.
+   */
+  async exportApp(): Promise<void> {
+    const url = appExportUrl(this.context.requireBranchId());
+    await this.saveQueue.flush();
+    // A link, not window.open: after waiting, a new window would count as a popup
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '';
+    link.click();
   }
 }

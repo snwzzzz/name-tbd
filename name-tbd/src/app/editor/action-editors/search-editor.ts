@@ -10,6 +10,7 @@ import { SearchConfig } from '../../_types/workflow.types';
 import { SEARCH_ALL_TABLES } from '../../core/workflow/actions/search/search.handler';
 import { flattenTree } from '../../_utils/layout-tree.utils';
 import { propText } from '../../_utils/widget-props.utils';
+import { isRowWidget } from '../../core/rendering/row-widgets';
 
 /** Settings of `search`: the input (on any page, e.g. the layout page's header) and the table(s) it filters. */
 @Component({
@@ -57,8 +58,8 @@ export class SearchEditor extends BaseActionEditor<SearchConfig> {
   readonly tableOptions = computed<SelectOption[]>(() => [
     { value: SEARCH_ALL_TABLES, label: 'All tables on this page', icon: LucideLayers },
     ...this.pageItems()
-      .filter((i) => i.type === 'table' && typeof i.id === 'number')
-      .map((i) => ({ value: String(i.id), label: `${propText(i.props, 'title') ?? 'Table'} (#${i.id})`, icon: LucideSheet })),
+      .filter((i) => isRowWidget(i.type) && typeof i.id === 'number')
+      .map((i) => ({ value: String(i.id), label: `${propText(i.props, 'title') ?? (i.type === 'list' ? 'List' : 'Table')} (#${i.id})`, icon: LucideSheet })),
   ]);
 
   constructor() {

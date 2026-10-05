@@ -5,7 +5,7 @@ import { runtimeConfig } from '../runtime.config';
 import { testDefinition } from '../test-definition';
 import { APP_DATA } from '../../../app/core/ports/app-ports';
 import { AppDefinition } from '../../../app/core/definition/app-definition';
-import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, EXPORT_MIN_WIDTH } from '../../../app/_constants/artboard.constants';
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, CELL_SIZE, EXPORT_MIN_WIDTH, GRID_ROWS } from '../../../app/_constants/artboard.constants';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve));
 
@@ -58,6 +58,47 @@ describe('RuntimeShell', () => {
     expect(EXPORT_MIN_WIDTH).toBe(ARTBOARD_WIDTH / 2);
     expect(artboard.style.height).toBe(`${ARTBOARD_HEIGHT}px`);
     expect(artboard.style.zoom).toBe('');
+  });
+
+  it('grows a page taller than the screen downward, so the window scrolls to it', async () => {
+    const definition = testDefinition();
+    // A label at the bottom of the second screen
+    definition.pages[0].components.push({ id: 13, type: 'label', x: 0, y: 2 * GRID_ROWS - 3, w: 8, h: 3, props: { text: 'Far below' } });
+    const el = await settle(await start(definition));
+    const artboard = el.querySelector<HTMLElement>('.artboard')!;
+
+    expect(artboard.style.height).toBe(`${2 * ARTBOARD_HEIGHT}px`);
+    // Both grids have cell-high rows, so the layout page's widgets stay where they are
+    const pageGrid = el.querySelector<HTMLElement>('app-runtime-page .layout-grid.root')!;
+    const layoutGrid = el.querySelector<HTMLElement>('.layout .layout-grid.root')!;
+    expect(pageGrid.style.gridTemplateRows).toBe(`repeat(${2 * GRID_ROWS}, ${CELL_SIZE}px)`);
+    expect(layoutGrid.style.gridTemplateRows).toBe(`repeat(${2 * GRID_ROWS}, ${CELL_SIZE}px)`);
+    const label = [...el.querySelectorAll<HTMLElement>('app-runtime-page .cell')].find((c) => c.textContent?.includes('Far below'))!;
+    expect(label.style.gridRow).toBe(`${2 * GRID_ROWS - 2} / span 3`);
+  });
+
+  it('is one screen high again on a shorter page', async () => {
+    const definition = testDefinition();
+    definition.pages[1].components.push({ id: 21, type: 'label', x: 0, y: 100, w: 8, h: 3, props: { text: 'Deep' } });
+    const fixture = await start(definition);
+    let el = await settle(fixture);
+    expect(el.querySelector<HTMLElement>('.artboard')!.style.height).toBe(`${ARTBOARD_HEIGHT}px`);
+
+    await TestBed.inject(Router).navigateByUrl('/about');
+    el = await settle(fixture);
+    expect(el.querySelector<HTMLElement>('.artboard')!.style.height).toBe(`${103 * CELL_SIZE}px`);
+  });
+
+  it("wears the app's theme: every widget reads its colors, font, corners and spacing", async () => {
+    const definition = testDefinition();
+    definition.theme = { preset: 'Custom', primary: '#aa3300', font: 'Mono', radius: 'Large', spacing: 'Roomy' };
+    await settle(await start(definition));
+    const root = document.documentElement.style;
+
+    expect(root.getPropertyValue('--widget-brand')).toBe('#aa3300');
+    expect(root.getPropertyValue('--widget-font')).toContain('monospace');
+    expect(root.getPropertyValue('--widget-radius')).toBe('14px');
+    expect(root.getPropertyValue('--widget-space')).toBe('0.75rem');
   });
 
   it('keeps data changes in the browser for the next visit', async () => {

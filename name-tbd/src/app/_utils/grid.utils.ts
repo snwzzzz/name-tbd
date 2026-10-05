@@ -1,9 +1,11 @@
 import { GridItemHTMLElement, GridStack, GridStackNode } from 'gridstack';
 import { ComponentId, GridGeometry, LayoutItem } from '../_types/layout.types';
 import { newTemporaryId, toComponentId } from './component-id.utils';
-import { subGridOptions } from '../_constants/artboard.constants';
+import { CELL_SIZE, subGridOptions } from '../_constants/artboard.constants';
 import { RESIZABLE_WIDGET_TYPES } from '../_constants/widget-registry.constants';
 import { isFlushType } from '../core/rendering/widget-components';
+import { catalogWidget, headerRowsOf } from '../core/catalog/widget-catalog';
+import { innerRows } from '../core/rendering/containers';
 
 // Helpers for the canvas's GridStack grids. A widget's DOM element carries its type in
 // `data-type` and its component id in `data-gs-id` (a temporary id until it's saved).
@@ -11,6 +13,22 @@ import { isFlushType } from '../core/rendering/widget-components';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 export const widgetType = (el: HTMLElement | undefined): string => el?.getAttribute('data-type') || 'unknown';
+
+/** Whether widgets of this type hold others in a nested grid (containers, tabs, modals, forms). */
+export const isContainerType = (type: string | undefined): boolean => !!catalogWidget(type)?.container;
+
+/** The rows at the top of a grid node's container that its frame draws on (tab bar, title bar). */
+const headerRowsOfNode = (node: GridStackNode): number => headerRowsOf(widgetType(node.el));
+
+/**
+ * Turns a grid item's content into a container's: a nested grid below its header rows (as many
+ * rows as are left), on the container's look (see canvas.scss).
+ */
+export function makeContainer(grid: GridStack, el: GridItemHTMLElement, content: HTMLElement, type: string, h: number): GridStack {
+  content.classList.add('container-widget');
+  content.style.setProperty('--header-h', `${headerRowsOf(type) * CELL_SIZE}px`);
+  return grid.makeSubGrid(el, subGridOptions(innerRows({ type, h })), undefined, false);
+}
 
 /** The component id of a grid node (numeric once saved). */
 export const nodeId = (node: GridStackNode): ComponentId | undefined =>
@@ -62,10 +80,7 @@ export function addStoredWidget(grid: GridStack, item: LayoutItem): { el: GridIt
     noResize: !RESIZABLE_WIDGET_TYPES.includes(item.type ?? ''),
   };
   grid.addWidget(node);
-  if (item.type === 'container') {
-    content.classList.add('container-widget');
-    grid.makeSubGrid(el, subGridOptions(item.h ?? 1), undefined, false);
-  }
+  if (isContainerType(item.type)) makeContainer(grid, el, content, item.type!, item.h ?? 1);
   return { el, content };
 }
 
@@ -99,8 +114,13 @@ export function createRemoveButton(onRemove: () => void): HTMLElement {
   return button;
 }
 
-/** The layout tree of a grid's nodes (ids of unsaved widgets stay temporary strings). */
-export function toLayoutItems(nodes: GridStackNode[], parentId?: ComponentId): LayoutItem[] {
+/**
+ * The layout tree of a grid's nodes (ids of unsaved widgets stay temporary strings). `hidden`
+ * gives a container's children that aren't in its grid (those on a tabs widget's other tabs).
+ */
+export function toLayoutItems(
+  nodes: GridStackNode[], parentId?: ComponentId, hidden: (id: ComponentId) => LayoutItem[] = () => [],
+): LayoutItem[] {
   return nodes.map((node) => {
     const id = nodeId(node) ?? newTemporaryId();
     return {
@@ -111,7 +131,7 @@ export function toLayoutItems(nodes: GridStackNode[], parentId?: ComponentId): L
       h: node.h ?? 1,
       type: widgetType(node.el),
       parentId,
-      children: node.subGrid ? toLayoutItems(node.subGrid.engine.nodes, id) : undefined,
+      children: node.subGrid ? [...toLayoutItems(node.subGrid.engine.nodes, id, hidden), ...hidden(id)] : undefined,
     };
   });
 }
@@ -129,17 +149,19 @@ export function fitContainersToContent(nodes: GridStackNode[]): void {
       node.el.setAttribute('data-base-min-h', String(node.minH || 2));
     }
     const children = node.subGrid.engine.nodes;
+    const header = headerRowsOfNode(node);
     const minW = Math.max(Number(node.el.getAttribute('data-base-min-w')), ...children.map((c) => (c.x ?? 0) + (c.w || 1)));
-    const minH = Math.max(Number(node.el.getAttribute('data-base-min-h')), ...children.map((c) => (c.y ?? 0) + (c.h || 1)));
+    const minH = Math.max(Number(node.el.getAttribute('data-base-min-h')), ...children.map((c) => header + (c.y ?? 0) + (c.h || 1)));
     if (node.minW !== minW || node.minH !== minH) node.grid.update(node.el, { minW, minH });
 
     fitContainersToContent(children);
   }
 }
 
-/** A container's nested grid has exactly as many rows as the container is high. */
-export function syncSubGridRows(node: GridStackNode, rows = node.h ?? 1): void {
+/** A container's nested grid has exactly as many rows as the container is high (less its header rows). */
+export function syncSubGridRows(node: GridStackNode, height = node.h ?? 1): void {
   if (!node.subGrid) return;
+  const rows = Math.max(1, height - headerRowsOfNode(node));
   node.subGrid.opts.maxRow = rows;
   node.subGrid.opts.row = rows;
   node.subGrid.engine.maxRow = rows;
@@ -161,7 +183,7 @@ export function growContainerForDrop(node: GridStackNode): void {
   const minH = attr('gs-min-h', node.minH || h);
 
   const neededW = Math.max(container.w || 1, (node.x ?? 0) + Math.max(w, minW));
-  const neededH = Math.max(container.h || 1, (node.y ?? 0) + Math.max(h, minH));
+  const neededH = Math.max(container.h || 1, headerRowsOfNode(container) + (node.y ?? 0) + Math.max(h, minH));
   if (neededW <= (container.w || 1) && neededH <= (container.h || 1)) return;
 
   container.grid.update(container.el, { w: neededW, h: neededH });

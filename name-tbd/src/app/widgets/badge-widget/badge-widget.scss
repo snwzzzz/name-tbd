@@ -1,0 +1,36 @@
+:host {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+}
+
+.badge {
+  max-width: 100%;
+  padding: 0.125em 0.75em;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--widget-font);
+  font-size: var(--widget-text-size);
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  // A tint of the tone, with the tone darkened toward the text color so it stays readable
+  &.soft {
+    background: color-mix(in srgb, var(--tone) 14%, var(--widget-bg));
+    color: color-mix(in srgb, var(--tone) 70%, var(--widget-fg));
+  }
+
+  &.solid {
+    background: var(--tone);
+    color: #ffffff;
+  }
+
+  &.outline {
+    border-color: var(--tone);
+    color: color-mix(in srgb, var(--tone) 70%, var(--widget-fg));
+  }
+}

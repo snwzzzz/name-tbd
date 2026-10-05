@@ -1,18 +1,26 @@
-<label class="input-widget">
+<div class="input-widget">
   @if (label(); as label) {
-    <span class="input-label">{{ label }}</span>
+    <label class="input-label" [class.w-required]="required()" [for]="fieldId()">{{ label }}</label>
   }
   <span class="field">
     @if (searchIcon()) {
       <svg lucideSearch class="field-icon" aria-hidden="true"></svg>
     }
     <input
+      [id]="fieldId()"
       [attr.type]="searchIcon() ? 'search' : 'text'"
       [placeholder]="placeholder()"
       [value]="value()"
       [readOnly]="!session.live()"
-      [attr.tabindex]="session.live() ? null : -1"
+      [attr.tabindex]="tabIndex()"
+      [attr.aria-label]="label() ? null : placeholder() || 'Text'"
+      [attr.aria-required]="required()"
+      [attr.aria-invalid]="!!error()"
+      [attr.aria-describedby]="error() ? errorId() : null"
       (input)="onInput($any($event.target).value)"
       (keydown.enter)="onEnter()" />
   </span>
-</label>
+  @if (error(); as error) {
+    <span class="w-error" [id]="errorId()" role="alert">{{ error }}</span>
+  }
+</div>

@@ -1,0 +1,70 @@
+<div class="panel">
+  <header class="header">
+    <h2>History</h2>
+    <button type="button" class="icon-btn" title="Refresh" aria-label="Refresh" [disabled]="state.loading()" (click)="state.load()">
+      <svg lucideRefreshCw></svg>
+    </button>
+  </header>
+
+  <form class="save" (submit)="$event.preventDefault(); save()">
+    <input
+      type="text"
+      maxlength="200"
+      placeholder="Name (optional)"
+      aria-label="Name of the new version"
+      [value]="newLabel()"
+      (input)="newLabel.set(inputValue($event))" />
+    <button type="submit" class="primary" [disabled]="state.busy()">Save version</button>
+  </form>
+
+  @if (state.error(); as error) {
+    <p class="error" role="alert">{{ error }}</p>
+  }
+
+  @if (state.versions().length) {
+    <ul class="group">
+      @for (version of state.versions(); track version.id) {
+        <li class="row">
+          <span class="number">{{ version.number }}</span>
+          @if (renaming()?.id === version.id) {
+            <input
+              class="rename"
+              type="text"
+              maxlength="200"
+              aria-label="Name of the version"
+              [value]="renaming()!.label"
+              (input)="renaming.set({ id: version.id!, label: inputValue($event) })"
+              (keydown.enter)="finishRename()"
+              (keydown.escape)="renaming.set(null)"
+              (blur)="finishRename()"
+              #rename />
+          } @else {
+            <span class="text">
+              <span class="name">{{ title(version) }}</span>
+              <span class="meta">{{ meta(version) }}</span>
+            </span>
+            <span class="actions">
+              <button type="button" title="Preview in a new tab" [attr.aria-label]="'Preview version ' + version.number" (click)="preview(version)">
+                <svg lucideEye></svg>
+              </button>
+              <button type="button" title="Rename" [attr.aria-label]="'Rename version ' + version.number" (click)="startRename(version)">
+                <svg lucidePencil></svg>
+              </button>
+              <button type="button" title="Restore" [attr.aria-label]="'Restore version ' + version.number" [disabled]="state.busy()" (click)="restore(version)">
+                <svg lucideRotateCcw></svg>
+              </button>
+            </span>
+          }
+        </li>
+      }
+    </ul>
+    <p class="footnote">Saved every 30 minutes while you edit, and before each export.</p>
+  } @else if (state.loading()) {
+    <p class="footnote"><span class="ui-spinner"></span> Loading…</p>
+  } @else {
+    <div class="empty">
+      <p class="empty-title">No versions yet</p>
+      <p class="footnote">Save one to come back to it later. Versions are also saved every 30 minutes while you edit.</p>
+    </div>
+  }
+</div>

@@ -28,7 +28,7 @@ describe('Sidebar', () => {
     const fixture = mount();
     const el: HTMLElement = fixture.nativeElement;
     expect(icons(el, 'left')).toEqual(['Components (drag to move)', 'Data (drag to move)']);
-    expect(icons(el, 'right')).toEqual(['Properties (drag to move)', 'Layers (drag to move)']);
+    expect(icons(el, 'right')).toEqual(['Properties (drag to move)', 'Layers (drag to move)', 'History (drag to move)', 'Theme (drag to move)']);
 
     TestBed.inject(SidebarStateService).move('layers', 'left', 0);
     fixture.detectChanges();

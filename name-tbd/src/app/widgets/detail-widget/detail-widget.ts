@@ -3,6 +3,7 @@ import { BaseWidget } from '../../_directives/base-widget.directive';
 import { DetailRecordsService } from '../../core/services/detail-records.service';
 import { APP_DATA, APP_SESSION } from '../../core/ports/app-ports';
 import { propNumber } from '../../_utils/widget-props.utils';
+import { cellText } from '../../core/forms/file-value';
 import { parseColumnList, visibleColumnIndexes } from '../../_utils/table.utils';
 
 export const DETAIL_DEFAULT_EMPTY_TEXT = 'Nothing selected yet.';
@@ -53,7 +54,7 @@ export class DetailWidget extends BaseWidget {
     const columns = row?.columns ?? (this.previewing() ? [] : (this.configuredColumns() ?? []));
     return visibleColumnIndexes(columns, this.chosenFields()).map((i) => ({
       label: columns[i],
-      value: row ? (row.values[i] ?? '') : '',
+      value: row ? cellText(row.values[i]) : '',
     }));
   });
 

@@ -1,0 +1,51 @@
+// Over the whole container; only the tab bar takes clicks (the nested grid below gets the rest)
+:host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--widget-font);
+  font-size: var(--widget-text-size);
+}
+
+.tabbar {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+  padding: 0 calc(var(--widget-space) * 1.5);
+  border-bottom: 1px solid var(--widget-stroke-subtle);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+// The tab shown is underlined in the theme's color
+.tab {
+  position: relative;
+  padding: 0 0.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--widget-fg-secondary);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--widget-transition);
+
+  &:hover {
+    color: var(--widget-fg);
+  }
+
+  &.active {
+    color: var(--widget-fg);
+    font-weight: 600;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0.5rem;
+      right: 0.5rem;
+      bottom: -1px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--widget-brand);
+    }
+  }
+}

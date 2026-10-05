@@ -1,3 +1,3 @@
 <div class="button-wrapper">
-  <button class="dynamic-button" [style.background]="color()">{{ label() }}</button>
+  <button type="button" class="dynamic-button" [class]="variant()" [style.--button-color]="color()" [attr.tabindex]="session.live() ? null : -1">{{ label() }}</button>
 </div>

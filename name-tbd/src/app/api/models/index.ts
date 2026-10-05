@@ -86,50 +86,18 @@ export interface EdgeDto {
 }
 
 export interface NewVersionControlCommand {
-    id?: number;
     branchId?: number;
-    timestamp?: Date;
-    applicationDefinition?: string;
-    version?: string;
+    label?: string;
 }
 
-export interface ApplicationDto {
+export interface VersionDto {
     id?: number;
-    workspaceId?: number;
-    title?: string;
-    description?: string;
-    defaultBranchId?: number;
-    lastModified?: Date;
-    lastModifiedBy?: string;
-}
-
-export interface BranchDto {
-    id?: number;
-    name?: string;
-    description?: string;
+    number?: number;
+    kind?: 'MANUAL' | 'AUTO' | 'BEFORE_EXPORT' | 'RESTORE' | 'LEGACY';
+    label?: string;
     createdAt?: Date;
-    lastModified?: Date;
-    latestVersion?: string;
-    createdBy?: UserDto;
-    application?: ApplicationDto;
-}
-
-export interface UserDto {
-    id?: number;
-    username?: string;
-    email?: string;
-    firstName?: string;
-    lastName?: string;
-    avatarUrl?: string;
-}
-
-export interface VersionControlDto {
-    id?: number;
-    version?: string;
-    branch?: BranchDto;
-    timestamp?: Date;
-    applicationDefinition?: string;
-    modifiedBy?: UserDto;
+    author?: string;
+    sizeBytes?: number;
 }
 
 export interface NewUiComponentCommand {
@@ -181,6 +149,45 @@ export interface NewBranchCommand {
     description?: string;
 }
 
+export interface AppTheme {
+    preset?: string;
+    primary?: string;
+    font?: string;
+    radius?: string;
+    spacing?: string;
+}
+
+export interface ApplicationDto {
+    id?: number;
+    workspaceId?: number;
+    title?: string;
+    description?: string;
+    defaultBranchId?: number;
+    lastModified?: Date;
+    lastModifiedBy?: string;
+    theme?: AppTheme;
+}
+
+export interface BranchDto {
+    id?: number;
+    name?: string;
+    description?: string;
+    createdAt?: Date;
+    lastModified?: Date;
+    latestVersion?: string;
+    createdBy?: UserDto;
+    application?: ApplicationDto;
+}
+
+export interface UserDto {
+    id?: number;
+    username?: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    avatarUrl?: string;
+}
+
 export interface ChangeBatchCommand {
     changes?: Array<ChangeOperation>;
 }
@@ -220,9 +227,14 @@ export interface DuplicateApplicationCommand {
     title?: string;
 }
 
+export interface RenameVersionCommand {
+    label?: string;
+}
+
 export interface UpdateApplicationCommand {
     title?: string;
     description?: string;
+    theme?: AppTheme;
 }
 
 export interface WidgetPropDefinitionDto {
@@ -234,6 +246,16 @@ export interface WidgetPropDefinitionDto {
     label?: string;
     group?: string;
     options?: Array<string>;
+}
+
+export interface App {
+    id?: number;
+    name?: string;
+}
+
+export interface AppDefinition {
+    version?: number;
+    app?: App;
 }
 
 export interface PageContentDto {
@@ -267,16 +289,6 @@ export interface DataSourceSummaryDto {
     branchId?: number;
     columns?: Array<string>;
     rowCount?: number;
-}
-
-export interface App {
-    id?: number;
-    name?: string;
-}
-
-export interface AppDefinition {
-    version?: number;
-    app?: App;
 }
 
 /** Request Options for Angular HttpClient requests */

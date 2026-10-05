@@ -116,4 +116,10 @@ public interface WorkspaceAccessRepository extends Repository<WorkspaceMember, W
             where d.id.id = :dataSourceId and m.workspace = a.workspace and m.user.id.id = :userId
             """)
     Optional<ResourceAccess> roleForDataSource(Long dataSourceId, Long userId);
+
+    @Query("""
+            select new com.example.ntbd.persistence.ResourceAccess(m.role, a.id.id) from VersionControl v join v.branch b join b.application a, WorkspaceMember m
+            where v.id.id = :versionId and m.workspace = a.workspace and m.user.id.id = :userId
+            """)
+    Optional<ResourceAccess> roleForVersion(Long versionId, Long userId);
 }

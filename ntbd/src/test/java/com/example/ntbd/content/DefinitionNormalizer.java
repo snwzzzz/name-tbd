@@ -12,7 +12,8 @@ import java.util.*;
  * An export definition with its ids renumbered in order of appearance, per kind (page#1, widget#3,
  * ...), also where props and node settings hold them. Two definitions of the same content written
  * with different ids (a duplicate, a restored version) are then equal. The app itself and
- * "dataRevision" (a fingerprint that includes the ids) are left out.
+ * "dataRevision" (a fingerprint that includes the ids) are left out. An id that points to nothing is
+ * the same as none (""), as writing content clears it.
  */
 public final class DefinitionNormalizer {
 
@@ -129,15 +130,17 @@ public final class DefinitionNormalizer {
             case DATA_SOURCE -> labelOrSame("data", value);
             case PAGE_LIST -> {
                 List<?> ids = objectMapper.readValue(value.toString(), List.class);
-                yield ids.stream().map(id -> labelOrSame("page", id)).toList();
+                yield ids.stream().map(id -> labelOrSame("page", id)).filter(id -> !"".equals(id)).toList();
             }
         };
     }
 
-    /** The label of a known id; anything else ("", "all", ...) as it is. */
+    /** The label of a known id; an unknown id is none (""); anything else ("all", ...) as it is. */
     private Object labelOrSame(String kind, Object value) {
-        String label = labels.getOrDefault(kind, Map.of()).get(String.valueOf(value).trim());
-        return label != null ? label : value;
+        String text = String.valueOf(value).trim();
+        String label = labels.getOrDefault(kind, Map.of()).get(text);
+        if (label != null) return label;
+        return text.matches("-?\\d+") ? "" : value;
     }
 
     private String label(String kind, Object id) {

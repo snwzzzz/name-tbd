@@ -4,7 +4,8 @@ import {
 } from '@angular/core';
 import { GridItemHTMLElement, GridStack, GridStackNode } from 'gridstack';
 import {
-  LucideAlignCenterHorizontal, LucideAlignCenterVertical, LucideClipboardPaste, LucideCopy, LucideCopyPlus,
+  LucideAlignCenterHorizontal, LucideAlignCenterVertical, LucideAlignHorizontalDistributeCenter, LucideAlignStartHorizontal,
+  LucideAlignStartVertical, LucideAlignVerticalDistributeCenter, LucideClipboardPaste, LucideCopy, LucideCopyPlus,
   LucideCrosshair, LucideTrash2, LucideZap,
 } from '@lucide/angular';
 import { LayoutStateService } from '../../_services/layout-state.service';
@@ -28,8 +29,8 @@ import { ZoomControls } from '../../components/zoom-controls/zoom-controls';
 import { ZoomButton } from '../../components/zoom-controls/zoom-button';
 import { DEFAULT_WIDGET_TYPE, widgetDefinition } from '../../_constants/widget-registry.constants';
 import {
-  ARTBOARD_HEIGHT, ARTBOARD_WIDTH, CANVAS_FIT_PADDING, CANVAS_MAX_ZOOM, CANVAS_MIN_ZOOM, GRID_COLUMNS, GRID_ROWS,
-  ROOT_GRID_OPTIONS, subGridOptions,
+  ARTBOARD_HEIGHT, ARTBOARD_WIDTH, CANVAS_FIT_PADDING, CANVAS_MAX_ZOOM, CANVAS_MIN_ZOOM, CELL_SIZE, GRID_COLUMNS, GRID_ROWS,
+  ROOT_GRID_OPTIONS, editorPageRows,
 } from '../../_constants/artboard.constants';
 import { widgetTrigger } from '../../_constants/workflow.constants';
 import { CanvasContextMenu } from '../../_types/canvas.types';
@@ -41,8 +42,8 @@ import { HistoryService } from '../../editor/commands/history.service';
 import { AddWidgets, DeleteWidgets, MoveWidgets, WidgetPlace } from '../../editor/commands/widget-commands';
 import { recordGraphChange } from '../../editor/commands/workflow-commands';
 import {
-  addStoredWidget, createRemoveButton, fitContainersToContent, geometryOf, growContainerForDrop, nodeId,
-  parentIdOf, sameGeometry, syncSubGridRows, toLayoutItems, widgetType,
+  addStoredWidget, createRemoveButton, fitContainersToContent, geometryOf, growContainerForDrop, isContainerType,
+  makeContainer, nodeId, parentIdOf, sameGeometry, syncSubGridRows, toLayoutItems, widgetType,
 } from '../../_utils/grid.utils';
 import { blueprintGridStyle, clamp, zoomAround } from '../../_utils/viewport.utils';
 import { isTyping, matchesShortcut } from '../../_utils/keyboard.utils';
@@ -50,7 +51,14 @@ import { shortcutKeys } from '../../_constants/keyboard-shortcuts.constants';
 import { findInTree, flattenTree } from '../../_utils/layout-tree.utils';
 import { propText } from '../../_utils/widget-props.utils';
 import { centeredAxes, centeredPosition, CenterAxis } from '../../_utils/centering.utils';
-import { isFlushType } from '../../core/rendering/widget-components';
+import { align, AlignEdge, distribute, DistributeAxis, moveGroup, PlacedRect } from '../../_utils/align.utils';
+import { AlignToolbar } from '../../components/align-toolbar/align-toolbar';
+import { containerFrame, isFlushType } from '../../core/rendering/widget-components';
+import { containerClass, tabNames, tabOf, visibleChildren } from '../../core/rendering/containers';
+import { ActiveTabsService } from '../../core/services/active-tabs.service';
+import { AppThemeService } from '../../core/services/app-theme.service';
+import { ModalStateService } from '../../core/services/modal-state.service';
+import { propBool } from '../../_utils/widget-props.utils';
 
 const BUTTON_ZOOM_STEP = 1.25;
 
@@ -62,7 +70,7 @@ const BUTTON_ZOOM_STEP = 1.25;
  */
 @Component({
   selector: 'app-canvas',
-  imports: [ViewportControls, ZoomControls, ZoomButton, ContextMenu, ContextMenuItem, ContextMenuDivider, LayoutOverlay],
+  imports: [ViewportControls, ZoomControls, ZoomButton, ContextMenu, ContextMenuItem, ContextMenuDivider, LayoutOverlay, AlignToolbar],
   templateUrl: './canvas.html',
   styleUrl: './canvas.scss',
 })
@@ -79,6 +87,9 @@ export class Canvas implements AfterViewInit {
   private readonly widgetEvents = inject(WidgetEventsService);
   private readonly registry = inject(IdRegistry);
   private readonly history = inject(HistoryService);
+  private readonly activeTabs = inject(ActiveTabsService);
+  private readonly theme = inject(AppThemeService);
+  readonly modals = inject(ModalStateService);
   private readonly vcr = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -96,20 +107,38 @@ export class Canvas implements AfterViewInit {
    */
   private gesture = false;
   private gestureEnd: ReturnType<typeof setTimeout> | undefined;
+  /** A selected widget being dragged with the other selected widgets of its grid (see startGroupDrag). */
+  private groupDrag: GroupDrag | null = null;
+  /** A selected widget pressed without a modifier: selected alone on release, unless it's dragged first. */
+  private selectOnRelease: string | null = null;
   /** Live widget components by component id. */
   private readonly widgetRefs = new Map<string, ComponentRef<BaseWidget>>();
   /** The content element of each container (by component id), which shows its background. */
   private readonly containerContents = new Map<string, HTMLElement>();
+  /**
+   * The widgets of each tabs widget (by component id) on its other tabs: not in its grid (they'd
+   * collide with the shown tab's), but part of the page all the same.
+   */
+  private readonly hiddenChildren = new Map<string, LayoutItem[]>();
   /** The last saved geometry of each widget, to only send what changed. */
   private readonly savedGeometry = new Map<string, GridGeometry>();
 
-  /** The artboard's size and cell lines (see canvas.scss). */
-  readonly artboardSize = {
+  /** The page's height in rows: one screen, or down to its lowest widget plus room to place more. */
+  readonly pageRows = signal(editorPageRows([]));
+  /** Where one screen ends (a 1080p window), marked on taller pages. */
+  readonly screenHeight = ARTBOARD_HEIGHT;
+  /**
+   * The artboard's size and cell lines (see canvas.scss): it grows downward from the first screen.
+   * Plus the app's theme, which every widget on it reads.
+   */
+  readonly artboardSize = computed(() => ({
+    ...this.theme.variables(),
     '--artboard-width': `${ARTBOARD_WIDTH}px`,
-    '--artboard-height': `${ARTBOARD_HEIGHT}px`,
+    '--artboard-height': `${this.pageRows() * CELL_SIZE}px`,
+    '--screen-height': `${ARTBOARD_HEIGHT}px`,
     '--grid-columns': String(GRID_COLUMNS),
-    '--grid-rows': String(GRID_ROWS),
-  };
+    '--grid-rows': String(this.pageRows()),
+  }));
 
   // ─── Zoom / pan (the artboard is centered; pan moves it from there) ──────
   readonly zoom = signal(1);
@@ -128,6 +157,8 @@ export class Canvas implements AfterViewInit {
   readonly icons = {
     addAction: LucideZap, copy: LucideCopy, duplicate: LucideCopyPlus, paste: LucideClipboardPaste,
     centerX: LucideAlignCenterVertical, centerY: LucideAlignCenterHorizontal, centerBoth: LucideCrosshair, delete: LucideTrash2,
+    alignLeft: LucideAlignStartVertical, alignTop: LucideAlignStartHorizontal,
+    distributeX: LucideAlignHorizontalDistributeCenter, distributeY: LucideAlignVerticalDistributeCenter,
   };
   readonly canPaste = this.clipboard.hasContent;
   /** Whether the right-clicked widget fires a trigger an action can be added to (one widget only). */
@@ -177,6 +208,15 @@ export class Canvas implements AfterViewInit {
     // New widgets were saved: their elements go by the real ids from now on
     const savedIds = this.registry.mapped$.subscribe((ids) => ids.forEach((id, ref) => this.adoptSavedId(ref, id)));
 
+    // A tabs widget shows another tab: its grid now holds that tab's widgets
+    const tabSwitches = this.activeTabs.changed$.subscribe(() => {
+      const tabId = this.tabs.activeTabId();
+      if (tabId && this.grid) this.restoreLayout(tabId, this.layoutState.getLayout(tabId));
+    });
+
+    // In a preview, dialogs only show while open (over the page, see .preview-backdrop)
+    effect(() => this.markModals(this.previewMode(), this.modals.openIds()));
+
     // Undo or redo changed this page's widgets: show them as they are now
     const undone = this.history.applied$.subscribe((pageId) => {
       if (pageId !== this.tabs.activeTabId()) return;
@@ -191,6 +231,7 @@ export class Canvas implements AfterViewInit {
       widgetEvents.unsubscribe();
       savedIds.unsubscribe();
       undone.unsubscribe();
+      tabSwitches.unsubscribe();
       this.grid?.destroy(false);
       this.grid = null;
     });
@@ -218,13 +259,16 @@ export class Canvas implements AfterViewInit {
   /**
    * Clicking a widget selects it (Ctrl/⌘/Shift+click adds it to the selection, or takes it out);
    * clicking the empty canvas clears the selection. A right-click keeps a selection it's part of.
+   * Pressing a widget that's already selected keeps the selection, so dragging it takes the others
+   * along; released without a drag, it's selected alone.
    */
   @HostListener('document:pointerdown', ['$event'])
   onDocumentPointerDown(event: PointerEvent): void {
+    this.selectOnRelease = null;
     if (this.previewMode()) return;
     const target = event.target as HTMLElement;
-    // Clicks outside the canvas (e.g. in a sidebar or the context menu) keep the selection
-    if (!target.closest('.canvas-viewport')) return;
+    // Clicks outside the canvas (e.g. in a sidebar or the context menu) and on its toolbars keep the selection
+    if (!target.closest('.canvas-viewport') || target.closest('app-align-toolbar')) return;
 
     const id = target.closest<HTMLElement>('.grid-stack-item')?.getAttribute('data-gs-id');
     if (!id) {
@@ -232,7 +276,14 @@ export class Canvas implements AfterViewInit {
       return;
     }
     if (event.ctrlKey || event.metaKey || event.shiftKey) this.selection.toggle(id);
-    else if (event.button !== 2 || !this.selection.isSelected(id)) this.selection.select(id);
+    else if (!this.selection.isSelected(id)) this.selection.select(id);
+    else if (event.button === 0 && this.selection.selectedIds().length > 1) this.selectOnRelease = id;
+  }
+
+  @HostListener('document:pointerup')
+  onDocumentPointerUp(): void {
+    if (this.selectOnRelease) this.selection.select(this.selectOnRelease);
+    this.selectOnRelease = null;
   }
 
   /** Double-clicking a widget selects it and shows its properties, in whichever sidebar that tab is. */
@@ -337,14 +388,37 @@ export class Canvas implements AfterViewInit {
 
   /** Moves each selected widget to the middle of what it's in (the page, or its container) on the axis. */
   center(axis: CenterAxis): void {
-    this.beginGesture();
+    this.placeSelection((items, room) => items.map((item) => ({ ...item, ...centeredPosition(item, room, axis) })));
+  }
+
+  /** Lines the selected widgets up on an edge or center line (in each grid: the page, or a container). */
+  alignSelection(edge: AlignEdge): void {
+    this.placeSelection((items) => align(items, edge));
+  }
+
+  /** Spaces the selected widgets evenly (three or more in a grid). */
+  distributeSelection(axis: DistributeAxis): void {
+    this.placeSelection((items) => distribute(items, axis));
+  }
+
+  /**
+   * Moves the selected widgets to where `place` puts them, per grid they're in (the page, or a
+   * container: widgets only line up with others in the same one). One undo step.
+   */
+  private placeSelection(place: (items: PlacedRect[], room: { w: number; h: number }) => PlacedRect[]): void {
+    const byGrid = new Map<GridStack, { el: GridItemHTMLElement; rect: PlacedRect }[]>();
     for (const id of this.selection.selectedIds()) {
       const el = this.itemElement(id);
-      const node = el?.gridstackNode;
-      const grid = node?.grid;
-      if (!el || !node || !grid) continue;
-      const room = { w: grid.getColumn(), h: grid.opts.row || grid.getRow() };
-      grid.update(el, centeredPosition({ x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 1, h: node.h ?? 1 }, room, axis));
+      const grid = el?.gridstackNode?.grid;
+      if (!el || !grid) continue;
+      byGrid.set(grid, [...(byGrid.get(grid) ?? []), { el, rect: { id, ...rectOf(el.gridstackNode!) } }]);
+    }
+    this.beginGesture();
+    for (const [grid, entries] of byGrid) {
+      const placed = place(entries.map((e) => e.rect), roomOf(grid));
+      grid.batchUpdate();
+      placed.forEach((rect, i) => grid.update(entries[i].el, { x: rect.x, y: rect.y }));
+      grid.batchUpdate(false);
     }
     this.syncLayout();
     this.endGestureSoon();
@@ -388,6 +462,7 @@ export class Canvas implements AfterViewInit {
     this.previewSession.stop();
     this.previewPageId = null;
     this.previewMode.set(false);
+    this.modals.reset();
   }
 
   // ─── Pan & zoom ──────────────────────────────────────────────────────────
@@ -417,7 +492,7 @@ export class Canvas implements AfterViewInit {
   zoomOut(): void { this.setZoom(this.zoom() / BUTTON_ZOOM_STEP); }
   zoomReset(): void { this.setZoom(1); }
 
-  /** Fit the whole artboard into the viewport, centered. */
+  /** Fit the artboard's first screen into the viewport, centered (a taller page goes on below). */
   zoomFit(): void {
     const vp = this.viewport().nativeElement;
     const fit = Math.min(
@@ -441,12 +516,15 @@ export class Canvas implements AfterViewInit {
     this.restoring = true;
     grid.removeAll();
     this.containerContents.clear();
+    this.hiddenChildren.clear();
     for (const item of flattenTree(layout)) {
       if (item.id != null) this.savedGeometry.set(item.id.toString(), geometryOf(item));
     }
     this.addStoredWidgets(tabId, grid, layout);
+    this.pageRows.set(editorPageRows(layout));
     this.restoring = false;
     this.markSelection(this.selection.selectedIds());
+    this.markModals(this.previewMode(), this.modals.openIds());
   }
 
   private addStoredWidgets(tabId: string, grid: GridStack, items: LayoutItem[]): void {
@@ -454,17 +532,18 @@ export class Canvas implements AfterViewInit {
       const { el, content } = addStoredWidget(grid, item);
       this.attachRemoveButton(el, grid);
 
-      if (item.id != null && item.type !== 'container') {
-        this.mountWidget(item.id.toString(), item.type ?? 'unknown', content, item.props);
-      }
-      if (item.id != null && item.type === 'container') {
-        this.containerContents.set(item.id.toString(), content);
-        this.paintContainer(item.id.toString(), item.props ?? {});
-      }
+      const id = item.id?.toString();
+      if (id != null && !isContainerType(item.type)) this.mountWidget(id, item.type ?? 'unknown', content, item.props);
+      if (id != null && isContainerType(item.type)) this.prepareContainer(id, item.type!, content, item.props ?? {});
 
       const subGrid = el.gridstackNode?.subGrid;
       if (subGrid) this.wireGrid(subGrid);
-      if (item.children?.length && subGrid) this.addStoredWidgets(tabId, subGrid, item.children);
+      // A tabs widget's grid holds the widgets of the tab it shows; the others wait aside
+      const shown = id != null ? visibleChildren(item, this.activeTabs.active(id)) : item.children ?? [];
+      if (id != null && shown.length < (item.children?.length ?? 0)) {
+        this.hiddenChildren.set(id, (item.children ?? []).filter((child) => !shown.includes(child)));
+      }
+      if (shown.length && subGrid) this.addStoredWidgets(tabId, subGrid, shown);
     }
   }
 
@@ -510,12 +589,10 @@ export class Canvas implements AfterViewInit {
     // The palette card's own styling came along with the clone
     content.classList.remove('palette-card');
 
-    if (type === 'container') {
+    if (isContainerType(type)) {
       content.innerHTML = '';
-      const subGrid = rootGrid.makeSubGrid(node.el, subGridOptions(node.h ?? 1), undefined, false);
-      this.wireGrid(subGrid);
-      content.classList.add('container-widget');
-      this.containerContents.set(id, content);
+      this.wireGrid(makeContainer(rootGrid, node.el, content, type, node.h ?? 1));
+      this.prepareContainer(id, type, content, {});
       return;
     }
     // Moved into/out of a container: GridStack re-adds the same element, so the live widget is already there
@@ -589,7 +666,9 @@ export class Canvas implements AfterViewInit {
   private syncLayout(): void {
     if (!this.grid) return;
     fitContainersToContent(this.grid.engine.nodes);
-    const layout = toLayoutItems(this.grid.engine.nodes);
+    const layout = toLayoutItems(this.grid.engine.nodes, undefined, (id) => this.hiddenChildren.get(String(id)) ?? []);
+    // The page grows (or shrinks back) with its lowest widget
+    this.pageRows.set(editorPageRows(layout));
     const tabId = this.tabs.activeTabId();
     if (this.restoring || !tabId) return;
 
@@ -611,6 +690,7 @@ export class Canvas implements AfterViewInit {
       }
     }
     this.layoutState.saveLayout(tabId, layout);
+    this.keepOnShownTabs(tabId, layout);
     // One drag (or "Center") is one step: moves recorded together merge (HistoryService)
     if (after.length > 0 && this.gesture) this.history.record(new MoveWidgets(tabId, before, after));
   }
@@ -633,10 +713,53 @@ export class Canvas implements AfterViewInit {
     this.widgetRefs.set(id, ref);
   }
 
-  /** A container shows its background color (none: the editor's faint fill, see canvas.scss). */
+  /** A container's content element: its look, and its frame (tab bar, title bar) over its grid. */
+  private prepareContainer(id: string, type: string, content: HTMLElement, props: WidgetProps): void {
+    this.containerContents.set(id, content);
+    this.paintContainer(id, props);
+    if (containerFrame(type)) this.mountWidget(id, type, content, props);
+  }
+
+  /** A container shows its look and background color (none: the editor's faint fill, see canvas.scss). */
   private paintContainer(id: string, props: WidgetProps): void {
     const content = this.containerContents.get(id);
-    if (content) content.style.background = propText(props, 'background') ?? '';
+    if (!content) return;
+    content.style.background = propText(props, 'background') ?? '';
+    content.classList.remove('container-plain', 'container-card', 'container-outline');
+    content.classList.add(containerClass(props));
+  }
+
+  /**
+   * A widget showing in a tabs widget is on the tab it shows (e.g. one just dropped or moved there).
+   * Said in its `tab` prop, saved like other prop changes.
+   */
+  private keepOnShownTabs(pageId: string, layout: LayoutItem[]): void {
+    for (const tabsItem of flattenTree(layout).filter((item) => item.type === 'tabs' && item.id != null)) {
+      const stored = findInTree(this.layoutState.getLayout(pageId), tabsItem.id!);
+      const count = tabNames(stored?.props).length;
+      const active = Math.min(this.activeTabs.active(String(tabsItem.id)), count - 1);
+      const hidden = this.hiddenChildren.get(String(tabsItem.id)) ?? [];
+      for (const child of stored?.children ?? []) {
+        const shown = !hidden.some((h) => String(h.id) === String(child.id));
+        if (child.id != null && shown && tabOf(child, count) !== active) this.layoutState.patchItemProps(pageId, child.id, { tab: String(active) });
+      }
+    }
+  }
+
+  /** In a preview, dialogs are hidden until opened; an open one shows over the page. While editing, all show. */
+  private markModals(previewing: boolean, open: readonly string[]): void {
+    document.querySelectorAll<HTMLElement>('.canvas-viewport .grid-stack-item[data-type="modal"]').forEach((el) => {
+      const isOpen = open.includes(el.getAttribute('data-gs-id') ?? '');
+      el.classList.toggle('modal-closed', previewing && !isOpen);
+      el.classList.toggle('modal-open', previewing && isOpen);
+    });
+  }
+
+  /** A click beside the open dialogs (preview) closes the topmost, unless it's set not to. */
+  closeTopModal(): void {
+    const top = this.modals.top();
+    const item = top ? findInTree(this.layoutState.getLayout(this.tabs.activeTabId() ?? ''), top) : null;
+    if (top && propBool(item?.props, 'closeOnBackdrop', true)) this.modals.close(top);
   }
 
   /** The grid item of a widget on the canvas. */
@@ -671,20 +794,30 @@ export class Canvas implements AfterViewInit {
     const showGuides = (el: GridItemHTMLElement) => {
       const node = el.gridstackNode;
       if (!node) return;
-      const room = { w: grid.getColumn(), h: grid.opts.row || grid.getRow() };
+      const room = roomOf(grid);
       const axes = centeredAxes({ x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 1, h: node.h ?? 1 }, room);
       grid.el.classList.toggle('guide-x', axes.x);
       grid.el.classList.toggle('guide-y', axes.y);
     };
     const clearGuides = () => grid.el.classList.remove('guide-x', 'guide-y');
 
-    grid.on('dragstart resizestart', (_event: Event, el: GridItemHTMLElement) => {
+    grid.on('dragstart', (_event: Event, el: GridItemHTMLElement) => {
+      this.beginGesture();
+      showGuides(el);
+      this.startGroupDrag(grid, el);
+    });
+    grid.on('resizestart', (_event: Event, el: GridItemHTMLElement) => {
       this.beginGesture();
       showGuides(el);
     });
-    grid.on('drag resize', (_event: Event, el: GridItemHTMLElement) => showGuides(el));
-    grid.on('dragstop', () => {
+    grid.on('drag', (_event: Event, el: GridItemHTMLElement) => {
+      showGuides(el);
+      this.followGroupDrag(el);
+    });
+    grid.on('resize', (_event: Event, el: GridItemHTMLElement) => showGuides(el));
+    grid.on('dragstop', (_event: Event, el: GridItemHTMLElement) => {
       clearGuides();
+      this.dropGroupDrag(el);
       this.endGestureSoon();
     });
     grid.on('resizestop', (_event: Event, el: GridItemHTMLElement) => {
@@ -693,6 +826,68 @@ export class Canvas implements AfterViewInit {
       if (el.gridstackNode) syncSubGridRows(el.gridstackNode);
       this.syncLayout();
       this.endGestureSoon();
+    });
+  }
+
+  // ─── Dragging several widgets ────────────────────────────────────────────
+  // GridStack drags one widget. When it's selected along with others in the same grid, they follow:
+  // shown moved while dragging (CSS only), placed when it's dropped. The whole group stops at the
+  // grid's edges (moveGroup); a widget dropped into another container goes there alone.
+
+  private startGroupDrag(grid: GridStack, el: GridItemHTMLElement): void {
+    this.groupDrag = null;
+    this.selectOnRelease = null;
+    const id = el.getAttribute('data-gs-id');
+    const node = el.gridstackNode;
+    if (!id || !node || !this.selection.isSelected(id)) return;
+    const others = this.selection.selectedIds()
+      .filter((other) => other !== id)
+      .map((other) => ({ id: other, el: this.itemElement(other) }))
+      .filter((o): o is { id: string; el: GridItemHTMLElement } => !!o.el?.gridstackNode && o.el.gridstackNode.grid === grid)
+      .map((o) => ({ el: o.el, rect: { id: o.id, ...rectOf(o.el.gridstackNode!) } }));
+    if (others.length === 0) return;
+    this.groupDrag = { grid, el, start: { x: node.x ?? 0, y: node.y ?? 0 }, others };
+    others.forEach((o) => o.el.classList.add('group-dragging'));
+  }
+
+  /** Where the other widgets go: the dragged one's offset in cells, cut short at the grid's edges. */
+  private groupTargets(drag: GroupDrag): PlacedRect[] | null {
+    const node = drag.el.gridstackNode;
+    if (!node || node.grid !== drag.grid) return null;
+    return moveGroup(drag.others.map((o) => o.rect), (node.x ?? 0) - drag.start.x, (node.y ?? 0) - drag.start.y, roomToMoveIn(drag.grid));
+  }
+
+  private followGroupDrag(el: GridItemHTMLElement): void {
+    const drag = this.groupDrag;
+    if (!drag || el !== drag.el) return;
+    const targets = this.groupTargets(drag);
+    drag.others.forEach(({ el: other, rect }, i) => {
+      const target = targets?.[i];
+      // Percent of its own size: whole cells, whatever the zoom
+      other.style.transform = target
+        ? `translate(${((target.x - rect.x) / rect.w) * 100}%, ${((target.y - rect.y) / rect.h) * 100}%)`
+        : '';
+    });
+  }
+
+  private dropGroupDrag(el: GridItemHTMLElement): void {
+    const drag = this.groupDrag;
+    this.groupDrag = null;
+    if (!drag) return;
+    drag.others.forEach(({ el: other }) => {
+      other.style.transform = '';
+      other.classList.remove('group-dragging');
+    });
+    if (el !== drag.el) return;
+    // After GridStack has finished the drop (updating its grid during dragstop undoes part of it),
+    // by where the dragged widget landed; still within the gesture (endGestureSoon comes after)
+    setTimeout(() => {
+      const targets = this.groupTargets(drag);
+      if (!targets) return;
+      drag.grid.batchUpdate();
+      targets.forEach((target, i) => drag.grid.update(drag.others[i].el, { x: target.x, y: target.y }));
+      drag.grid.batchUpdate(false);
+      this.syncLayout();
     });
   }
 
@@ -723,4 +918,30 @@ export class Canvas implements AfterViewInit {
     if (deleted && tabId) this.history.record(new DeleteWidgets(tabId, [structuredClone(deleted)]));
     this.endGestureSoon();
   }
+}
+
+/** A widget dragged with the other selected widgets of its grid: where it started, and them as they were. */
+interface GroupDrag {
+  grid: GridStack;
+  el: GridItemHTMLElement;
+  start: { x: number; y: number };
+  others: { el: GridItemHTMLElement; rect: PlacedRect }[];
+}
+
+function rectOf(node: GridStackNode): { x: number; y: number; w: number; h: number } {
+  return { x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 1, h: node.h ?? 1 };
+}
+
+/**
+ * The cells a grid has, to center and line up in: a container's fixed rows, or the page's (one
+ * screen, or down to its lowest widget).
+ */
+function roomOf(grid: GridStack): { w: number; h: number } {
+  if (grid.parentGridNode) return { w: grid.getColumn(), h: grid.opts.row || grid.opts.maxRow || grid.getRow() };
+  return { w: grid.getColumn(), h: Math.max(GRID_ROWS, grid.getRow()) };
+}
+
+/** The cells widgets can be moved within: a container's, or the page's, which grows downward without end. */
+function roomToMoveIn(grid: GridStack): { w: number; h: number } {
+  return grid.parentGridNode ? roomOf(grid) : { w: grid.getColumn(), h: Number.POSITIVE_INFINITY };
 }

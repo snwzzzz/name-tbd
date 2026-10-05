@@ -1,6 +1,21 @@
-import { LucideMousePointerClick, LucideSheet, LucideTextCursorInput } from '@lucide/angular';
+import {
+  LucideCalendar, LucideClipboardList, LucideHash, LucideLayoutList, LucideMousePointerClick, LucideSheet,
+  LucideSquareCheck, LucideSquareChevronDown, LucideTextCursorInput, LucideToggleRight, LucideUpload,
+} from '@lucide/angular';
 import { WidgetTrigger } from '../../_types/workflow.types';
-import { CLICK_EVENT, INPUT_EVENT, ROW_DOUBLE_CLICK_EVENT } from '../../_constants/widget-events.constants';
+import {
+  CHANGE_EVENT, CLICK_EVENT, INPUT_EVENT, ITEM_CLICK_EVENT, ROW_DOUBLE_CLICK_EVENT, SUBMIT_EVENT,
+} from '../../_constants/widget-events.constants';
+
+/** "On change" of a field that fires CHANGE_EVENT. */
+const onChange = (widgetType: string, icon: WidgetTrigger['icon'], what: string): WidgetTrigger => ({
+  widgetType,
+  event: CHANGE_EVENT,
+  title: 'On change',
+  icon,
+  nameProp: 'label',
+  describe: (name) => `${what} ${name} is changed`,
+});
 
 /**
  * The widget events that can start a flow: they're offered in the trigger node and in the
@@ -30,6 +45,28 @@ export const WIDGET_TRIGGERS: WidgetTrigger[] = [
     icon: LucideTextCursorInput,
     nameProp: 'placeholder',
     describe: (name) => `something is typed into input ${name}`,
+  },
+  onChange('select', LucideSquareChevronDown, 'dropdown'),
+  onChange('checkbox', LucideSquareCheck, 'checkbox'),
+  onChange('toggle', LucideToggleRight, 'toggle'),
+  onChange('number', LucideHash, 'number input'),
+  onChange('date', LucideCalendar, 'date picker'),
+  onChange('file', LucideUpload, 'file upload'),
+  {
+    widgetType: 'list',
+    event: ITEM_CLICK_EVENT,
+    title: 'On item click',
+    icon: LucideLayoutList,
+    nameProp: 'titleColumn',
+    describe: (name) => `an item in list ${name} is clicked`,
+  },
+  {
+    widgetType: 'form',
+    event: SUBMIT_EVENT,
+    title: 'On submit',
+    icon: LucideClipboardList,
+    nameProp: 'successMessage',
+    describe: () => 'the form is saved',
   },
 ];
 

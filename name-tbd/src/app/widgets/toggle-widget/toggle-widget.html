@@ -1,0 +1,17 @@
+<div class="toggle">
+  <button
+    type="button"
+    role="switch"
+    class="switch"
+    [class.on]="on()"
+    [attr.aria-checked]="on()"
+    [attr.aria-labelledby]="label() ? labelId() : null"
+    [attr.aria-label]="label() ? null : 'Switch'"
+    [attr.tabindex]="tabIndex()"
+    (click)="toggle()">
+    <span class="thumb"></span>
+  </button>
+  @if (label(); as label) {
+    <span class="text" [id]="labelId()" (click)="toggle()">{{ label }}</span>
+  }
+</div>

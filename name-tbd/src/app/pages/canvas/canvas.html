@@ -24,11 +24,21 @@
       </button>
     </app-zoom-controls>
 
+    @if (selectionCount() > 1 && !previewMode()) {
+      <app-align-toolbar [count]="selectionCount()" (align)="alignSelection($event)" (distribute)="distributeSelection($event)" />
+    }
+
     <!-- The artboard (a desktop browser window's page area, see artboard.constants.ts). CSS zoom keeps GridStack's drag and drop working. -->
-    <div class="artboard" [style]="artboardSize" [style.zoom]="zoom()" [style.transform]="artboardTransform()">
+    <div class="artboard" [style]="artboardSize()" [style.zoom]="zoom()" [style.transform]="artboardTransform()">
       <!-- The layout page's widgets (navbar, ...), under this page's own -->
       <app-layout-overlay />
       <div class="grid-stack" #gridContainer></div>
+      @if (previewMode() && modals.anyOpen()) {
+        <!-- Under the open dialog (preview): a click on it closes the dialog -->
+        <div class="preview-backdrop" (click)="closeTopModal()"></div>
+      }
+      <!-- Where a 1080p window's page area ends: below it, visitors scroll -->
+      <div class="screen-fold" [style.top.px]="screenHeight" aria-hidden="true"><span>End of first screen · scrolls below</span></div>
     </div>
   </div>
 </div>
@@ -46,6 +56,15 @@
         <button app-context-menu-item [icon]="icons.paste" (click)="closeContextMenu(); paste()">Paste</button>
       }
       <app-context-menu-divider />
+      @if (selectionCount() > 1) {
+        <button app-context-menu-item [icon]="icons.alignLeft" (click)="closeContextMenu(); alignSelection('left')">Align left</button>
+        <button app-context-menu-item [icon]="icons.alignTop" (click)="closeContextMenu(); alignSelection('top')">Align top</button>
+        @if (selectionCount() > 2) {
+          <button app-context-menu-item [icon]="icons.distributeX" (click)="closeContextMenu(); distributeSelection('horizontal')">Distribute horizontally</button>
+          <button app-context-menu-item [icon]="icons.distributeY" (click)="closeContextMenu(); distributeSelection('vertical')">Distribute vertically</button>
+        }
+        <app-context-menu-divider />
+      }
       <button app-context-menu-item [icon]="icons.centerX" (click)="closeContextMenu(); center('x')">Center horizontally</button>
       <button app-context-menu-item [icon]="icons.centerY" (click)="closeContextMenu(); center('y')">Center vertically</button>
       <button app-context-menu-item [icon]="icons.centerBoth" (click)="closeContextMenu(); center('both')">Center on both axes</button>

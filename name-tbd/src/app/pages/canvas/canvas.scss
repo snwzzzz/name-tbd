@@ -38,12 +38,12 @@
 // Its size and cell count are set inline from _constants/artboard.constants.ts, in px like
 // GridStack's cells (rem would follow the browser's font size setting, the grid wouldn't).
 .artboard {
-  // Centered in viewport via negative margin (half of artboard size)
+  // Its first screen is centered in the viewport via negative margins; a taller page grows downward
   position: absolute;
   top: 50%;
   left: 50%;
   margin-left: calc(var(--artboard-width) / -2);
-  margin-top: calc(var(--artboard-height) / -2);
+  margin-top: calc(var(--screen-height) / -2);
   width: var(--artboard-width);
   height: var(--artboard-height);
 
@@ -67,10 +67,32 @@
   user-select: none;
 }
 
+// Where the first screen ends (taller pages scroll in the exported app)
+.screen-fold {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--color-primary) 55%, transparent);
+  pointer-events: none;
+
+  span {
+    position: absolute;
+    right: 0.5rem;
+    top: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+    color: var(--color-primary-dark);
+    font-size: 0.6875rem;
+    font-weight: 600;
+  }
+}
+
 // ─── GridStack container matches artboard exactly ────────────────────────────
 // GridStack mounts on .grid-stack with position:relative + overflow:hidden.
-// Its fixed row count × cellHeight is the artboard's height.
-// The grid MUST NOT add scrollbars — row count is fixed.
+// The artboard is as high as the page's rows (Canvas.pageRows); the grid fills it.
+// The grid MUST NOT add scrollbars: the artboard grows instead.
 :host ::ng-deep .artboard .grid-stack {
   width: 100% !important;
   height: 100% !important;
@@ -132,11 +154,24 @@
   }
 
   // A container: its background color (set inline, see Canvas.paintContainer), else a faint fill
-  // so its area shows while editing
+  // so its area shows while editing. Its frame (tab bar, title bar) takes its header rows; its
+  // nested grid starts below them (--header-h, see makeContainer).
   &.container-widget {
     background: rgba(0, 0, 0, 0.03);
     inset: 0 !important; // override GridStack margin so it acts as a flush structural wrapper
     overflow: hidden !important; // strictly enforce no scrollbars on the container itself
+
+    > .grid-stack {
+      position: absolute !important;
+      top: var(--header-h, 0px);
+      left: 0;
+      right: 0;
+      height: calc(100% - var(--header-h, 0px)) !important;
+    }
+
+    &.container-card {
+      background: var(--widget-bg);
+    }
   }
 }
 
@@ -190,6 +225,12 @@
 // ─── Center guides ───────────────────────────────────────────────────────────
 // While a widget is dragged or resized centered in its grid (the page, or a container's), a dashed
 // line marks the grid's middle (see Canvas.showCenterGuides)
+// Selected widgets following a dragged one: shown where they'll land, above the others
+:host ::ng-deep .grid-stack-item.group-dragging {
+  z-index: 10;
+  opacity: 0.85;
+}
+
 :host ::ng-deep .grid-stack.guide-x::before,
 :host ::ng-deep .grid-stack.guide-y::after {
   content: '';
@@ -210,6 +251,28 @@
   right: 0;
   top: 50%;
   border-top: 1px dashed #e8178a;
+}
+
+// ─── Dialogs in a preview: hidden until opened, then over the page ─────────────
+:host ::ng-deep .grid-stack-item.modal-closed {
+  display: none !important;
+}
+
+:host ::ng-deep .grid-stack-item.modal-open {
+  z-index: 600 !important;
+
+  > .grid-stack-item-content {
+    border-radius: calc(var(--widget-radius) * 2);
+    background: var(--widget-bg);
+    box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.3);
+  }
+}
+
+.preview-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  background: rgb(0 0 0 / 0.4);
 }
 
 // ─── Preview mode ────────────────────────────────────────────────────────────

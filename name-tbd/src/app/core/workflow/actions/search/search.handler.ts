@@ -9,6 +9,7 @@ import { LayoutItem } from '../../../../_types/layout.types';
 import { flattenTree } from '../../../../_utils/layout-tree.utils';
 import { propNumber } from '../../../../_utils/widget-props.utils';
 import { parseColumnList, rowMatches, visibleColumnIndexes } from '../../../../_utils/table.utils';
+import { isRowWidget } from '../../../rendering/row-widgets';
 
 /** The search's `tableId` for "every data table on the page" (a global search bar). */
 export const SEARCH_ALL_TABLES = 'all';
@@ -50,7 +51,7 @@ export class SearchHandler implements ActionHandler {
   }
 
   private targetTables(pageId: string, tableId: string): LayoutItem[] {
-    const tables = flattenTree(this.layout.items(pageId)).filter((item) => item.type === 'table' && item.id != null);
+    const tables = flattenTree(this.layout.items(pageId)).filter((item) => isRowWidget(item.type) && item.id != null);
     return tableId === SEARCH_ALL_TABLES ? tables : tables.filter((item) => String(item.id) === tableId);
   }
 

@@ -1,15 +1,36 @@
 import { GridStackOptions } from 'gridstack';
 
 // The artboard is the page area of a maximized desktop browser on the most common screen
-// (1920 × 1080 minus the taskbar and the browser's toolbars): 128 × 63 square cells of 15px =
-// exactly 1920 × 945px, so a widget on its edge sits on the window's edge. The only definition
-// of the grid: the canvas, the layout overlay and the exported app all draw from these.
+// (1920 × 1080 minus the taskbar and the browser's toolbars): 128 square cells of 15px across =
+// exactly 1920px, so a widget on its edge sits on the window's edge. A page is at least one screen
+// high (63 rows = 945px) and grows downward with its widgets; the exported app scrolls like any
+// website. The only definition of the grid: the canvas, the layout overlay and the exported app
+// all draw from these.
 // Widget margins are 2px, so a typical button (w:7, h:3) has 101 × 41px of content.
 export const CELL_SIZE = 15;
 export const GRID_COLUMNS = 128;
+/** The rows of one screen: every page has at least these. */
 export const GRID_ROWS = 63;
 export const ARTBOARD_WIDTH = GRID_COLUMNS * CELL_SIZE;
+/** One screen's height; a taller page goes on below it. */
 export const ARTBOARD_HEIGHT = GRID_ROWS * CELL_SIZE;
+/** Empty rows the canvas keeps below the lowest widget, so there's always room to drop more. */
+export const PAGE_GROW_ROWS = 21;
+
+/** The row the lowest of these widgets ends on (0 for none). */
+export function contentRows(items: readonly { y?: number; h?: number }[]): number {
+  return items.reduce((rows, item) => Math.max(rows, (item.y ?? 0) + (item.h ?? 1)), 0);
+}
+
+/** A page's height in rows: one screen, or down to its lowest widget. */
+export function pageRows(items: readonly { y?: number; h?: number }[]): number {
+  return Math.max(GRID_ROWS, contentRows(items));
+}
+
+/** A page's height on the canvas: with room below its lowest widget to place more. */
+export function editorPageRows(items: readonly { y?: number; h?: number }[]): number {
+  return Math.max(GRID_ROWS, contentRows(items) + PAGE_GROW_ROWS);
+}
 /**
  * The narrowest the exported app gets (half the artboard; e.g. zoomed in to 200%): down to it,
  * columns narrow with the window while rows keep their height; below it, the page scrolls sideways.
@@ -38,8 +59,8 @@ export const ROOT_GRID_OPTIONS: GridStackOptions = {
   column: GRID_COLUMNS,
   cellHeight: CELL_SIZE,
   margin: WIDGET_MARGIN,
-  // Fixed row count locks the canvas to the artboard's height
-  row: GRID_ROWS,
+  // At least one screen; no maximum, so a page grows downward (the artboard follows, see Canvas)
+  minRow: GRID_ROWS,
   // No responsive breakpoints, so the grid doesn't drop to 1 column when zoomed out
   columnOpts: { breakpoints: [] },
   acceptWidgets: ACCEPTED_WIDGETS,

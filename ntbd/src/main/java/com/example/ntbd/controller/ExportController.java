@@ -30,6 +30,7 @@ public class ExportController {
     private final AppDefinitionService definitionService;
     private final ExportFormatRegistry formats;
     private final WorkspaceAccess access;
+    private final com.example.ntbd.service.VersionControlService versionControlService;
 
     /** What the exported app runs: its pages, widgets, workflows and data. */
     @GetMapping(value = "/branches/{branchId}/definition", produces = "application/json")
@@ -43,7 +44,10 @@ public class ExportController {
     public ResponseEntity<byte[]> exportApp(@PathVariable Long branchId,
                                             @RequestParam(defaultValue = "html") String format) {
         access.requireBranch(branchId, VIEWER);
-        ExportedFile file = formats.get(format).export(definitionService.build(branchId));
+        var exportFormat = formats.get(format);
+        // What was exported can be found again in the History panel
+        versionControlService.snapshotIfChanged(branchId, com.example.ntbd.domain.VersionKind.BEFORE_EXPORT, null);
+        ExportedFile file = exportFormat.export(definitionService.build(branchId));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(file.mediaType());

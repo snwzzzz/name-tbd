@@ -4,6 +4,7 @@ import { SetTextEditor } from '../editor/action-editors/set-text-editor';
 import { TableActionEditor } from '../editor/action-editors/table-action-editor';
 import { ShowDetailEditor } from '../editor/action-editors/show-detail-editor';
 import { SearchEditor } from '../editor/action-editors/search-editor';
+import { ModalActionEditor, SubmitFormEditor } from '../editor/action-editors/widget-picker-editor';
 import { SEARCH_ALL_TABLES } from '../core/workflow/actions/search/search.handler';
 
 export const CONDITION_OPERATORS: ConditionOperator[] = [
@@ -45,6 +46,24 @@ export const ACTION_TYPES: ActionType[] = [
     label: 'Search table',
     defaultConfig: { inputId: '', tableId: SEARCH_ALL_TABLES },
     editor: SearchEditor,
+  },
+  {
+    id: 'open_modal',
+    label: 'Open dialog',
+    defaultConfig: { modalId: '' },
+    editor: ModalActionEditor,
+  },
+  {
+    id: 'close_modal',
+    label: 'Close dialog',
+    defaultConfig: { modalId: '' },
+    editor: ModalActionEditor,
+  },
+  {
+    id: 'submit_form',
+    label: 'Submit form',
+    defaultConfig: { formId: '' },
+    editor: SubmitFormEditor,
   },
 ];
 

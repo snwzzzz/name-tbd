@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestOptions, VersionControlDto, NewVersionControlCommand } from "../models";
+import { RequestOptions, VersionDto, NewVersionControlCommand, RenameVersionCommand, AppDefinition } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class VersionControlControllerService {
@@ -25,10 +25,10 @@ export class VersionControlControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    getVersionsByBranch(branchId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<VersionControlDto>>;
-    getVersionsByBranch(branchId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<VersionControlDto>>>;
-    getVersionsByBranch(branchId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<VersionControlDto>>>;
-    getVersionsByBranch(branchId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+    getVersions(branchId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<VersionDto>>;
+    getVersions(branchId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<VersionDto>>>;
+    getVersions(branchId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<VersionDto>>>;
+    getVersions(branchId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/versions`;
 
         let params = new HttpParams();
@@ -57,10 +57,10 @@ export class VersionControlControllerService {
         });
     }
 
-    createVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<VersionControlDto>;
-    createVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<VersionControlDto>>;
-    createVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<VersionControlDto>>;
-    createVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+    saveVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<VersionDto>;
+    saveVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<VersionDto>>;
+    saveVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<VersionDto>>;
+    saveVersion(newVersionControlCommand: NewVersionControlCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/versions`;
 
         let headers: HttpHeaders;
@@ -88,16 +88,92 @@ export class VersionControlControllerService {
         });
     }
 
-    getLatestVersionByBranch(branchId: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<VersionControlDto>;
-    getLatestVersionByBranch(branchId: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<VersionControlDto>>;
-    getLatestVersionByBranch(branchId: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<VersionControlDto>>;
-    getLatestVersionByBranch(branchId: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
-        const url = `${this.basePath}/api/versions/latest`;
+    restoreVersion(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    restoreVersion(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    restoreVersion(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    restoreVersion(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/versions/${id}/restore`;
 
-        let params = new HttpParams();
-        if (branchId != null) {
-            params = HttpParamsBuilder.addToHttpParams(params, branchId, 'branchId');
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
         }
+
+        return this.httpClient.request('post', url, {
+            body: null,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    renameVersion(id: number, renameVersionCommand: RenameVersionCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<VersionDto>;
+    renameVersion(id: number, renameVersionCommand: RenameVersionCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<VersionDto>>;
+    renameVersion(id: number, renameVersionCommand: RenameVersionCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<VersionDto>>;
+    renameVersion(id: number, renameVersionCommand: RenameVersionCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/versions/${id}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+        // Set Content-Type for JSON requests if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json');
+        }
+
+        return this.httpClient.request('patch', url, {
+            body: renameVersionCommand,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    previewVersion(id: number, observe?: 'body', options?: RequestOptions<'blob'>): Observable<string>;
+    previewVersion(id: number, observe?: 'response', options?: RequestOptions<'blob'>): Observable<HttpResponse<string>>;
+    previewVersion(id: number, observe?: 'events', options?: RequestOptions<'blob'>): Observable<HttpEvent<string>>;
+    previewVersion(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/versions/${id}/preview`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'text/html, application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            responseType: 'blob',
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    getVersionDefinition(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<AppDefinition>;
+    getVersionDefinition(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<AppDefinition>>;
+    getVersionDefinition(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<AppDefinition>>;
+    getVersionDefinition(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/versions/${id}/definition`;
 
         let headers: HttpHeaders;
         if (options?.headers instanceof HttpHeaders) {
@@ -113,7 +189,6 @@ export class VersionControlControllerService {
         return this.httpClient.request('get', url, {
             observe,
             headers,
-            params,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

@@ -1,0 +1,25 @@
+<div class="w-field">
+  @if (label(); as label) {
+    <label class="w-label" [class.w-required]="required()" [for]="fieldId()">{{ label }}</label>
+  }
+  <input
+    type="number"
+    class="w-box"
+    [id]="fieldId()"
+    [value]="value()"
+    [placeholder]="placeholder()"
+    [attr.step]="step()"
+    [attr.min]="min()"
+    [attr.max]="max()"
+    [readOnly]="!session.live()"
+    [attr.aria-label]="label() ? null : placeholder() || 'Number'"
+    [attr.aria-required]="required()"
+    [attr.aria-invalid]="!!error()"
+    [attr.aria-describedby]="error() ? errorId() : null"
+    [attr.tabindex]="tabIndex()"
+    (input)="onInput($any($event.target).value)"
+    (change)="onChange()" />
+  @if (error(); as error) {
+    <span class="w-error" [id]="errorId()" role="alert">{{ error }}</span>
+  }
+</div>

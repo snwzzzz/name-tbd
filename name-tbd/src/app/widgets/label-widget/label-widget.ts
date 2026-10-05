@@ -1,6 +1,7 @@
 import { Component, computed } from '@angular/core';
 import { BaseWidget } from '../../_directives/base-widget.directive';
 
+/** A line of text in the chosen color (Auto: the theme's text color) and size. */
 @Component({
   selector: 'app-label-widget',
   templateUrl: './label-widget.html',

@@ -9,6 +9,7 @@ import { SelectOption } from '../../_types/select.types';
 import { ShowDetailConfig } from '../../_types/workflow.types';
 import { flattenTree } from '../../_utils/layout-tree.utils';
 import { propText } from '../../_utils/widget-props.utils';
+import { isRowWidget } from '../../core/rendering/row-widgets';
 
 /** Settings of `show_detail`: the table (on this page) and the detail section (on any page). */
 @Component({
@@ -47,8 +48,8 @@ export class ShowDetailEditor extends BaseActionEditor<ShowDetailConfig> {
 
   readonly tableOptions = computed<SelectOption[]>(() =>
     this.pageItems()
-      .filter((i) => i.type === 'table' && typeof i.id === 'number')
-      .map((i) => ({ value: String(i.id), label: `${propText(i.props, 'title') ?? 'Table'} (#${i.id})`, icon: LucideSheet })));
+      .filter((i) => isRowWidget(i.type) && typeof i.id === 'number')
+      .map((i) => ({ value: String(i.id), label: `${propText(i.props, 'title') ?? (i.type === 'list' ? 'List' : 'Table')} (#${i.id})`, icon: LucideSheet })));
 
   /** The detail sections of all pages, with the page each one is on. */
   private readonly details = computed(() =>

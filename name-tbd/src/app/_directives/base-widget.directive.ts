@@ -5,9 +5,10 @@ import { textSizeOf } from '../core/rendering/text-sizes';
 
 /**
  * Base of every widget the canvas places: the canvas sets `id` and `props`. Its "Text size" prop
- * sets --widget-text-size, which all widget text is sized by.
+ * sets --widget-text-size, which all widget text is sized by. Hosts get .app-widget, which the
+ * widgets' shared styles (_styles/_widgets.scss) hang on.
  */
-@Directive({ host: { '[style.--widget-text-size]': 'textSize()' } })
+@Directive({ host: { class: 'app-widget', '[style.--widget-text-size]': 'textSize()' } })
 export abstract class BaseWidget {
   readonly id = input.required<string>();
   readonly props = model<WidgetProps>({});

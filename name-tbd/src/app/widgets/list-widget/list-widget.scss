@@ -1,0 +1,127 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  color: var(--widget-fg);
+  font-family: var(--widget-font);
+  font-size: var(--widget-text-size);
+}
+
+.message {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--widget-fg-secondary);
+  font-size: var(--widget-text-size-small);
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--widget-space);
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+
+  &.grid {
+    display: grid;
+    grid-template-columns: repeat(var(--per-row), minmax(0, 1fr));
+  }
+}
+
+// A card: the theme's corners and a hairline; selected ones in the brand tint
+.card {
+  display: flex;
+  gap: calc(var(--widget-space) * 1.5);
+  padding: calc(var(--widget-space) * 1.5);
+  border: 1px solid var(--widget-stroke-subtle);
+  border-radius: calc(var(--widget-radius) * 2);
+  background: var(--widget-bg);
+  transition:
+    border-color var(--widget-transition),
+    background var(--widget-transition);
+
+  .grid & {
+    flex-direction: column;
+  }
+
+  :host(.live) & {
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--widget-stroke);
+    }
+  }
+
+  &.selected {
+    border-color: var(--widget-brand);
+    background: var(--widget-brand-selected-bg);
+  }
+}
+
+.image {
+  flex-shrink: 0;
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: var(--widget-radius);
+
+  .grid & {
+    width: 100%;
+    height: 8rem;
+  }
+}
+
+.body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  flex-shrink: 0;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--widget-brand) 14%, var(--widget-bg));
+  color: color-mix(in srgb, var(--widget-brand) 70%, var(--widget-fg));
+  font-size: var(--widget-text-size-small);
+  font-weight: 600;
+}
+
+.subtitle,
+dt {
+  color: var(--widget-fg-secondary);
+}
+
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem 1rem;
+  margin: 0.25rem 0 0;
+  font-size: var(--widget-text-size-small);
+
+  div {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
