@@ -811,6 +811,11 @@ dto/ + mapper/   records sent to clients, and entity ↔ DTO mapping
 commands/        request bodies (NewPageCommand, UpdateUiComponentCommand, …)
 ```
 
+### 10.2 Data Connections and Proxy
+
+Connectors in `livedata/` (PostgreSQL, Google Sheets, Microsoft 365, generic REST) allow live apps to query data where it lives. The backend acts as a proxy: exported apps call `/api/data/:sourceId/*` with their App Key. The proxy applies queries, limits rows, and forwards requests to the target using credentials encrypted at rest.
+
+
 **Errors** (`GlobalExceptionHandler`):
 
 | Exception | Status |
@@ -854,7 +859,7 @@ The server runs flows with **the browser's engine** (section 8.4), in a small No
 
 - **`POST /run`** takes a `RunRequest` (`flow-engine/run-request.ts`: the workflow's nodes and edges, the trigger, the variables, the data, more scope) and answers a `RunResponse`: the run log, the steps, the variables and the data after it. `GET /health` answers `ok`. With `FLOW_SIDECAR_TOKEN` set, requests need `Authorization: Bearer <token>`.
 - **HTTP requests** from flows only go to public addresses (`public-fetch.ts`: the name is resolved first; private, loopback, link-local and metadata addresses are refused) and don't follow redirects. `FLOW_ALLOW_PRIVATE_URLS=true` lifts that for local development.
-- **The backend** (`workflow/sidecar/`): `POST /api/workflows/{id}/run` (`ServerFlowRunner`) sends the workflow's flows that start without a widget, the app's and page's variables, every data source of the branch and the request body (`payload` in expressions, `event` for the flow) to the sidecar (`FlowSidecarClient`, `app.flows.sidecar-url` / `app.flows.sidecar-token`, env `FLOW_SIDECAR_URL` / `FLOW_SIDECAR_TOKEN`), saves the rows the flow changed (`DataSourceService.replaceRows`), and answers the run log, steps and variables. Without a sidecar: 503. Counted like `execute` in the request limits.
+- **The backend** (`workflow/sidecar/`): `POST /api/workflows/{id}/run` (`ServerFlowRunner`) sends the workflow's flows that start without a widget, the app's and page's variables, every data source of the branch and the request body (`payload` in expressions, `event` for the flow) to the sidecar (`FlowSidecarClient`, `app.flows.sidecar-url` / `app.flows.sidecar-token`, env `FLOW_SIDECAR_URL` / `FLOW_SIDECAR_TOKEN`), saves the rows the flow changed , and answers the run log, steps and variables. Without a sidecar: 503. Counted like `execute` in the request limits.
 - Scheduled jobs and incoming webhooks are meant to start flows the same way (`ServerFlowRunner.run`); they have no triggers of their own yet.
 
 The old Java engine (`workflow/FlowEngine`, node types `CONDITION`, `EMAIL`, `WEBHOOK`, `POST /api/workflows/{id}/execute`) is still there for workflows built for it; page workflows don't use it.
@@ -864,7 +869,7 @@ The old Java engine (`workflow/FlowEngine`, node types `CONDITION`, `EMAIL`, `WE
 ## 11. The export pipeline
 
 ```
-GET /api/branches/{id}/export?format=html
+GET /api/branches/{id}/export?format=html&dataMode=embed&allColumns=false
         │
         ▼
 ExportController ──▶ AppDefinitionService.build(branchId)
@@ -1033,7 +1038,7 @@ A version is a snapshot of the whole branch (`BranchContent` as JSON in `version
 
 ### 13.5 Exporting
 
-1. **Navbar → Export** sends the changes still waiting (`SaveQueue.flush`), then downloads `GET /api/branches/{id}/export?format=html`.
+1. **Navbar → Export** sends the changes still waiting (`SaveQueue.flush`), then opens the Export Dialog. You can choose the `dataMode` (embed, cache, live) and toggle `allColumns`.
 2. The backend saves a `BEFORE_EXPORT` version (if something changed), builds the definition, inlines the runtime, and sends `<app-name>.html`.
 3. Open the file anywhere. The runtime reads the embedded definition, routes to the home page, draws the layout page plus the page, and runs workflows exactly like the preview. Data changes stay in that browser.
 
@@ -1226,7 +1231,6 @@ The whole folder is regenerated each time. Commit it together with the backend c
 - Expressions don't know the signed-in user yet (phase 6 adds it through `EXPRESSION_SCOPE`).
 - The expression engine adds about 115 kB (35 kB gzipped) to the exported app; its warning budget is 650 kB (`angular.json`).
 - There is no home-page setting: the export starts on the page at `/`, or else the first page.
-- Exported data lives in the export and in each visitor's browser. There's no shared live data yet.
 - Pages are designed for one desktop window width. They adapt to windows down to half its width; on smaller screens (phones) they scroll sideways. Real mobile layouts would need per-breakpoint geometry.
 - Uploaded files are kept inline (data URLs, up to 2 MB each) in the app's data and its visitors' browser storage (a few MB in all); a server keeps them once apps are published.
 - Charts are drawn by the widget itself (SVG, one series) rather than with a chart library, to keep the single-file export small.
@@ -1234,6 +1238,5 @@ The whole folder is regenerated each time. Commit it together with the backend c
 - Workspace members can't be invited yet; each user only has their personal workspace (plus, in development, the sample workspace).
 
 **Planned, and prepared for by the architecture:**
-- **Live data sources** (databases, APIs): a new definition section plus an `AppData` implementation (section 15).
 - **Vendor deploys and ZIP exports**: a new `ExportFormat`. The runtime already reads `app-definition.json` from next to the page.
 - **More widgets, actions and triggers**: registry entries (section 15).

@@ -1,0 +1,38 @@
+<div class="modal">
+  <div class="modal-header">
+    <h2>Connect data</h2>
+  </div>
+  <div class="modal-body">
+    @if (step === 1) {
+      <div class="connection-kinds">
+        @for (kind of kinds; track kind.kind) {
+          <div class="kind-card" (click)="selectKind(kind)">
+            <h3>{{ kind.label }}</h3>
+            <p>{{ kind.description }}</p>
+          </div>
+        }
+      </div>
+    } @else if (step === 2 && selectedKind) {
+      <div class="connection-fields">
+        <h3>Configure {{ selectedKind.label }}</h3>
+        <!-- Very basic representation of form -->
+        @for (field of selectedKind.connectionFields; track field.key) {
+           <div class="form-group">
+             <label>{{ field.label }}</label>
+             <input type="text" [(ngModel)]="connectionValues[field.key]" />
+           </div>
+        }
+        <button (click)="createConnection()">Connect</button>
+      </div>
+    } @else if (step === 3 && connectionId) {
+      <div class="source-fields">
+        <h3>Configure Data Source</h3>
+        <!-- source fields -->
+        <button (click)="addDataSource()">Add Data Source</button>
+      </div>
+    }
+  </div>
+  <div class="modal-footer">
+    <button class="btn-cancel" (click)="close()">Cancel</button>
+  </div>
+</div>
