@@ -1,0 +1,6 @@
+$content = Get-Content "c:\Users\snwzi\OneDrive\Dokumente\GitHub\name-tbd\README.md" -Raw
+$content = $content.Replace("GET /api/branches/{id}/export?format=html", "GET /api/branches/{id}/export?format=html&dataMode=embed&allColumns=false")
+$content = $content.Replace("DataSourcesContributor   `"dataSources`", `"dataRevision`"", "DataSourcesContributor   `"dataSources`", `"dataRevision`"`n                       │     AppKeysContributor       `"appKeys`" (if live/cache)")
+$content = $content.Replace("The backend does not spawn a build process per export;", "Exports are requested by the frontend (with `dataMode` and `allColumns`). The backend does not spawn a build process per export;")
+$content = $content.Replace("and injects the app's definition, CSS, and name into `index.html`.", "and injects the app's definition, CSS, and name into `index.html`.`n`n**Data modes:**`n- `embed`: (Default) Data is bundled inside the HTML file.`n- `cache`: Live data with an offline cache. An App Key is issued. When offline, changes queue up in IndexedDB and sync when back online.`n- `live`: Live only. An App Key is issued; no offline cache.`n`n**App Keys:** If live or cache mode is used, an App Key allows the exported app to query data without user sign-in. Keys can be revoked.")
+Set-Content "c:\Users\snwzi\OneDrive\Dokumente\GitHub\name-tbd\README.md" $content

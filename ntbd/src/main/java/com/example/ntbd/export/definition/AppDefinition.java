@@ -17,7 +17,7 @@ import java.util.Map;
 public final class AppDefinition {
 
     /** The format's version; bumped (here and in the frontend) on breaking changes. */
-    public static final int VERSION = 1;
+    public static final int VERSION = 3;
 
     private final App app;
     private final Map<String, Object> sections = new LinkedHashMap<>();

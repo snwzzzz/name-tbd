@@ -11,7 +11,7 @@ import { PagePickerData, PagePickerModal } from './page-picker-modal/page-picker
 import { RecentPagesService } from '../../_services/recent-pages.service';
 import { PageDto } from '../../api/models';
 import { timeAgo } from '../../_utils/time.utils';
-import { EDITOR_BRANCH_ID } from '../../_constants/api.constants';
+import { EditorContext } from '../../_services/editor-context.service';
 
 /** Pages are not split by branch yet; everything lives on this one. */
 /** How many pages the Start tab lists. */
@@ -39,6 +39,7 @@ export class Welcome implements OnInit {
   private readonly pagesState = inject(PagesStateService);
   private readonly navigation = inject(PageNavigationService);
   private readonly recentPages = inject(RecentPagesService);
+  private readonly context = inject(EditorContext);
 
   /** The project's pages (shared with links and the layout layer, so they stay in sync). */
   readonly pages = this.pagesState.pages;
@@ -95,7 +96,7 @@ export class Welcome implements OnInit {
     }
     if (this.creatingLayout()) return;
     this.creatingLayout.set(true);
-    this.pageService.createPage({ branchId: EDITOR_BRANCH_ID, ...NEW_LAYOUT_PAGE, layout: true }).subscribe({
+    this.pageService.createPage({ branchId: this.context.requireBranchId(), ...NEW_LAYOUT_PAGE, layout: true }).subscribe({
       next: (page) => {
         this.creatingLayout.set(false);
         this.pagesState.refresh();
@@ -119,7 +120,7 @@ export class Welcome implements OnInit {
   }
 
   private createPage({ name, path, layout }: CreatePageResult): void {
-    this.pageService.createPage({ branchId: EDITOR_BRANCH_ID, name, path, layout }).subscribe((page) => {
+    this.pageService.createPage({ branchId: this.context.requireBranchId(), name, path, layout }).subscribe((page) => {
       // The pages list, links and the layout layer pick up the new page
       this.pagesState.refresh();
       this.openPage(page.id!);

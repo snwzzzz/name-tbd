@@ -19,7 +19,13 @@
       <label class="field-label">When</label>
       <app-select size="sm" [options]="triggerOptions()" [ngModel]="selectedTrigger()" (ngModelChange)="setTrigger($event)" />
 
-      @if (triggerButton(); as button) {
+      @if (trigger.triggerType === 'timer') {
+        <div class="reset-row">
+          <span>every</span>
+          <input class="node-input seconds-input" type="number" min="1" [ngModel]="trigger.intervalSeconds ?? 10" (ngModelChange)="setInterval($event)" />
+          <span>seconds</span>
+        </div>
+      } @else if (triggerButton(); as button) {
         <!-- The button this flow starts from, drawn like it looks on the page -->
         <div class="trigger-button" [style.background]="button.color" [title]="'Button #' + trigger.elementId">
           {{ button.label }}
@@ -30,11 +36,16 @@
     </div>
   }
 
-  @if (condition(); as condition) {
+  @if (condition() !== null) {
     <div class="node-fields" (mousedown)="$event.stopPropagation()">
-      <input class="node-input" placeholder="Field" [ngModel]="condition.field" (ngModelChange)="updateCondition({ field: $event })" />
-      <app-select size="sm" [options]="operatorOptions" [ngModel]="condition.operator" (ngModelChange)="updateCondition({ operator: $event })" />
-      <input class="node-input" placeholder="Value" [ngModel]="condition.value" (ngModelChange)="updateCondition({ value: $event })" />
+      <label class="field-label">If</label>
+      <app-expression-input
+        mode="expression"
+        label="Condition"
+        placeholder="e.g. orderForm.amount > 500"
+        [scope]="scope()"
+        [value]="condition() ?? ''"
+        (valueChange)="setCondition($event)" />
     </div>
   }
 
@@ -43,7 +54,7 @@
       <app-select size="sm" [options]="actionTypeOptions" [ngModel]="action.actionType" (ngModelChange)="setActionType($event)" />
 
       @if (actionType(); as type) {
-        <ng-container *ngComponentOutlet="type.editor; inputs: { config: action.config, pageItems: pageItems(), update: updateConfig }" />
+        <ng-container *ngComponentOutlet="type.editor; inputs: { config: action.config, pageItems: pageItems(), update: updateConfig, pageId: pageId(), scope: scope() }" />
       }
     </div>
   }
@@ -65,6 +76,16 @@
         <span class="branch-label">False</span>
         <div fNodeOutput class="port out-port false-port" [fOutputId]="outputPort('false')" [fOutputMultiple]="true" fOutputConnectableSide="right"></div>
       </div>
+    </div>
+  } @else if (ports().length > 1) {
+    <div class="branch-ports">
+      @for (port of ports(); track port.id) {
+        <div class="branch-port-row">
+          <span class="branch-label">{{ port.label }}</span>
+          <div fNodeOutput class="port out-port" [class.false-port]="port.id === 'error' || port.id === 'invalid'"
+               [fOutputId]="outputPort(port.id)" [fOutputMultiple]="true" fOutputConnectableSide="right"></div>
+        </div>
+      }
     </div>
   } @else {
     <div fNodeOutput class="port out-port" [fOutputId]="outputPort('out')" [fOutputMultiple]="true" fOutputConnectableSide="right"></div>

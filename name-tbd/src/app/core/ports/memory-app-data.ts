@@ -9,6 +9,12 @@ export interface DataSourceSnapshot {
   name: string;
   columns: string[];
   rows: string[][];
+  /** The rows' ids, in order (exports before live data have none: rows are known by position). */
+  rowIds?: string[];
+  /** "embedded": the rows are here; "live": they come from the data API (see LiveData in the definition). */
+  mode?: 'embedded' | 'live';
+  keyColumn?: string | null;
+  readOnly?: boolean;
 }
 
 /**
@@ -16,7 +22,7 @@ export interface DataSourceSnapshot {
  * told about every change (e.g. to keep it in the browser's storage).
  */
 export class MemoryAppData implements AppData {
-  private readonly tables = signal<Record<number, { name: string; data: TableData }>>({});
+  private readonly tables = signal<Record<number, { name: string; data: TableData; readOnly?: boolean }>>({});
   private nextRowNumber = 0;
 
   readonly loaded = signal(true).asReadonly();
@@ -26,6 +32,7 @@ export class MemoryAppData implements AppData {
       name: t.name,
       columns: t.data.columns,
       rowCount: t.data.rows.length,
+      ...(t.readOnly ? { readOnly: true } : {}),
     })),
   );
 
@@ -33,7 +40,7 @@ export class MemoryAppData implements AppData {
     snapshot: DataSourceSnapshot[],
     private readonly onChange?: (tables: Record<number, TableData>) => void,
   ) {
-    this.tables.set(Object.fromEntries(snapshot.map((s) => [s.id, { name: s.name, data: toTableData(s) }])));
+    this.tables.set(Object.fromEntries(snapshot.map((s) => [s.id, { name: s.name, data: toTableData(s), readOnly: s.readOnly }])));
   }
 
   /** Replaces a data source's rows (e.g. with ones kept from an earlier visit). */
@@ -55,17 +62,17 @@ export class MemoryAppData implements AppData {
     return table;
   }
 
-  addRow(dataSourceId: number, values: string[]): void {
+  async addRow(dataSourceId: number, values: string[]): Promise<void> {
     // Unique also next to rows added on an earlier visit (kept in the browser)
     const id = `new-${Date.now().toString(36)}-${++this.nextRowNumber}`;
     this.change(dataSourceId, (t) => ({ ...t, rows: [...t.rows, { id, values }] }));
   }
 
-  updateRow(dataSourceId: number, rowId: string, values: string[]): void {
+  async updateRow(dataSourceId: number, rowId: string, values: string[]): Promise<void> {
     this.change(dataSourceId, (t) => ({ ...t, rows: t.rows.map((r) => (r.id === rowId ? { ...r, values } : r)) }));
   }
 
-  deleteRows(dataSourceId: number, rowIds: string[]): void {
+  async deleteRows(dataSourceId: number, rowIds: string[]): Promise<void> {
     this.change(dataSourceId, (t) => ({ ...t, rows: t.rows.filter((r) => !rowIds.includes(r.id)) }));
   }
 

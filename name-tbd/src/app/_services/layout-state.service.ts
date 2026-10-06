@@ -1,32 +1,59 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, Subject, of } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
-import { UiComponentControllerService } from '../api/services/uiComponentController.service';
 import { PageControllerService } from '../api/services/pageController.service';
-import { UiComponentDto } from '../api/models';
+import { ChangeOperation, PageContentDto } from '../api/models';
 import { ComponentId, LayoutItem, PropPatch, WidgetProps } from '../_types/layout.types';
-import { isSavedId, toComponentId } from '../_utils/component-id.utils';
-import { buildLayoutTree, findInTree, updateInTree } from '../_utils/layout-tree.utils';
-import { toApiParentId, toApiProps, toLayoutItem } from '../_utils/api-mapper.utils';
+import { buildLayoutTree, findInTree, flattenTree, insertIntoTree, removeFromTree, updateInTree } from '../_utils/layout-tree.utils';
+import { toApiProps, toConnection, toFlowNode, toLayoutItem } from '../_utils/api-mapper.utils';
+import { isTemporaryId } from '../_utils/component-id.utils';
+import { catalogDefaults, catalogWidget } from '../core/catalog/widget-catalog';
+import { WorkflowStateService } from './workflow-state.service';
+import { SaveQueue } from './save-queue.service';
+import { IdRegistry } from './id-registry.service';
+import { propText } from '../_utils/widget-props.utils';
+import { widgetName } from '../core/expressions/expression-scope.service';
 
-/** The widgets of each page (by page id = editor tab id), and their persistence. */
+/**
+ * The widgets of each page (by page id = editor tab id). Changes apply here right away and go to
+ * the backend through the SaveQueue; new widgets have a temporary id until it's swapped for the
+ * saved one (IdRegistry).
+ */
 @Injectable({ providedIn: 'root' })
 export class LayoutStateService {
-  private readonly uiService = inject(UiComponentControllerService);
   private readonly pageService = inject(PageControllerService);
+  private readonly workflows = inject(WorkflowStateService);
+  private readonly saveQueue = inject(SaveQueue);
 
   private readonly layouts = signal<Record<string, LayoutItem[]>>({});
 
   /** Emits whenever a widget's props change, so the canvas can update the live widget. */
   readonly propPatch$ = new Subject<PropPatch>();
 
-  /** Load a page's widgets once; later calls get the cached layout. */
+  constructor() {
+    inject(IdRegistry).mapped$.subscribe((ids) => this.adoptSavedIds(ids));
+  }
+
+  /**
+   * Load a page's widgets once (props complete: type defaults overlaid with the widget's own); later
+   * calls get the cached layout. The page's workflow comes along in the same answer.
+   */
   loadLayoutForTab(pageId: string): Observable<LayoutItem[]> {
     const cached = this.layouts()[pageId];
     if (cached) return of(cached);
 
-    return this.pageService.getComponents1(Number(pageId)).pipe(
-      map((dtos) => buildLayoutTree((Array.isArray(dtos) ? dtos : []).map(toLayoutItem))),
+    return this.pageService.getPageContent(Number(pageId)).pipe(
+      tap((content: PageContentDto) => {
+        const workflow = content.workflow;
+        if (workflow?.id != null) {
+          this.workflows.seedGraph(pageId, {
+            workflowId: workflow.id,
+            nodes: (workflow.nodes ?? []).map(toFlowNode),
+            connections: (workflow.edges ?? []).map(toConnection),
+          });
+        }
+      }),
+      map((content) => buildLayoutTree((content.components ?? []).map(toLayoutItem))),
       tap((layout) => this.layouts.update((all) => ({ ...all, [pageId]: layout }))),
     );
   }
@@ -51,30 +78,26 @@ export class LayoutStateService {
     this.layouts.update((all) => ({ ...all, [pageId]: withProps(incoming) }));
   }
 
-  /**
-   * Persist an item's geometry. Props are only sent when `includeProps` is set (the explicit
-   * Save in the properties panel), so moving a widget never saves unsaved prop edits.
-   */
-  updateComponent(pageId: string, item: LayoutItem, includeProps = false): Observable<UiComponentDto | null> {
-    if (!isSavedId(item.id)) return of(null);
-
-    // Geometry comes from the caller (the canvas passes the new position before the layout
-    // signal is updated); props come from the signal, which holds the latest edits.
-    const props = (findInTree(this.getLayout(pageId), item.id) ?? item).props ?? {};
-
-    return this.uiService.updateComponent(item.id, {
+  /** Save a widget's place: position, size and container (the caller passes the new ones). */
+  saveWidgetPlace(item: LayoutItem): void {
+    if (item.id == null) return;
+    this.saveQueue.enqueue({
+      op: 'updateWidget',
+      ...target(item.id),
       x: item.x,
       y: item.y,
       w: item.w,
       h: item.h,
-      props: includeProps ? toApiProps(props) : undefined,
-      parentId: toApiParentId(item.parentId),
+      ...parent(item.parentId),
     });
   }
 
-  addComponent(pageId: string, item: LayoutItem): Observable<UiComponentDto> {
-    const parentId = toComponentId(item.parentId);
-    return this.uiService.createComponent({
+  /** Save a widget just placed on the page (it has a temporary id; its props are what it has). */
+  createWidget(pageId: string, item: LayoutItem): void {
+    if (!isTemporaryId(item.id)) return;
+    this.saveQueue.enqueue({
+      op: 'createWidget',
+      ref: item.id,
       pageId: Number(pageId),
       type: item.type,
       x: item.x,
@@ -82,30 +105,100 @@ export class LayoutStateService {
       w: item.w,
       h: item.h,
       props: toApiProps(item.props ?? {}),
-      parentId: isSavedId(parentId) ? parentId : undefined,
+      ...parentForCreate(item.parentId),
     });
-  }
-
-  deleteComponent(id: ComponentId): Observable<void> {
-    if (!isSavedId(id)) return of(undefined);
-    return this.uiService.deleteComponent(id).pipe(map(() => undefined));
   }
 
   /**
-   * Fetch the props of a placed component (type defaults overlaid with its stored values)
-   * and apply them to the layout and the live widget. Nothing is written back.
+   * Add new widgets (with temporary ids, children inside) to the page, and save them: e.g. pasted
+   * copies. Each goes into its parent's children, or onto the page.
    */
-  loadComponentProps(pageId: string, id: number): void {
-    this.uiService.getComponentProps(id).subscribe({
-      // Local values win, so an edit made while the request was in flight isn't reverted
-      next: (props: WidgetProps) => this.setItemProps(pageId, id, (current) => ({ ...props, ...current })),
-      error: (err) => console.error(`Failed to load props for component ${id}:`, err),
-    });
+  addWidgets(pageId: string, items: LayoutItem[]): void {
+    // Copies whose name is taken on the page get a new one (expressions name widgets)
+    const taken = new Set(flattenTree(this.getLayout(pageId)).map(widgetName));
+    const rename = (item: LayoutItem): LayoutItem => {
+      const named = { ...item, children: item.children?.map(rename) };
+      if (!taken.has(widgetName(item))) {
+        taken.add(widgetName(item));
+        return named;
+      }
+      const name = uniqueWidgetName(item.type, taken);
+      taken.add(name);
+      return { ...named, props: { ...item.props, name } };
+    };
+    items = items.map(rename);
+    this.insert(pageId, items);
+    for (const item of flattenTree(items)) this.createWidget(pageId, item);
   }
 
-  /** Apply prop edits locally; they reach the database when the user presses Save. */
+  // ---- For undo and redo (editor/commands): change the layout and save it ----
+
+  /** Puts widgets in these places (position, size and container). */
+  placeWidgets(pageId: string, places: LayoutItem[]): void {
+    let layout = this.getLayout(pageId);
+    for (const place of places) {
+      const item = place.id != null ? findInTree(layout, place.id) : null;
+      if (!item || place.id == null) continue;
+      layout = insertIntoTree(removeFromTree(layout, [place.id]),
+        { ...item, x: place.x, y: place.y, w: place.w, h: place.h, parentId: place.parentId });
+    }
+    this.layouts.update((all) => ({ ...all, [pageId]: layout }));
+    places.forEach((place) => this.saveWidgetPlace(place));
+  }
+
+  /** Deletes widgets (with what's inside them). */
+  removeWidgets(pageId: string, ids: ComponentId[]): void {
+    this.layouts.update((all) => ({ ...all, [pageId]: removeFromTree(this.getLayout(pageId), ids) }));
+    ids.forEach((id) => this.deleteWidget(id));
+  }
+
+  /** Brings back deleted widgets, as they were (with what was inside them), by their ids. */
+  restoreWidgets(pageId: string, items: LayoutItem[]): void {
+    this.insert(pageId, items);
+    items.forEach((item) => item.id != null && this.saveQueue.enqueue({ op: 'restoreWidget', ...target(item.id) }));
+  }
+
+  private insert(pageId: string, items: LayoutItem[]): void {
+    let layout = this.getLayout(pageId);
+    for (const item of items) layout = insertIntoTree(layout, item);
+    this.layouts.update((all) => ({ ...all, [pageId]: layout }));
+  }
+
+  /** Delete a widget (and what's inside it); it can be restored for a while (soft delete). */
+  deleteWidget(id: ComponentId): void {
+    this.saveQueue.enqueue({ op: 'deleteWidget', ...target(id) });
+  }
+
+  /** Edit a widget's props: shown right away, saved with the next batch. */
   patchItemProps(pageId: string, id: ComponentId, props: WidgetProps): void {
-    this.setItemProps(pageId, id, (current) => ({ ...current, ...props }));
+    const saved = this.setItemProps(pageId, id, (current) => ({ ...current, ...props }));
+    if (saved) this.saveQueue.enqueue({ op: 'updateWidget', ...target(id), props: toApiProps(saved) });
+  }
+
+  /** Set a widget's props as a whole (undo/redo of edits): shown right away, saved with the next batch. */
+  replaceItemProps(pageId: string, id: ComponentId, props: WidgetProps): void {
+    if (this.setItemProps(pageId, id, () => ({ ...props }))) {
+      this.saveQueue.enqueue({ op: 'updateWidget', ...target(id), props: toApiProps(props) });
+    }
+  }
+
+  /**
+   * Complete a new widget's props with its type's defaults (as loading a page does for stored ones),
+   * without saving anything. Values already there win.
+   */
+  /** Gives a widget just placed a name no other widget on the page has (its type and a number, e.g. `input3`). */
+  nameNewWidget(pageId: string, id: ComponentId, type: string | undefined): void {
+    const layout = this.getLayout(pageId);
+    const item = findInTree(layout, id);
+    if (!item || propText(item.props, 'name')) return;
+    const taken = new Set(flattenTree(layout).filter((other) => other !== item).map(widgetName));
+    this.patchItemProps(pageId, id, { ...item.props, name: uniqueWidgetName(type, taken) });
+  }
+
+  applyTypeDefaults(pageId: string, id: ComponentId, type: string | undefined): void {
+    const widget = catalogWidget(type);
+    if (!widget) return;
+    this.setItemProps(pageId, id, (current) => ({ ...catalogDefaults(widget), ...current }));
   }
 
   /**
@@ -119,13 +212,52 @@ export class LayoutStateService {
     this.propPatch$.next({ id: id.toString(), props: patch ? { ...props, ...patch } : props });
   }
 
-  private setItemProps(pageId: string, id: ComponentId, compute: (current: WidgetProps) => WidgetProps): void {
+  /** The props now set (null when there's no such widget). */
+  private setItemProps(pageId: string, id: ComponentId, compute: (current: WidgetProps) => WidgetProps): WidgetProps | null {
     const layout = this.layouts()[pageId];
     const item = layout ? findInTree(layout, id) : null;
-    if (!layout || !item) return;
+    if (!layout || !item) return null;
 
     const props = compute(item.props ?? {});
     this.layouts.update((all) => ({ ...all, [pageId]: updateInTree(layout, id, (it) => ({ ...it, props })) }));
     this.propPatch$.next({ id: id.toString(), props });
+    return props;
   }
+
+  /** New widgets were saved: they go by their real ids from now on. */
+  private adoptSavedIds(ids: ReadonlyMap<string, number>): void {
+    const swap = (id: ComponentId | undefined): ComponentId | undefined =>
+      typeof id === 'string' && ids.has(id) ? ids.get(id) : id;
+    const rename = (items: LayoutItem[]): LayoutItem[] =>
+      items.map((item) => ({
+        ...item,
+        id: swap(item.id),
+        parentId: swap(item.parentId),
+        children: item.children ? rename(item.children) : item.children,
+      }));
+    this.layouts.update((all) => Object.fromEntries(Object.entries(all).map(([page, items]) => [page, rename(items)])));
+  }
+}
+
+/** How a change names a widget: by id once saved, else by its temporary id. */
+function target(id: ComponentId): Pick<ChangeOperation, 'id' | 'ref'> {
+  return typeof id === 'number' ? { id } : { ref: id };
+}
+
+/** A widget's container, or -1: on the page itself. */
+function parent(parentId: ComponentId | undefined): Pick<ChangeOperation, 'parentId' | 'parentRef'> {
+  if (parentId == null) return { parentId: -1 };
+  return typeof parentId === 'number' ? { parentId } : { parentRef: parentId };
+}
+
+function parentForCreate(parentId: ComponentId | undefined): Pick<ChangeOperation, 'parentId' | 'parentRef'> {
+  return parentId == null ? {} : parent(parentId);
+}
+
+/** `type` and the smallest number that makes a name not taken yet. */
+export function uniqueWidgetName(type: string | undefined, taken: Set<string>): string {
+  const base = (type ?? 'widget').replace(/[^A-Za-z0-9_]/g, '') || 'widget';
+  let n = 1;
+  while (taken.has(`${base}${n}`)) n++;
+  return `${base}${n}`;
 }

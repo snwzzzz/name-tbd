@@ -38,14 +38,22 @@ describe('table row handlers', () => {
             askForRow: async () => answer.row,
             confirm: async () => !!answer.confirmed,
             notice: async (title: string) => { notices.push(title); },
+            save: async (change: () => Promise<void>) => {
+              try {
+                await change();
+                return true;
+              } catch {
+                return false;
+              }
+            },
           },
         },
         {
           provide: APP_DATA,
           useValue: {
-            addRow: (...a: unknown[]) => calls.add.push(a),
-            updateRow: (...a: unknown[]) => calls.update.push(a),
-            deleteRows: (...a: unknown[]) => calls.delete.push(a),
+            addRow: async (...a: unknown[]) => { calls.add.push(a); },
+            updateRow: async (...a: unknown[]) => { calls.update.push(a); },
+            deleteRows: async (...a: unknown[]) => { calls.delete.push(a); },
           },
         },
         { provide: TableSelectionService, useValue: { deselect: () => {} } },

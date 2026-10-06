@@ -18,7 +18,8 @@ public class User extends AuditableEntity {
     @EmbeddedId
     private UserId id;
 
-    @Column(nullable = false, unique = true)
+    /** Not set for users who sign in with an identity provider. */
+    @Column(unique = true)
     @Convert(converter = UsernameConverter.class)
     private Username username;
 
@@ -27,13 +28,13 @@ public class User extends AuditableEntity {
     private Email email;
 
     @Column(nullable = false)
-    private String password;
-
-    @Column(nullable = false)
     private String firstName;
 
     @Column(nullable = false)
     private String lastName;
+
+    @Column(length = 1024)
+    private String avatarUrl;
 
     @Embeddable
     public record UserId(@GeneratedValue Long id) {}

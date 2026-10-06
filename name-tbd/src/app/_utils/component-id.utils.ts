@@ -9,5 +9,12 @@ export function toComponentId(raw: ComponentId | null | undefined): ComponentId 
   return !isNaN(Number(raw)) ? Number(raw) : raw;
 }
 
-/** A unique id for a widget that hasn't been saved yet. */
-export const newTemporaryId = (): string => `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+/**
+ * A unique id for something not saved yet (a widget, node or connection; see IdRegistry). No dash:
+ * workflow port ids are `${nodeId}-${port}`.
+ */
+export const newTemporaryId = (): string =>
+  `new_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+/** Whether an id is a temporary one (see newTemporaryId). */
+export const isTemporaryId = (id: unknown): id is string => typeof id === 'string' && id.startsWith('new_');

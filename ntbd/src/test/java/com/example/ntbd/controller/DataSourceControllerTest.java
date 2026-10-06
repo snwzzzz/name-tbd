@@ -1,5 +1,6 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.auth.WorkspaceAccess;
 import com.example.ntbd.commands.NewDataSourceCommand;
 import com.example.ntbd.dto.DataSourceDto;
 import com.example.ntbd.service.DataSourceService;
@@ -23,6 +24,12 @@ class DataSourceControllerTest {
     @Mock
     private DataSourceService dataSourceService;
 
+    @Mock
+    private WorkspaceAccess access;
+
+    @Mock
+    private com.example.ntbd.service.SoftDeleteService softDelete;
+
     @InjectMocks
     private DataSourceController dataSourceController;
 
@@ -44,6 +51,6 @@ class DataSourceControllerTest {
         ResponseEntity<Void> response = dataSourceController.deleteDataSource(1L);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        verify(dataSourceService).delete(1L);
+        verify(softDelete).deleteDataSource(1L);
     }
 }

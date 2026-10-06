@@ -1,5 +1,6 @@
 package com.example.ntbd.mapper;
 
+import com.example.ntbd.domain.Timestamps;
 import com.example.ntbd.domain.Branch;
 import com.example.ntbd.domain.Workflow;
 import com.example.ntbd.domain.WorkflowStatus;
@@ -19,8 +20,8 @@ public class WorkflowMapper {
                 workflow.getId() != null ? workflow.getId().id() : null,
                 workflow.getName(),
                 workflow.getStatus(),
-                workflow.getCreatedAt(),
-                workflow.getLastModified(),
+                Timestamps.toInstant(workflow.getCreatedAt()),
+                Timestamps.toInstant(workflow.getLastModified()),
                 branchId
         );
     }
@@ -36,8 +37,8 @@ public class WorkflowMapper {
                         ? Branch.builder().id(new Branch.BranchId(dto.branchId())).build()
                         : null)
                 .build();
-        workflow.setCreatedAt(dto.createdAt());
-        workflow.setLastModified(dto.lastModified());
+        workflow.setCreatedAt(Timestamps.fromInstant(dto.createdAt()));
+        workflow.setLastModified(Timestamps.fromInstant(dto.lastModified()));
         return workflow;
     }
 }

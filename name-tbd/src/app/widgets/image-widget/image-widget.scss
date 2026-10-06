@@ -1,0 +1,37 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+img {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  &.rounded {
+    border-radius: calc(var(--widget-radius) * 3);
+  }
+}
+
+.empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border: 1px dashed var(--widget-stroke);
+  border-radius: var(--widget-radius);
+  background: var(--widget-bg-subtle);
+  color: var(--widget-fg-secondary);
+  font-family: var(--widget-font);
+  font-size: var(--widget-text-size-small);
+  overflow: hidden;
+
+  svg {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+}

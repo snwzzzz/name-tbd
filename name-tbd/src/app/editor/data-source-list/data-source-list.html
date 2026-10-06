@@ -1,10 +1,13 @@
 <div class="panel">
   <header class="header">
     <h2>Data</h2>
-    <label class="text-btn" [class.disabled]="loading()" [title]="'Import ' + formatLabels + ' file'">
-      Import…
-      <input type="file" [accept]="accept" [disabled]="loading()" [attr.aria-label]="'Import ' + formatLabels + ' file'" (change)="onFileChosen($event)" />
-    </label>
+    <div style="display: flex; gap: 8px;">
+      <button class="text-btn" [disabled]="loading()" (click)="connectData()">Connect data</button>
+      <label class="text-btn" [class.disabled]="loading()" [title]="'Import ' + formatLabels + ' file'">
+        Import…
+        <input type="file" [accept]="accept" [disabled]="loading()" [attr.aria-label]="'Import ' + formatLabels + ' file'" (change)="onFileChosen($event)" />
+      </label>
+    </div>
   </header>
 
   @if (error(); as error) {

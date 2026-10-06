@@ -31,6 +31,10 @@ export interface CatalogWidget {
   palette?: boolean;
   /** Holds other widgets (the canvas gives it a nested grid). */
   container?: boolean;
+  /** Fills its cells to their edges, without the gap other widgets keep (like a container): e.g. a nav bar. */
+  flush?: boolean;
+  /** A container's rows at its top that its component draws on (a tab bar, a title bar); its nested grid starts below them. */
+  headerRows?: number;
   props: CatalogProp[];
 }
 
@@ -49,3 +53,6 @@ export const catalogWidget = (type: string | undefined): CatalogWidget | undefin
 export function catalogDefaults(widget: CatalogWidget): Record<string, string> {
   return Object.fromEntries(widget.props.map((p) => [p.key, p.default ?? '']));
 }
+
+/** The rows at the top of a container that its component draws on (0 for most). */
+export const headerRowsOf = (type: string | undefined): number => catalogWidget(type)?.headerRows ?? 0;

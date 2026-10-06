@@ -30,7 +30,7 @@ export class DeleteRowsHandler implements ActionHandler {
     if (!confirmed || !run.isCurrent()) return 'stop';
 
     const ids = selected.map((row) => row.id);
-    this.appData.deleteRows(target.dataSourceId, ids);
+    if (!(await this.tables.save(() => this.appData.deleteRows(target.dataSourceId, ids)))) return 'stop';
     this.selection.deselect(target.tableId, ids);
     return 'continue';
   }

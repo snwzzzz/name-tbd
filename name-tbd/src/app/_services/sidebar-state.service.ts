@@ -55,9 +55,29 @@ export class SidebarStateService {
     return this.active[side].asReadonly();
   }
 
+  // The tab each sidebar showed before it was collapsed, to reopen it (see toggle)
+  private readonly lastOpen: Record<SidebarSide, string | null> = { left: null, right: null };
+
   /** Clicking a tab opens it; clicking the open one collapses its sidebar. */
   select(side: SidebarSide, tabId: string): void {
-    this.active[side].set(this.active[side]() === tabId ? null : tabId);
+    this.setActive(side, this.active[side]() === tabId ? null : tabId);
+  }
+
+  /** Collapses a sidebar, or opens it again on the tab it showed last (else its first one). */
+  toggle(side: SidebarSide): void {
+    const open = this.active[side]();
+    if (open) {
+      this.setActive(side, null);
+      return;
+    }
+    const last = this.lastOpen[side];
+    this.active[side].set(last && this.tabIds(side).includes(last) ? last : (this.tabIds(side)[0] ?? null));
+  }
+
+  private setActive(side: SidebarSide, tabId: string | null): void {
+    const open = this.active[side]();
+    if (tabId === null && open) this.lastOpen[side] = open;
+    this.active[side].set(tabId);
   }
 
   /** Opens a tab in whichever sidebar it's in. */

@@ -3,6 +3,7 @@ import { TableWidget } from './table-widget';
 import { WidgetProps } from '../../_types/layout.types';
 import { WidgetEvent, WidgetEventsService } from '../../core/services/widget-events.service';
 import { TableSelectionService } from '../../core/services/table-selection.service';
+import { TableFilterService } from '../../core/services/table-filter.service';
 import { DataSourceSnapshot } from '../../core/ports/memory-app-data';
 import { fakeApp, provideFakeApp } from '../../core/testing/fake-app';
 
@@ -47,10 +48,51 @@ describe('TableWidget', () => {
     expect(texts(el, 'tbody tr:first-child td')).toEqual(['Alice', '30', 'Bern']);
   });
 
+  it('takes the picked background and header colors, falling back to the theme', () => {
+    const styled = render({ dataSourceId: '5', background: '#fafafa', headerBackground: '#0f6cbd', headerColor: '#ffffff' });
+    const table = styled.querySelector('.table-widget') as HTMLElement;
+    expect(table.style.getPropertyValue('--table-bg')).toBe('#fafafa');
+    expect(table.style.getPropertyValue('--table-header-bg')).toBe('#0f6cbd');
+    expect(table.style.getPropertyValue('--table-header-color')).toBe('#ffffff');
+
+    TestBed.resetTestingModule();
+    const plain = render({ dataSourceId: '5', background: '', headerBackground: '' }).querySelector('.table-widget') as HTMLElement;
+    expect(plain.style.getPropertyValue('--table-bg')).toBe('');
+    expect(plain.style.getPropertyValue('--table-header-bg')).toBe('');
+  });
+
   it('explains a missing or unknown data source', () => {
     expect(render({ dataSourceId: '' }).textContent).toContain('Pick a data source');
     TestBed.resetTestingModule();
     expect(render({ dataSourceId: '9' }).textContent).toContain('Data source not found');
+  });
+
+  it('shows only the rows matching its search while the app runs, or says none do', () => {
+    const fixture = mount({ dataSourceId: '5' });
+    const el = fixture.nativeElement as HTMLElement;
+    const names = () => [...el.querySelectorAll('tbody tr')].map((tr) => tr.querySelector('td')?.textContent);
+    TestBed.inject(TableFilterService).set('1', 'b');
+    fixture.detectChanges();
+    expect(names()).toEqual(['Alice', 'Bob', 'Carol']); // editing: no filter
+
+    fakeApp().session.start('page');
+    fixture.detectChanges();
+    expect(names()).toEqual(['Alice', 'Bob']); // "b": Alice in Bern, Bob
+
+    TestBed.inject(TableFilterService).set('1', 'zurich');
+    fixture.detectChanges();
+    expect(names()).toEqual([]);
+    expect(el.textContent).toContain('No rows match “zurich”');
+  });
+
+  it('keeps the editor hint out of the running app', () => {
+    TestBed.configureTestingModule({ providers: provideFakeApp({ data: [PEOPLE] }) });
+    fakeApp().session.start('1');
+    const fixture = TestBed.createComponent(TableWidget);
+    fixture.componentRef.setInput('id', '1');
+    fixture.componentRef.setInput('props', { dataSourceId: '' });
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Pick a data source');
   });
 
   it('selects rows by clicking them only while the app runs, and shows changed data', () => {

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { TabsService, tabKind } from './tabs.service';
 import { PagesStateService } from './pages-state.service';
 import { PageDto } from '../api/models';
+import { provideTestEditorContext } from '../_testing/editor-context.testing';
 
 describe('TabsService', () => {
   let navigated: unknown[][];
@@ -14,7 +15,7 @@ describe('TabsService', () => {
     pages.set([]);
     sessionStorage.clear();
     TestBed.configureTestingModule({
-      providers: [
+      providers: [provideTestEditorContext(), 
         { provide: PagesStateService, useValue: { pages, ensureLoaded: () => {}, page: (id: number) => pages().find((p) => p.id === id) } },
       ],
     });
@@ -25,7 +26,7 @@ describe('TabsService', () => {
   });
 
   it('tells what a tab is from its id', () => {
-    expect(['welcome-0', 'new-3', 'panel-data', '42', 'nonsense'].map(tabKind)).toEqual(['start', 'start', 'panel', 'page', null]);
+    expect(['welcome-0', 'new-3', 'panel-data', '42', '-1', 'nonsense'].map(tabKind)).toEqual(['start', 'start', 'panel', 'page', 'page', null]);
   });
 
   it('keeps the query parameters (sidebar state) when switching tab or mode', () => {
@@ -37,8 +38,8 @@ describe('TabsService', () => {
     tabs.selectTab('welcome-0');
 
     expect(navigated).toEqual([
-      [['/editor', '4', 'workflow'], { queryParamsHandling: 'preserve' }],
-      [['/editor', 'welcome-0', 'welcome'], { queryParamsHandling: 'preserve' }],
+      [['/apps', 3, 'edit', '4', 'workflow'], { queryParamsHandling: 'preserve' }],
+      [['/apps', 3, 'edit', 'welcome-0', 'welcome'], { queryParamsHandling: 'preserve' }],
     ]);
   });
 
@@ -56,11 +57,11 @@ describe('TabsService', () => {
 
     tabs.closeTab('welcome-0');
     expect(tabs.tabs()).toEqual([{ id: 'welcome-0', title: 'Start', mode: 'welcome' }]);
-    expect(navigated.at(-1)?.[0]).toEqual(['/editor', 'welcome-0', 'welcome']);
+    expect(navigated.at(-1)?.[0]).toEqual(['/apps', 3, 'edit', 'welcome-0', 'welcome']);
   });
 
   it('repairs saved tabs whose mode does not fit (e.g. a page saved as Start)', () => {
-    sessionStorage.setItem('editor-tabs', JSON.stringify([
+    sessionStorage.setItem('editor-tabs:3', JSON.stringify([
       { id: 'welcome-0', title: 'Welcome', mode: 'welcome' },
       { id: '4', title: 'Home', mode: 'welcome' },
     ]));
@@ -87,6 +88,6 @@ describe('TabsService', () => {
     tabs.openPanel('data', 'Data');
 
     expect(tabs.tabs().filter((t) => t.id === 'panel-data')).toEqual([{ id: 'panel-data', title: 'Data', mode: 'panel' }]);
-    expect(navigated.at(-1)).toEqual([['/editor', 'panel-data', 'panel'], { queryParamsHandling: 'preserve' }]);
+    expect(navigated.at(-1)).toEqual([['/apps', 3, 'edit', 'panel-data', 'panel'], { queryParamsHandling: 'preserve' }]);
   });
 });

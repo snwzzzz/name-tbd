@@ -12,11 +12,11 @@ public class UserMapper {
 
         return new UserDto(
                 user.getId() != null ? user.getId().id() : null,
-                user.getUsername().value(),
+                user.getUsername() != null ? user.getUsername().value() : null,
                 user.getEmail().value(),
-                user.getPassword(),
                 user.getFirstName(),
-                user.getLastName()
+                user.getLastName(),
+                user.getAvatarUrl()
         );
     }
 
@@ -27,9 +27,9 @@ public class UserMapper {
                 userDto.id() != null ? new User.UserId(userDto.id()) : null,
                 userDto.username() != null ? new Username(userDto.username()) : null,
                 userDto.email() != null ? new Email(userDto.email()) : null,
-                userDto.password(),
                 userDto.firstName(),
-                userDto.lastName()
+                userDto.lastName(),
+                userDto.avatarUrl()
         );
     }
 }

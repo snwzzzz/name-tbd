@@ -177,41 +177,6 @@ public class NodeServiceTest {
         assertThat(dtos.get(1).type()).isEqualTo("WEBHOOK");
     }
 
-    // ---- deleteNode ----
-
-    @Test
-    void deleteNode_deletes_when_exists() {
-        when(nodeRepository.existsById(new Node.NodeId(5L))).thenReturn(true);
-
-        nodeService.deleteNode(5L);
-
-        verify(nodeRepository).deleteById(new Node.NodeId(5L));
-    }
-
-    @Test
-    void deleteNode_removes_connected_edges_first() {
-        var edge = Edge.builder().id(new Edge.EdgeId(7L)).sourcePort("out").build();
-        when(nodeRepository.existsById(new Node.NodeId(5L))).thenReturn(true);
-        when(edgeRepository.findBySourceNode_IdOrTargetNode_Id(new Node.NodeId(5L), new Node.NodeId(5L))).thenReturn(List.of(edge));
-
-        nodeService.deleteNode(5L);
-
-        var order = inOrder(edgeRepository, nodeRepository);
-        order.verify(edgeRepository).deleteAll(List.of(edge));
-        order.verify(nodeRepository).deleteById(new Node.NodeId(5L));
-    }
-
-    @Test
-    void deleteNode_throws_when_not_found() {
-        when(nodeRepository.existsById(new Node.NodeId(99L))).thenReturn(false);
-
-        assertThatThrownBy(() -> nodeService.deleteNode(99L))
-                .isInstanceOf(NodeNotFoundException.class)
-                .hasMessageContaining("99");
-
-        verify(nodeRepository, never()).deleteById(any());
-    }
-    
     // ---- updateNode ----
     
     @Test

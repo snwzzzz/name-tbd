@@ -43,13 +43,6 @@ public class PageService {
     }
 
     @Transactional
-    public List<PageDto> findAll() {
-        return pageRepository.findAll().stream()
-                .map(PageMapper::toDto)
-                .toList();
-    }
-
-    @Transactional
     public List<PageDto> findByBranchId(Long branchId) {
         return pageRepository.findByBranch_Id(new Branch.BranchId(branchId)).stream()
                 .map(PageMapper::toDto)

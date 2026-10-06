@@ -39,7 +39,18 @@
     .logo {
       font-weight: bold;
       font-size: var(--font-size-lg);
+      color: inherit;
+      text-decoration: none;
       cursor: pointer;
+    }
+
+    .app-title {
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
     }
   }
 
@@ -109,9 +120,14 @@
         height: 1.125rem;
       }
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: var(--color-surface-hover);
         color: var(--color-text-primary);
+      }
+
+      &:disabled {
+        color: var(--color-text-disabled);
+        cursor: default;
       }
     }
 

@@ -1,15 +1,14 @@
-// The whole window, scrolling down when the page is taller than it
+// The page, like a website: as wide as the window (scrolling sideways below its minimum width),
+// as high as the artboard
 :host {
-  position: fixed;
-  inset: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  display: block;
+  min-height: 100%;
   background: var(--color-bg);
 }
 
-// Drawn at its real size (like the canvas) and zoomed to the window's width
 .artboard {
   position: relative;
+  width: 100%;
   background: var(--color-bg);
 }
 

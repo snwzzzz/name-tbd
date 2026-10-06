@@ -1,5 +1,6 @@
 package com.example.ntbd.mapper;
 
+import com.example.ntbd.domain.Timestamps;
 import com.example.ntbd.domain.Node;
 import com.example.ntbd.domain.Workflow;
 import com.example.ntbd.dto.NodeDto;
@@ -21,8 +22,8 @@ public class NodeMapper {
                 node.getProps(),
                 node.getX(),
                 node.getY(),
-                node.getCreatedAt(),
-                node.getLastModified()
+                Timestamps.toInstant(node.getCreatedAt()),
+                Timestamps.toInstant(node.getLastModified())
         );
     }
 
@@ -39,8 +40,8 @@ public class NodeMapper {
                         ? Workflow.builder().id(new Workflow.WorkflowId(dto.workflowId())).build()
                         : null)
                 .build();
-        node.setCreatedAt(dto.createdAt());
-        node.setLastModified(dto.lastModified());
+        node.setCreatedAt(Timestamps.fromInstant(dto.createdAt()));
+        node.setLastModified(Timestamps.fromInstant(dto.lastModified()));
         return node;
     }
 }

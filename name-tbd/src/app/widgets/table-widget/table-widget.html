@@ -1,10 +1,17 @@
-<div class="table-widget">
+<div
+  class="table-widget"
+  [style.--table-bg]="background()"
+  [style.--table-header-bg]="headerBackground()"
+  [style.--table-header-color]="headerColor()">
   @if (title(); as title) {
     <div class="table-title">{{ title }}</div>
   }
 
-  @if (dataSourceId() === null) {
-    <div class="table-message">Pick a data source in the properties panel.</div>
+  @if (dataSourceId() === null && !fromItems()) {
+    <!-- A hint for the editor; the running app shows an empty table -->
+    @if (!previewing()) {
+      <div class="table-message">Pick a data source in the properties panel.</div>
+    }
   } @else if (missing()) {
     <div class="table-message">Data source not found.</div>
   } @else if (!data()) {
@@ -32,6 +39,9 @@
         </tbody>
       </table>
     </div>
+    @if (query() && rows().length === 0) {
+      <div class="table-message">No rows match “{{ query() }}”.</div>
+    }
     @if (hiddenRowCount() > 0) {
       <div class="table-message">+ {{ hiddenRowCount() }} more rows</div>
     }

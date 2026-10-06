@@ -1,0 +1,22 @@
+<div class="w-field">
+  @if (label(); as label) {
+    <label class="w-label" [class.w-required]="required()" [for]="fieldId()">{{ label }}</label>
+  }
+  <select
+    class="w-box"
+    [id]="fieldId()"
+    [attr.aria-label]="label() ? null : placeholder() || 'Choose one'"
+    [attr.aria-required]="required()"
+    [attr.aria-invalid]="!!error()"
+    [attr.aria-describedby]="error() ? errorId() : null"
+    [attr.tabindex]="tabIndex()"
+    (change)="setValue($any($event.target).value)">
+    <option value="" [selected]="value() === ''">{{ placeholder() }}</option>
+    @for (option of options(); track option) {
+      <option [value]="option" [selected]="option === value()">{{ option }}</option>
+    }
+  </select>
+  @if (error(); as error) {
+    <span class="w-error" [id]="errorId()" role="alert">{{ error }}</span>
+  }
+</div>

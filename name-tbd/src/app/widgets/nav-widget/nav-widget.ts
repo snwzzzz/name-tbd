@@ -2,8 +2,15 @@ import { Component, computed, inject } from '@angular/core';
 import { BaseWidget } from '../../_directives/base-widget.directive';
 import { APP_NAVIGATION, APP_PAGES, APP_SESSION, PageInfo } from '../../core/ports/app-ports';
 import { parseJsonList, propBool } from '../../_utils/widget-props.utils';
+import { LIGHT_TEXT, isDark, readableOn, toneOf } from '../../_utils/color.utils';
+import { AppThemeService } from '../../core/services/app-theme.service';
 
-export const NAV_DEFAULT_COLOR = '#1f1f1f';
+/** Text without a background of its own: the theme's text color. */
+export const NAV_DEFAULT_COLOR = 'var(--widget-fg)';
+
+/** How the menu marks the open page (its "Appearance" setting). */
+export const NAV_VARIANTS = ['underline', 'pill', 'filled'] as const;
+export type NavVariant = (typeof NAV_VARIANTS)[number];
 
 /**
  * A `<nav>` with links to the chosen pages, in the chosen order, marking the page that's open.
@@ -18,10 +25,34 @@ export class NavWidget extends BaseWidget {
   private readonly pages = inject(APP_PAGES);
   private readonly navigation = inject(APP_NAVIGATION);
   readonly previewing = inject(APP_SESSION).live;
+  private readonly theme = inject(AppThemeService);
 
   readonly vertical = computed(() => propBool(this.props(), 'vertical', false));
   readonly highlightCurrent = computed(() => propBool(this.props(), 'highlightCurrent', true));
-  readonly color = computed(() => this.text('color') ?? NAV_DEFAULT_COLOR);
+  /** null: transparent, over whatever is behind it. */
+  readonly background = computed(() => this.text('background') ?? null);
+  /** Its text color; none picked (Auto): one readable on its background. */
+  readonly color = computed(() => {
+    const background = this.background();
+    return this.text('color') ?? (background ? readableOn(background) : NAV_DEFAULT_COLOR);
+  });
+  /**
+   * The open page's color. None picked (Auto): filled, a darker tone of its background (white
+   * without one); else the theme's primary color, or white on a dark background.
+   */
+  readonly accentColor = computed(() => {
+    const picked = this.text('accentColor');
+    if (picked) return picked;
+    const background = this.background();
+    if (this.variant() === 'filled') return toneOf(background ?? '#ffffff');
+    return background && isDark(background) ? LIGHT_TEXT : this.theme.resolved().primary;
+  });
+  /** Text on the accent (the filled appearance's open page). */
+  readonly onAccentColor = computed(() => readableOn(this.accentColor()));
+  readonly variant = computed<NavVariant>(() => {
+    const variant = this.text('variant')?.toLowerCase();
+    return NAV_VARIANTS.find((v) => v === variant) ?? 'underline';
+  });
 
   /** The chosen pages that still exist, in their order. */
   readonly links = computed(() =>

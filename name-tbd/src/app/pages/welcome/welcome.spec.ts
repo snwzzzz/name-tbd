@@ -7,6 +7,7 @@ import { PagesStateService } from '../../_services/pages-state.service';
 import { RecentPage, RecentPagesService } from '../../_services/recent-pages.service';
 import { PageControllerService } from '../../api/services/pageController.service';
 import { PageDto } from '../../api/models';
+import { provideTestEditorContext } from '../../_testing/editor-context.testing';
 
 describe('Welcome (Start tab)', () => {
   let navigated: unknown[][];
@@ -19,7 +20,7 @@ describe('Welcome (Start tab)', () => {
     created = [];
     sessionStorage.clear();
     TestBed.configureTestingModule({
-      providers: [
+      providers: [provideTestEditorContext(), 
         {
           provide: PagesStateService,
           useValue: {
@@ -59,7 +60,7 @@ describe('Welcome (Start tab)', () => {
     pages.set([{ id: 1, name: 'Home', path: '/' }]);
     recent.set([]);
     rows(mount())[0].click();
-    expect(navigated.map((n) => n[0])).toEqual([['/editor', '1', 'edit']]);
+    expect(navigated.map((n) => n[0])).toEqual([['/apps', 3, 'edit', '1', 'edit']]);
   });
 
   it('creates the layout page from the quick action when there is none, then opens it', () => {
@@ -69,8 +70,8 @@ describe('Welcome (Start tab)', () => {
     const tile = el.querySelector('.tile') as HTMLElement;
     expect(tile.textContent).toContain('Create layout page');
     tile.click();
-    expect(created).toEqual([{ branchId: -1, name: 'Layout', path: '/layout', layout: true }]);
-    expect(navigated.at(-1)?.[0]).toEqual(['/editor', '50', 'edit']);
+    expect(created).toEqual([{ branchId: 7, name: 'Layout', path: '/layout', layout: true }]);
+    expect(navigated.at(-1)?.[0]).toEqual(['/apps', 3, 'edit', '50', 'edit']);
   });
 
   it('opens the existing layout page instead of making another', () => {
@@ -79,7 +80,7 @@ describe('Welcome (Start tab)', () => {
 
     (el.querySelector('.tile') as HTMLElement).click();
     expect(created).toEqual([]);
-    expect(navigated.at(-1)?.[0]).toEqual(['/editor', '9', 'edit']);
+    expect(navigated.at(-1)?.[0]).toEqual(['/apps', 3, 'edit', '9', 'edit']);
   });
 
   it('has the three cards: build, open, manage data', () => {

@@ -1,0 +1,41 @@
+<div class="panel">
+  <header class="header">
+    <h2>Run log</h2>
+    @if (runs().length) {
+      <button type="button" class="clear" (click)="clear()">Clear</button>
+    }
+  </header>
+
+  @for (run of runs(); track run.runId) {
+    <section class="run">
+      <div class="run-head">
+        <span>{{ pageName(run.pageId) }}</span>
+        <span class="time">{{ run.startedAt | date: 'HH:mm:ss' }}</span>
+      </div>
+      <ol class="steps">
+        @for (entry of run.entries; track entry.step) {
+          <li class="step" [attr.data-status]="entry.status" [class.nested]="entry.iteration !== undefined">
+            <button type="button" class="step-line" [attr.aria-expanded]="isOpen(entry)" (click)="toggle(entry)">
+              <span class="status" [attr.aria-label]="entry.status"></span>
+              <span class="label">{{ label(entry) }}</span>
+              @if (entry.iteration !== undefined) { <span class="tag">item {{ entry.iteration + 1 }}</span> }
+              @if (branch(entry); as branch) { <span class="tag branch">→ {{ branch }}</span> }
+              @if (entry.status === 'stopped') { <span class="tag">stopped</span> }
+              <span class="duration">{{ entry.durationMs }} ms</span>
+            </button>
+            @if (entry.error) { <p class="error">{{ entry.error }}</p> }
+            @if (isOpen(entry)) {
+              @for (detail of details(entry); track detail.label) {
+                <div class="detail"><span>{{ detail.label }}</span><pre>{{ detail.text }}</pre></div>
+              } @empty {
+                <p class="none">Nothing to show.</p>
+              }
+            }
+          </li>
+        }
+      </ol>
+    </section>
+  } @empty {
+    <p class="hint">Start the preview (Alt+P) and use the page: every flow that runs shows here, step by step.</p>
+  }
+</div>

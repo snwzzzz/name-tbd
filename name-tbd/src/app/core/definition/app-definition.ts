@@ -1,13 +1,14 @@
 import { LayoutItem } from '../../_types/layout.types';
-import { FlowConnection, FlowNode, WorkflowGraph } from '../../_types/workflow.types';
-import { inputPortId, outputPortId } from '../../_utils/port.utils';
+import { WorkflowGraph } from '../../_types/workflow.types';
 import { DataSourceSnapshot } from '../ports/memory-app-data';
+import { StoredWorkflow, VariableDefinition, graphOf } from '../../../flow-engine';
+import { AppTheme } from '../rendering/app-theme';
 
 // An app as a whole, as the backend exports it (AppDefinitionService.java and its contributors) and the exported app
 // runs it: pages with their widgets and workflows, and the data. Changes to its shape bump
 // APP_DEFINITION_VERSION on both sides.
 
-export const APP_DEFINITION_VERSION = 1;
+export const APP_DEFINITION_VERSION = 3;
 
 export interface AppDefinition {
   version: number;
@@ -18,6 +19,22 @@ export interface AppDefinition {
   homePageId: number | null;
   pages: DefinitionPage[];
   dataSources: DataSourceSnapshot[];
+  /** The app-wide theme (null or missing: the default preset); exports before themes have none. */
+  theme?: AppTheme | null;
+  /** The app's variables (exports before variables have none). */
+  variables?: VariableDefinition[];
+  /** Live exports: where the data API is; their data sources' rows come from there (embedded exports have none). */
+  liveData?: LiveDataSettings | null;
+}
+
+/** How a live export reaches its data (LiveDataContributor.java). Never credentials: only this app's key. */
+export interface LiveDataSettings {
+  /** The server; the app calls `<apiUrl>/api/data/<sourceId>`. */
+  apiUrl: string;
+  /** The app key (opens only this app's data; can be revoked in the editor). */
+  key: string;
+  /** Keep the rows last read in the browser, and queue changes made while offline. */
+  offlineCache: boolean;
 }
 
 export interface DefinitionPage {
@@ -29,26 +46,14 @@ export interface DefinitionPage {
   /** Placed widgets, containers with their children; props include their type's defaults. */
   components: LayoutItem[];
   workflow: DefinitionWorkflow;
+  /** The page's own variables (exports before variables have none). */
+  variables?: VariableDefinition[];
 }
 
 /** A workflow as the backend stores it (nodes with their props, edges between them). */
-export interface DefinitionWorkflow {
-  nodes: { id: number; type: string; x?: number; y?: number; props?: Record<string, unknown> }[];
-  edges: { id: number; sourceNodeId: number; sourcePort?: string; targetNodeId: number }[];
-}
+export type DefinitionWorkflow = StoredWorkflow;
 
 /** A page's workflow as the workflow runtime runs it (same as the editor's graphs). */
 export function definitionGraph(workflow: DefinitionWorkflow): WorkflowGraph {
-  const nodes = workflow.nodes.map((n) => ({
-    ...n.props,
-    id: String(n.id),
-    type: n.type === 'Trigger' || n.type === 'Condition' ? n.type : 'Action',
-    position: { x: n.x ?? 0, y: n.y ?? 0 },
-  }) as FlowNode);
-  const connections = workflow.edges.map((e): FlowConnection => {
-    const fromNode = String(e.sourceNodeId);
-    const toNode = String(e.targetNodeId);
-    return { id: String(e.id), fromNode, toNode, fromPort: outputPortId(fromNode, e.sourcePort ?? 'out'), toPort: inputPortId(toNode) };
-  });
-  return { nodes, connections };
+  return graphOf(workflow) as WorkflowGraph;
 }

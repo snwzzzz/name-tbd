@@ -1,4 +1,5 @@
 import { blueprintGridStyle, boundingBox, clampPanToBounds, fitToViewport, zoomAround } from './viewport.utils';
+import { BACKDROP_GRID_MAJOR, BACKDROP_GRID_MINOR } from '../_constants/artboard.constants';
 
 describe('viewport utils', () => {
   it('keeps the point under the anchor in place when zooming', () => {
@@ -34,16 +35,16 @@ describe('blueprintGridStyle', () => {
   it('scales the grid with the zoom and places it from the top-left corner', () => {
     const style = blueprintGridStyle({ x: 30, y: -10 }, 2, 'top-left');
 
-    expect(style['--grid-major-size']).toBe('180px');
-    expect(style['--grid-minor-size']).toBe('36px');
+    expect(style['--grid-major-size']).toBe(`${BACKDROP_GRID_MAJOR * 2}px`);
+    expect(style['--grid-minor-size']).toBe(`${BACKDROP_GRID_MINOR * 2}px`);
     expect(style['--grid-major-position']).toBe('30px -10px');
     expect(style['--grid-minor-color']).toBe('var(--canvas-grid-minor)');
   });
 
   it('places it from the center (offset by half a tile), and drops fine lines when zoomed far out', () => {
-    const style = blueprintGridStyle({ x: -720, y: -405 }, 0.25, 'center');
+    const style = blueprintGridStyle({ x: -720, y: -360 }, 0.25, 'center');
 
-    expect(style['--grid-major-position']).toBe('calc(50% + -708.75px) calc(50% + -393.75px)');
+    expect(style['--grid-major-position']).toBe('calc(50% + -705px) calc(50% + -345px)');
     expect(style['--grid-minor-color']).toBe('transparent');
   });
 });

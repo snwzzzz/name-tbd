@@ -1,0 +1,62 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--widget-fg);
+  font-family: var(--widget-font);
+  font-size: var(--widget-text-size);
+}
+
+.toggle {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+// A pill with a sliding thumb: grey when off, the theme's color when on
+.switch {
+  flex-shrink: 0;
+  position: relative;
+  width: 2.5em;
+  height: 1.4em;
+  padding: 0;
+  border: 1px solid var(--widget-stroke-accessible);
+  border-radius: 999px;
+  background: var(--widget-bg);
+  cursor: pointer;
+  transition:
+    background var(--widget-transition),
+    border-color var(--widget-transition);
+
+  &.on {
+    border-color: var(--widget-brand);
+    background: var(--widget-brand);
+  }
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  left: 0.2em;
+  width: 0.95em;
+  height: 0.95em;
+  border-radius: 50%;
+  background: var(--widget-fg-secondary);
+  transform: translateY(-50%);
+  transition:
+    left var(--widget-transition),
+    background var(--widget-transition);
+
+  .on & {
+    left: calc(100% - 1.15em);
+    background: #ffffff;
+  }
+}
+
+.text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}

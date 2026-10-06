@@ -1,0 +1,46 @@
+# The site: the editor's files, and the backend behind the same origin (so the session cookie and the
+# CSRF header work without CORS). Caddy gets and renews the HTTPS certificate for SITE_ADDRESS itself.
+{
+	email {$ACME_EMAIL}
+}
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	# The backend: API, sign-in (OIDC redirects), sign-out, health check. Caddy sets X-Forwarded-For to
+	# the client's address (ignoring what the client sent), which the backend's rate limits count by.
+	@backend path /api/* /oauth2/* /login/oauth2/* /logout /actuator/health
+	handle @backend {
+		reverse_proxy {$BACKEND_ADDRESS:backend:8080}
+	}
+
+	# Runtime settings for the editor (src/app/_services/error-tracking.ts)
+	handle /config.json {
+		header Content-Type application/json
+		header Cache-Control no-store
+		respond `{"sentryDsn":"{$SENTRY_DSN_EDITOR}","environment":"{$SENTRY_ENVIRONMENT}"}`
+	}
+
+	# The editor: its files, and index.html for its routes (/console, /apps/…)
+	handle {
+		root * {$SITE_ROOT:/srv}
+		header {
+			Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.sentry.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+			Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		}
+		# File names with a content hash never change: cache them for good; everything else is checked each time
+		@hashed path_regexp -[0-9A-Z]{8}\.(js|css)$
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		@notHashed not path_regexp -[0-9A-Z]{8}\.(js|css)$
+		header @notHashed Cache-Control no-cache
+		try_files {path} /index.html
+		file_server
+	}
+}

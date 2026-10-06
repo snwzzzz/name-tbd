@@ -12,13 +12,31 @@
     <p class="overline">{{ source.format?.toUpperCase() }} data source</p>
     <h2 class="title">{{ source.name }}</h2>
 
+    @if (source.format === 'live') {
+      <ul class="group">
+        <li class="row">Connection <span class="row-value">{{ connectionLabel() }}</span></li>
+        <li class="row">Key column <span class="row-value">{{ source.keyColumn || 'None' }}</span></li>
+        <li class="row">Access <span class="row-value">{{ source.readOnly ? 'Read-only' : 'Read and write' }}</span></li>
+      </ul>
+      @if (source.truncated) {
+        <p class="footnote warning">This source has too many rows. Only the first 5,000 are loaded.</p>
+      }
+    }
+
     <ul class="group">
       <li class="row">Rows <span class="row-value">{{ rows().length }}</span></li>
       <li class="row">Columns <span class="row-value">{{ columns().length }}</span></li>
       <li class="row">Complete <span class="row-value">{{ filledPercent() }}%</span></li>
     </ul>
 
-    <h3 class="group-title">Columns</h3>
+    <div class="header-with-action">
+      <h3 class="group-title">Columns</h3>
+      @if (source.format === 'live') {
+        <button type="button" class="text-btn small" (click)="refreshColumns()">
+          <svg lucideRefreshCw></svg> Refresh
+        </button>
+      }
+    </div>
     <ul class="group">
       @for (column of columnInfo(); track column.index) {
         <li class="row"><span class="name">{{ column.name }}</span> <span class="row-value">{{ column.type }}</span></li>

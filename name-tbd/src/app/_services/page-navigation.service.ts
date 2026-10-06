@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { EDITOR_NAVIGATION, TabsService } from './tabs.service';
 import { PagesStateService } from './pages-state.service';
 import { PreviewSessionService } from './preview-session.service';
+import { EditorContext } from './editor-context.service';
 
 /** Follows links to pages: opens the page's tab (adding it if needed) in edit mode. */
 @Injectable({ providedIn: 'root' })
@@ -11,6 +12,7 @@ export class PageNavigationService {
   private readonly tabs = inject(TabsService);
   private readonly pages = inject(PagesStateService);
   private readonly preview = inject(PreviewSessionService);
+  private readonly context = inject(EditorContext);
 
   /** Opens the page; when it's followed from a preview, the preview goes on there. */
   openPage(pageId: number): void {
@@ -22,6 +24,6 @@ export class PageNavigationService {
       this.tabs.tabs.update((tabs) => [...tabs, { id: tabId, title, mode: 'edit' }]);
     }
     if (this.preview.active()) this.preview.continueOn(tabId);
-    this.router.navigate(['/editor', tabId, 'edit'], EDITOR_NAVIGATION);
+    this.router.navigate(this.context.path(tabId, 'edit'), EDITOR_NAVIGATION);
   }
 }

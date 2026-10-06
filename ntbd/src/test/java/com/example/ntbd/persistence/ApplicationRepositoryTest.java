@@ -1,5 +1,6 @@
 package com.example.ntbd.persistence;
 
+import com.example.ntbd.domain.Workspace;
 import com.example.ntbd.domain.Application;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
@@ -16,10 +17,13 @@ public class ApplicationRepositoryTest {
     @Autowired
     private ApplicationRepository applicationRepository;
 
+    @Autowired
+    private WorkspaceRepository workspaceRepository;
+
     @Test
     void can_save() {
 
-        var application = Application.builder()
+        var application = Application.builder().workspace(workspaceRepository.save(Workspace.builder().name("Workspace").build()))
                 .title("Customer Portal")
                 .description("Self-service portal for customers to manage their accounts and subscriptions.")
                 .build();

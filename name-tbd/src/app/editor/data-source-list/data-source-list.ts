@@ -3,6 +3,8 @@ import { LucideChevronRight, LucideSheet, LucideTrash2 } from '@lucide/angular';
 import { DataSourceStateService } from '../../_services/data-source-state.service';
 import { DataSourceSummaryDto } from '../../api/models';
 import { DATA_SOURCE_FORMATS } from '../../_constants/data-source.constants';
+import { ModalService } from '../../_services/modal/modal.service';
+import { ConnectDataModal } from '../connect-data-modal/connect-data-modal';
 
 /** The project's data sources: import files (CSV, ...), open or delete one. */
 @Component({
@@ -13,6 +15,7 @@ import { DATA_SOURCE_FORMATS } from '../../_constants/data-source.constants';
 })
 export class DataSourceList implements OnInit {
   private readonly state = inject(DataSourceStateService);
+  private readonly modal = inject(ModalService);
 
   /** A data source was clicked, or just imported. */
   readonly opened = output<number>();
@@ -42,5 +45,12 @@ export class DataSourceList implements OnInit {
   requestDelete(source: DataSourceSummaryDto, event: Event): void {
     event.stopPropagation();
     this.deleteRequested.emit(source);
+  }
+
+  async connectData(): Promise<void> {
+    const sourceId = await import('rxjs').then(m => m.firstValueFrom(this.modal.open(ConnectDataModal, { data: undefined }).afterClosed()));
+    if (sourceId !== undefined && typeof sourceId === 'number') {
+      this.opened.emit(sourceId);
+    }
   }
 }

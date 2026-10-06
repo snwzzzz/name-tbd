@@ -13,7 +13,8 @@ public class PageMapper {
                 page.getName(),
                 page.getPath(),
                 page.getBranch() != null && page.getBranch().getId() != null ? page.getBranch().getId().id() : null,
-                page.isLayout()
+                page.isLayout(),
+                page.getVariables() != null ? page.getVariables() : java.util.List.of()
         );
     }
 }

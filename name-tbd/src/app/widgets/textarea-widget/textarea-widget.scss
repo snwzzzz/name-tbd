@@ -1,0 +1,13 @@
+// The field's look is shared (.w-field, .w-box in _styles/_widgets.scss)
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+textarea {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  line-height: 1.4;
+  resize: none;
+}

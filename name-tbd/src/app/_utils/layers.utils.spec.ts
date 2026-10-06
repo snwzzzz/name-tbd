@@ -3,7 +3,7 @@ import { layerDetail, layerTypeName, sortLayers } from './layers.utils';
 describe('layers utils', () => {
   it('names widgets by their type, falling back to the palette label', () => {
     expect(layerTypeName({ type: 'button' })).toBe('Button');
-    expect(layerTypeName({ type: 'container' })).toBe('Container');
+    expect(layerTypeName({ type: 'container' })).toBe('Container / Card');
     expect(layerTypeName({ type: 'mystery' })).toBe('Unknown Widget');
   });
 

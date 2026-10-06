@@ -24,6 +24,29 @@ public class Application extends AuditableEntity {
     @Column(nullable = false)
     private String description;
 
+    /** The app-wide theme (null: the default preset); see AppTheme. */
+    @Column(name = "theme")
+    private AppTheme theme;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "workspace_id", nullable = false)
+    private Workspace workspace;
+
+    /** The branch the editor opens; created with the application. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "default_branch_id")
+    private Branch defaultBranch;
+
+    /** Who changed the application (or anything in it) last; see ApplicationActivity. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    private User lastModifiedBy;
+
+    /** The data choice last made when exporting (embed, live_cached, live; see export.definition.DataMode). */
+    @Column(name = "export_data_mode", nullable = false)
+    @Builder.Default
+    private String exportDataMode = "embed";
+
     @OneToMany(orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "application")
     private List<Branch> branches = List.of();
 

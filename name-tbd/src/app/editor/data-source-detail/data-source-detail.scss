@@ -118,3 +118,12 @@ th {
 }
 
 .error { color: var(--color-danger); }
+
+.header-with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.warning {
+  color: var(--color-warning, #d97706);
+}

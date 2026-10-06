@@ -1,22 +1,27 @@
-<div class="application-card">
-  <div class="header">
-    <div class="status" [class.occupied]="application().isOccupied"></div>
-    <span class="title">{{ application().title }}</span>
-  </div>
-  <div class="body">
-    <span class="current-branch">Branch: {{ application().currentBranch }}</span>
-    <span class="last-modified">Last modified: {{ application().lastModified }}</span>
-    <span class="last-modified-by">Last modified by: {{ application().lastModifiedBy }}</span>
-  </div>
-  <div class="footer">
-    <div class="icon play">
-      <svg lucidePlay></svg>
-    </div>
-    <div class="icon pencil">
+<article class="application-card">
+  <a class="open" [routerLink]="editorLink()" [title]="'Open ' + application().title">
+    <h2 class="title">{{ application().title }}</h2>
+    @if (application().description) {
+      <p class="description">{{ application().description }}</p>
+    }
+    @if (application().lastModified) {
+      <p class="edited">
+        Edited {{ application().lastModified | date: 'medium' }}
+        @if (application().lastModifiedBy) {
+          by {{ application().lastModifiedBy }}
+        }
+      </p>
+    }
+  </a>
+  <div class="actions">
+    <button type="button" class="action" title="Rename" [attr.aria-label]="'Rename ' + application().title" (click)="rename.emit()">
       <svg lucidePencil></svg>
-    </div>
-    <div class="icon settings">
-      <svg lucideSettings></svg>
-    </div>
+    </button>
+    <button type="button" class="action" title="Duplicate" [attr.aria-label]="'Duplicate ' + application().title" (click)="duplicate.emit()">
+      <svg lucideCopy></svg>
+    </button>
+    <button type="button" class="action danger" title="Delete" [attr.aria-label]="'Delete ' + application().title" (click)="remove.emit()">
+      <svg lucideTrash2></svg>
+    </button>
   </div>
-</div>
+</article>

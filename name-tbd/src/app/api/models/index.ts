@@ -47,6 +47,12 @@ export interface UiComponentDto {
     h?: number;
 }
 
+export interface VariableDefinition {
+    name?: string;
+    type?: string;
+    initial?: string;
+}
+
 export interface NewWorkflowCommand {
     branchId?: number;
     name?: string;
@@ -86,55 +92,18 @@ export interface EdgeDto {
 }
 
 export interface NewVersionControlCommand {
-    id?: number;
     branchId?: number;
-    modifiedById?: number;
-    timestamp?: Date;
-    applicationDefinition?: string;
-    version?: string;
+    label?: string;
 }
 
-export interface ApplicationDto {
+export interface VersionDto {
     id?: number;
-    title?: string;
-    description?: string;
-}
-
-export interface BranchDto {
-    id?: number;
-    name?: string;
-    description?: string;
+    number?: number;
+    kind?: 'MANUAL' | 'AUTO' | 'BEFORE_EXPORT' | 'RESTORE' | 'LEGACY';
+    label?: string;
     createdAt?: Date;
-    lastModified?: Date;
-    latestVersion?: string;
-    createdBy?: UserDto;
-    application?: ApplicationDto;
-}
-
-export interface UserDto {
-    id?: number;
-    username?: string;
-    email?: string;
-    password?: string;
-    firstName?: string;
-    lastName?: string;
-}
-
-export interface VersionControlDto {
-    id?: number;
-    version?: string;
-    branch?: BranchDto;
-    timestamp?: Date;
-    applicationDefinition?: string;
-    modifiedBy?: UserDto;
-}
-
-export interface NewUserCommand {
-    username?: string;
-    email?: string;
-    password?: string;
-    firstName?: string;
-    lastName?: string;
+    author?: string;
+    sizeBytes?: number;
 }
 
 export interface NewUiComponentCommand {
@@ -162,6 +131,20 @@ export interface PageDto {
     path?: string;
     branchId?: number;
     layout?: boolean;
+    variables?: Array<VariableDefinition>;
+}
+
+export interface RowValues {
+    values?: Record<string, string>;
+}
+
+export interface LiveRow {
+    id?: string;
+    values?: Array<string>;
+}
+
+export interface RowIds {
+    ids?: Array<string>;
 }
 
 export interface NewDataSourceCommand {
@@ -178,18 +161,145 @@ export interface DataSourceDto {
     branchId?: number;
     columns?: Array<string>;
     rows?: Array<Array<string>>;
+    rowIds?: Array<string>;
+    kind?: string;
+    connectionId?: number;
+    settings?: Record<string, Record<string, unknown>>;
+    keyColumn?: string;
+    readOnly?: boolean;
+    truncated?: boolean;
+}
+
+export interface LiveDataSourceCommand {
+    branchId?: number;
+    name?: string;
+    connectionId?: number;
+    settings?: Record<string, Record<string, unknown>>;
+    keyColumn?: string;
+    readOnly?: boolean;
+}
+
+export interface ConnectionCommand {
+    workspaceId?: number;
+    branchId?: number;
+    name?: string;
+    kind?: string;
+    settings?: Record<string, Record<string, unknown>>;
+    secret?: Record<string, Record<string, unknown>>;
+}
+
+export interface ConnectionDto {
+    id?: number;
+    workspaceId?: number;
+    name?: string;
+    kind?: string;
+    settings?: Record<string, Record<string, unknown>>;
+    hasSecret?: boolean;
 }
 
 export interface NewBranchCommand {
     applicationId?: number;
-    createdById?: number;
     name?: string;
     description?: string;
 }
 
-export interface NewApplicationCommand {
+export interface AppTheme {
+    preset?: string;
+    primary?: string;
+    font?: string;
+    radius?: string;
+    spacing?: string;
+}
+
+export interface ApplicationDto {
+    id?: number;
+    workspaceId?: number;
     title?: string;
     description?: string;
+    defaultBranchId?: number;
+    lastModified?: Date;
+    lastModifiedBy?: string;
+    theme?: AppTheme;
+}
+
+export interface BranchDto {
+    id?: number;
+    name?: string;
+    description?: string;
+    createdAt?: Date;
+    lastModified?: Date;
+    latestVersion?: string;
+    createdBy?: UserDto;
+    application?: ApplicationDto;
+}
+
+export interface UserDto {
+    id?: number;
+    username?: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    avatarUrl?: string;
+}
+
+export interface ChangeBatchCommand {
+    changes?: Array<ChangeOperation>;
+}
+
+export interface ChangeOperation {
+    op?: string;
+    id?: number;
+    ref?: string;
+    pageId?: number;
+    workflowId?: number;
+    type?: string;
+    parentId?: number;
+    parentRef?: string;
+    x?: number;
+    y?: number;
+    w?: number;
+    h?: number;
+    props?: Record<string, Record<string, unknown>>;
+    sourceId?: number;
+    sourceRef?: string;
+    targetId?: number;
+    targetRef?: string;
+    sourcePort?: string;
+}
+
+export interface ChangeBatchResultDto {
+    ids?: Record<string, number>;
+}
+
+export interface NewApplicationCommand {
+    workspaceId?: number;
+    title?: string;
+    description?: string;
+}
+
+export interface DuplicateApplicationCommand {
+    title?: string;
+}
+
+export interface RenameVersionCommand {
+    label?: string;
+}
+
+export interface RowChange {
+    id?: string;
+    values?: Record<string, string>;
+    base?: Record<string, string>;
+}
+
+export interface ChangedRow {
+    row?: LiveRow;
+    conflicts?: Record<string, string>;
+}
+
+export interface UpdateApplicationCommand {
+    title?: string;
+    description?: string;
+    theme?: AppTheme;
 }
 
 export interface WidgetPropDefinitionDto {
@@ -203,15 +313,6 @@ export interface WidgetPropDefinitionDto {
     options?: Array<string>;
 }
 
-export interface DataSourceSummaryDto {
-    id?: number;
-    name?: string;
-    format?: string;
-    branchId?: number;
-    columns?: Array<string>;
-    rowCount?: number;
-}
-
 export interface App {
     id?: number;
     name?: string;
@@ -220,6 +321,77 @@ export interface App {
 export interface AppDefinition {
     version?: number;
     app?: App;
+}
+
+export interface PageContentDto {
+    page?: PageDto;
+    components?: Array<UiComponentDto>;
+    workflow?: PageWorkflowDto;
+}
+
+export interface PageWorkflowDto {
+    id?: number;
+    nodes?: Array<NodeDto>;
+    edges?: Array<EdgeDto>;
+}
+
+export interface MeDto {
+    user?: UserDto;
+    workspaces?: Array<WorkspaceMembershipDto>;
+}
+
+export interface WorkspaceMembershipDto {
+    id?: number;
+    name?: string;
+    personal?: boolean;
+    role?: string;
+}
+
+export interface DataPage {
+    id?: number;
+    name?: string;
+    columns?: Array<string>;
+    keyColumn?: string;
+    readOnly?: boolean;
+    rows?: Array<LiveRow>;
+    truncated?: boolean;
+}
+
+export interface DataSourceSummaryDto {
+    id?: number;
+    name?: string;
+    format?: string;
+    branchId?: number;
+    columns?: Array<string>;
+    rowCount?: number;
+    kind?: string;
+    connectionId?: number;
+    keyColumn?: string;
+    readOnly?: boolean;
+}
+
+export interface DataReport {
+    dataMode?: string;
+    sources?: Array<SourceReport>;
+}
+
+export interface SourceReport {
+    id?: number;
+    name?: string;
+    kind?: string;
+    columns?: Array<string>;
+    exportedColumns?: Array<string>;
+    allBecause?: string;
+}
+
+export interface AppKeyDto {
+    id?: number;
+    applicationId?: number;
+    hint?: string;
+    label?: string;
+    allowWrites?: boolean;
+    createdAt?: Date;
+    revokedAt?: Date;
 }
 
 /** Request Options for Angular HttpClient requests */

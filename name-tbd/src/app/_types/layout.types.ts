@@ -2,8 +2,8 @@
 export type WidgetProps = Record<string, unknown>;
 
 /**
- * Id of a placed component: a number once it's saved in the backend,
- * a temporary string (`item-…`) while the create request is still in flight.
+ * Id of a placed component: a number once it's saved in the backend, a temporary string (`new_…`,
+ * see IdRegistry) until then.
  */
 export type ComponentId = number | string;
 

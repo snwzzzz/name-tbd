@@ -1,0 +1,19 @@
+<div class="w-field check-field">
+  <label class="check">
+    <input
+      type="checkbox"
+      [checked]="checked()"
+      [attr.aria-label]="label() ? null : 'Checkbox'"
+      [attr.aria-required]="required()"
+      [attr.aria-invalid]="!!error()"
+      [attr.aria-describedby]="error() ? errorId() : null"
+      [attr.tabindex]="tabIndex()"
+      (change)="setValue($any($event.target).checked ? 'true' : 'false')" />
+    @if (label(); as label) {
+      <span class="text" [class.w-required]="required()">{{ label }}</span>
+    }
+  </label>
+  @if (error(); as error) {
+    <span class="w-error" [id]="errorId()" role="alert">{{ error }}</span>
+  }
+</div>

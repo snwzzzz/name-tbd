@@ -22,19 +22,72 @@
         (click)="togglePreview()">
         {{ previewMode() ? '■ Stop preview' : '▶ Preview' }}
       </button>
+      @if (previewMode()) {
+        <button
+          app-zoom-button
+          [active]="previewWritesRealData()"
+          [title]="previewWritesRealData()
+            ? 'The preview changes the real data (live sources: where they are kept). Click to try changes on a copy instead.'
+            : 'The preview changes a copy of the data, thrown away afterwards. Click to change the real data.'"
+          (click)="togglePreviewWrites()">
+          {{ previewWritesRealData() ? 'Real data' : 'Copy of data' }}
+        </button>
+      }
     </app-zoom-controls>
 
-    <!-- The artboard (1440 × 810, 16:9). CSS zoom keeps GridStack's drag and drop working. -->
-    <div class="artboard" [style.zoom]="zoom()" [style.transform]="artboardTransform()">
+    @if (selectionCount() > 1 && !previewMode()) {
+      <app-align-toolbar [count]="selectionCount()" (align)="alignSelection($event)" (distribute)="distributeSelection($event)" />
+    }
+
+    <!-- The artboard (a desktop browser window's page area, see artboard.constants.ts). CSS zoom keeps GridStack's drag and drop working. -->
+    <div class="artboard" [style]="artboardSize()" [style.zoom]="zoom()" [style.transform]="artboardTransform()">
       <!-- The layout page's widgets (navbar, ...), under this page's own -->
       <app-layout-overlay />
       <div class="grid-stack" #gridContainer></div>
+      @if (previewMode() && modals.anyOpen()) {
+        <!-- Under the open dialog (preview): a click on it closes the dialog -->
+        <div class="preview-backdrop" (click)="closeTopModal()"></div>
+      }
+      <!-- Where a 1080p window's page area ends: below it, visitors scroll -->
+      <div class="screen-fold" [style.top.px]="screenHeight" aria-hidden="true"><span>End of first screen · scrolls below</span></div>
     </div>
   </div>
 </div>
 
 @if (contextMenu(); as menu) {
   <app-context-menu [x]="menu.x" [y]="menu.y" (closed)="closeContextMenu()">
-    <button app-context-menu-item [icon]="addActionIcon" (click)="addActionToItem(menu.item.id, menu.item.type)">Add action</button>
+    @if (menu.item; as item) {
+      @if (canAddAction()) {
+        <button app-context-menu-item [icon]="icons.addAction" (click)="addActionToItem(item.id, item.type)">Add action</button>
+        <app-context-menu-divider />
+      }
+      <button app-context-menu-item [icon]="icons.copy" (click)="closeContextMenu(); copySelection()">Copy{{ selectionCount() > 1 ? ' ' + selectionCount() + ' widgets' : '' }}</button>
+      <button app-context-menu-item [icon]="icons.duplicate" (click)="closeContextMenu(); duplicateSelection()">Duplicate</button>
+      @if (canPaste()) {
+        <button app-context-menu-item [icon]="icons.paste" (click)="closeContextMenu(); paste()">Paste</button>
+      }
+      <app-context-menu-divider />
+      @if (selectionCount() > 1) {
+        <button app-context-menu-item [icon]="icons.alignLeft" (click)="closeContextMenu(); alignSelection('left')">Align left</button>
+        <button app-context-menu-item [icon]="icons.alignTop" (click)="closeContextMenu(); alignSelection('top')">Align top</button>
+        @if (selectionCount() > 2) {
+          <button app-context-menu-item [icon]="icons.distributeX" (click)="closeContextMenu(); distributeSelection('horizontal')">Distribute horizontally</button>
+          <button app-context-menu-item [icon]="icons.distributeY" (click)="closeContextMenu(); distributeSelection('vertical')">Distribute vertically</button>
+        }
+        <app-context-menu-divider />
+      }
+      <button app-context-menu-item [icon]="icons.centerX" (click)="closeContextMenu(); center('x')">Center horizontally</button>
+      <button app-context-menu-item [icon]="icons.centerY" (click)="closeContextMenu(); center('y')">Center vertically</button>
+      <button app-context-menu-item [icon]="icons.centerBoth" (click)="closeContextMenu(); center('both')">Center on both axes</button>
+      <app-context-menu-divider />
+      <button app-context-menu-item danger [icon]="icons.delete" (click)="closeContextMenu(); deleteSelection()">Delete{{ selectionCount() > 1 ? ' ' + selectionCount() + ' widgets' : '' }}</button>
+    } @else {
+      <button app-context-menu-item [icon]="icons.paste" (click)="closeContextMenu(); paste()">Paste</button>
+    }
   </app-context-menu>
+}
+
+@if (previewMode()) {
+  <!-- The previewed app's messages (Show message) -->
+  <app-app-messages />
 }

@@ -1,11 +1,13 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { PageControllerService } from '../api/services/pageController.service';
 import { PageDto } from '../api/models';
+import { EditorContext } from './editor-context.service';
 
-/** The project's pages (loaded once, refreshed when pages are created), and its layout page. */
+/** The branch's pages (loaded once, refreshed when pages are created), and its layout page. */
 @Injectable({ providedIn: 'root' })
 export class PagesStateService {
   private readonly api = inject(PageControllerService);
+  private readonly context = inject(EditorContext);
 
   readonly pages = signal<PageDto[]>([]);
   readonly loaded = signal(false);
@@ -22,7 +24,7 @@ export class PagesStateService {
 
   refresh(): void {
     this.requested = true;
-    this.api.getPages().subscribe({
+    this.api.getPages(this.context.requireBranchId()).subscribe({
       next: (pages) => {
         this.pages.set(pages ?? []);
         this.loaded.set(true);

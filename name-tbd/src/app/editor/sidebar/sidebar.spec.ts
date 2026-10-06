@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Sidebar } from './sidebar';
 import { SidebarStateService } from '../../_services/sidebar-state.service';
+import { provideTestEditorContext } from '../../_testing/editor-context.testing';
 
 @Component({
   imports: [Sidebar],
@@ -10,7 +11,10 @@ import { SidebarStateService } from '../../_services/sidebar-state.service';
 class Host {}
 
 describe('Sidebar', () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({ providers: [provideTestEditorContext()] });
+  });
 
   const mount = () => {
     const fixture = TestBed.createComponent(Host);
@@ -23,8 +27,8 @@ describe('Sidebar', () => {
   it('shows each sidebar its tabs, and follows moves between them', () => {
     const fixture = mount();
     const el: HTMLElement = fixture.nativeElement;
-    expect(icons(el, 'left')).toEqual(['Components (drag to move)', 'Data (drag to move)']);
-    expect(icons(el, 'right')).toEqual(['Properties (drag to move)', 'Layers (drag to move)']);
+    expect(icons(el, 'left')).toEqual(['Components (drag to move)', 'Data (drag to move)', 'Variables (drag to move)']);
+    expect(icons(el, 'right')).toEqual(['Properties (drag to move)', 'Layers (drag to move)', 'History (drag to move)', 'Theme (drag to move)', 'Run log (drag to move)']);
 
     TestBed.inject(SidebarStateService).move('layers', 'left', 0);
     fixture.detectChanges();

@@ -1,0 +1,56 @@
+<div class="wrap">
+  @if (multiline()) {
+    <textarea
+      #field
+      class="field"
+      rows="3"
+      spellcheck="false"
+      [attr.aria-label]="label() || null"
+      [attr.aria-invalid]="!!problem()"
+      [placeholder]="placeholder()"
+      [value]="text()"
+      (input)="onInput($event)"
+      (keydown)="onKeydown($event)"
+      (keyup)="onCaretMove($event)"
+      (click)="onCaretMove($event)"
+      (blur)="onBlur()"></textarea>
+  } @else {
+    <input
+      #field
+      class="field"
+      type="text"
+      spellcheck="false"
+      autocomplete="off"
+      [attr.aria-label]="label() || null"
+      [attr.aria-invalid]="!!problem()"
+      [placeholder]="placeholder()"
+      [value]="text()"
+      (input)="onInput($event)"
+      (keydown)="onKeydown($event)"
+      (keyup)="onCaretMove($event)"
+      (click)="onCaretMove($event)"
+      (blur)="onBlur()" />
+  }
+
+  @if (shown().length) {
+    <ul class="completions" role="listbox">
+      @for (item of shown(); track item.label + item.kind; let i = $index) {
+        <!-- mousedown, so the field keeps the focus -->
+        <li
+          role="option"
+          [class.active]="i === active()"
+          [attr.aria-selected]="i === active()"
+          [title]="item.detail ?? ''"
+          (mousedown)="$event.preventDefault(); accept(item)">
+          <span class="kind" [attr.data-kind]="item.kind">{{ icon(item) }}</span>
+          <span class="name">{{ item.label }}</span>
+          @if (item.detail) { <span class="detail">{{ item.detail }}</span> }
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+@if (problem(); as problem) {
+  <p class="problem" role="alert">{{ problem.message }}</p>
+}

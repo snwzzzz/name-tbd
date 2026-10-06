@@ -92,11 +92,61 @@ textarea.ui-input {
     &::-moz-color-swatch { border: none; border-radius: 0.1875rem; }
   }
 
+  // The typed hex value (see ColorField)
+  .ui-color-hex {
+    flex: 1;
+    min-width: 0;
+    padding: 0.125rem 0.25rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    background: none;
+    color: var(--color-text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+
+    &::placeholder {
+      font-family: 'Inter', system-ui, sans-serif;
+      text-transform: none;
+      color: var(--color-text-secondary);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      background: var(--color-surface);
+    }
+  }
+
   .ui-color-value {
     font-family: 'JetBrains Mono', monospace;
     font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
     text-transform: uppercase;
+
+    &.is-default {
+      font-family: inherit;
+      text-transform: none;
+    }
+  }
+
+  .ui-color-reset {
+    margin-left: auto;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    border: none;
+    border-radius: 0.25rem;
+    background: none;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--color-surface-secondary);
+      color: var(--color-text-primary);
+    }
   }
 }
 

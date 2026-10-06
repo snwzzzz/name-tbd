@@ -12,14 +12,28 @@ import com.example.ntbd.domain.DataSourceColumn;
 import com.example.ntbd.domain.DataSourceRow;
 import com.example.ntbd.dto.DataSourceDto;
 import com.example.ntbd.dto.DataSourceSummaryDto;
+import com.example.ntbd.Exception.ConnectionNotFoundException;
+import com.example.ntbd.commands.LiveDataSourceCommand;
+import com.example.ntbd.domain.DataConnection;
+import com.example.ntbd.livedata.LiveDataService;
+import com.example.ntbd.livedata.connector.ColumnInfo;
+import com.example.ntbd.livedata.connector.LiveRows;
+import com.example.ntbd.livedata.connector.Settings;
+import com.example.ntbd.livedata.connector.SourceRef;
+import com.example.ntbd.livedata.connector.SourceSchema;
 import com.example.ntbd.mapper.DataSourceMapper;
 import com.example.ntbd.persistence.BranchRepository;
+import com.example.ntbd.persistence.DataConnectionRepository;
 import com.example.ntbd.persistence.DataSourceRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @RequiredArgsConstructor
 @Service
@@ -31,6 +45,9 @@ public class DataSourceService {
     private final DataSourceRepository dataSourceRepository;
     private final BranchRepository branchRepository;
     private final TabularDataParserRegistry parserRegistry;
+    private final DataConnectionRepository connectionRepository;
+    private final LiveDataService liveData;
+    private final TransactionTemplate transactions;
 
     @Transactional
     public DataSourceDto importDataSource(NewDataSourceCommand command) {
@@ -69,17 +86,134 @@ public class DataSourceService {
                 .toList();
     }
 
-    @Transactional
+    /**
+     * A data source with its rows: an embedded one's from here, a live one's read from its system now
+     * (outside a transaction, so a slow system holds none).
+     */
     public DataSourceDto findById(Long id) {
-        return DataSourceMapper.toDto(getDataSource(id));
+        LiveDataService.SourceView view = liveData.view(id);
+        if (view.embedded()) {
+            return transactions.execute(status -> DataSourceMapper.toDto(getDataSource(id)));
+        }
+        LiveRows rows = liveData.read(id);
+        return transactions.execute(status -> {
+            DataSource source = getDataSource(id);
+            return DataSourceMapper.toDto(source, liveData.parse(source.getSettings()).values(), rows);
+        });
     }
 
-    @Transactional
-    public void delete(Long id) {
-        if (dataSourceRepository.deleteInBulk(new DataSource.DataSourceId(id)) == 0) {
-            throw new DataSourceNotFoundException(id);
+    /**
+     * Adds a live data source: what to read through one of the workspace's connections. Its columns (and
+     * key column) are asked from the system right away, so a source that can't be read isn't added.
+     */
+    public DataSourceDto createLive(LiveDataSourceCommand command) {
+        if (command.name() == null || command.name().isBlank()) {
+            throw new IllegalArgumentException("Data source name must not be blank");
+        }
+        Described described = describe(command.branchId(), command.connectionId(), command.settings(), command.keyColumn());
+        Long id = transactions.execute(status -> {
+            Branch branch = branchRepository.findById(new Branch.BranchId(command.branchId()))
+                    .orElseThrow(() -> new BranchNotFoundException(command.branchId()));
+            DataConnection connection = connectionRepository.findById(command.connectionId())
+                    .orElseThrow(() -> new ConnectionNotFoundException(command.connectionId()));
+            DataSource source = DataSource.builder()
+                    .name(command.name().trim())
+                    .format(connection.getKind())
+                    .kind(connection.getKind())
+                    .connection(connection)
+                    .branch(branch)
+                    .readOnly(Boolean.TRUE.equals(command.readOnly()))
+                    .build();
+            apply(source, described);
+            return dataSourceRepository.saveAndFlush(source).getId().id();
+        });
+        return findById(id);
+    }
+
+    /** Changes what a live data source reads (and its name, key column, read-only flag); its columns are asked anew. */
+    public DataSourceDto updateLive(Long id, LiveDataSourceCommand command) {
+        LiveDataService.SourceView view = liveData.view(id);
+        if (view.embedded()) throw new IllegalArgumentException("An embedded data source has no connection to change");
+        Long branchId = transactions.execute(status -> getDataSource(id).getBranch().getId().id());
+        Long connectionId = command.connectionId() != null ? command.connectionId()
+                : transactions.execute(status -> {
+                    DataConnection connection = getDataSource(id).getConnection();
+                    if (connection == null) throw new IllegalArgumentException("Choose a connection for this data source");
+                    return connection.getId();
+                });
+        Map<String, Object> settings = command.settings() != null ? command.settings()
+                : transactions.execute(status -> liveData.parse(getDataSource(id).getSettings()).values());
+        String keyColumn = command.keyColumn() != null ? (command.keyColumn().isBlank() ? null : command.keyColumn()) : view.keyColumn();
+        Described described = describe(branchId, connectionId, settings, keyColumn);
+        transactions.executeWithoutResult(status -> {
+            DataSource source = getDataSource(id);
+            if (command.name() != null && !command.name().isBlank()) source.setName(command.name().trim());
+            if (command.readOnly() != null) source.setReadOnly(command.readOnly());
+            DataConnection connection = connectionRepository.findById(connectionId)
+                    .orElseThrow(() -> new ConnectionNotFoundException(connectionId));
+            source.setConnection(connection);
+            source.setKind(connection.getKind());
+            source.setFormat(connection.getKind());
+            apply(source, described);
+        });
+        liveData.forget(id);
+        return findById(id);
+    }
+
+    /** A live source's columns, asked from its system again (e.g. after columns were added there). */
+    public DataSourceDto refreshSchema(Long id) {
+        LiveDataService.SourceView view = liveData.view(id);
+        if (view.embedded()) throw new IllegalArgumentException("An embedded data source has no connection to describe");
+        SourceSchema schema = liveData.describe(id);
+        transactions.executeWithoutResult(status -> {
+            DataSource source = getDataSource(id);
+            apply(source, new Described(liveData.parse(source.getSettings()).values(), schema, view.keyColumn()));
+        });
+        liveData.forget(id);
+        return findById(id);
+    }
+
+    private record Described(Map<String, Object> settings, SourceSchema schema, String keyColumn) {
+    }
+
+    /** Asks the connection's system what the settings point at; the connection must be in the branch's workspace. */
+    private Described describe(Long branchId, Long connectionId, Map<String, Object> settings, String keyColumn) {
+        if (connectionId == null) throw new IllegalArgumentException("Choose a connection");
+        DataConnection connection = transactions.execute(status -> {
+            Branch branch = branchRepository.findById(new Branch.BranchId(branchId))
+                    .orElseThrow(() -> new BranchNotFoundException(branchId));
+            DataConnection found = connectionRepository.findById(connectionId)
+                    .orElseThrow(() -> new ConnectionNotFoundException(connectionId));
+            if (!Objects.equals(found.getWorkspace().getId().id(), branch.getApplication().getWorkspace().getId().id())) {
+                // Another workspace's connection doesn't exist, as far as this app knows
+                throw new ConnectionNotFoundException(connectionId);
+            }
+            return found;
+        });
+        Map<String, Object> cleaned = new LinkedHashMap<>(settings == null ? Map.of() : settings);
+        cleaned.remove("columnTypes");
+        String key = keyColumn == null || keyColumn.isBlank() ? null : keyColumn.trim();
+        SourceRef ref = new SourceRef(null, liveData.connectionRef(connection), new Settings(cleaned), key, List.of(), liveData.maxRows());
+        SourceSchema schema = liveData.connector(connection.getKind()).describe(ref);
+        return new Described(cleaned, schema, key);
+    }
+
+    /** Stores what was described: settings (with the column types), the key column and the columns. */
+    private void apply(DataSource source, Described described) {
+        Map<String, Object> settings = new LinkedHashMap<>(described.settings());
+        Map<String, String> types = new LinkedHashMap<>();
+        described.schema().columns().forEach(column -> types.put(column.name(), column.type()));
+        settings.put("columnTypes", types);
+        source.setSettings(liveData.json(new Settings(settings)));
+        source.setKeyColumn(described.keyColumn() != null ? described.keyColumn() : described.schema().keyColumn());
+        source.getColumns().clear();
+        List<ColumnInfo> columns = described.schema().columns();
+        for (int i = 0; i < columns.size(); i++) {
+            source.getColumns().add(DataSourceColumn.builder().dataSource(source).columnIndex(i).name(columns.get(i).name()).build());
         }
     }
+
+
 
     private DataSource getDataSource(Long id) {
         return dataSourceRepository.findById(new DataSource.DataSourceId(id))
@@ -89,6 +223,7 @@ public class DataSourceService {
     private static DataSourceRow toRow(DataSource dataSource, int rowIndex, List<String> values, List<DataSourceColumn> columns) {
         DataSourceRow row = DataSourceRow.builder().dataSource(dataSource).rowIndex(rowIndex).build();
         for (int i = 0; i < values.size(); i++) {
+            if (values.get(i) == null) continue;
             row.getCells().add(DataSourceCell.builder().row(row).column(columns.get(i)).value(values.get(i)).build());
         }
         return row;

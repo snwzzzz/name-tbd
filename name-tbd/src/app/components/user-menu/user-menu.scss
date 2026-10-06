@@ -1,0 +1,86 @@
+:host {
+  position: relative;
+  display: inline-flex;
+}
+
+.avatar-button {
+  display: flex;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  background-color: var(--color-primary-light);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1000;
+  min-width: 220px;
+  padding: 0.25rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.who {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 0.25rem;
+
+  .name {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .email {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+  }
+}
+
+.item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  color: var(--color-text-primary);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--color-surface-hover);
+    outline: none;
+  }
+}

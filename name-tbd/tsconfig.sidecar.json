@@ -1,0 +1,11 @@
+/* Type-checks the flow sidecar (Node), which esbuild bundles without checking: npx tsc -p tsconfig.sidecar.json */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src/flow-engine/**/*.ts"],
+  "exclude": ["src/flow-engine/**/*.spec.ts"]
+}

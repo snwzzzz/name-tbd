@@ -1,0 +1,75 @@
+<figure class="chart" [class.sample]="sample()" [attr.aria-labelledby]="title() ? titleId() : null" [attr.aria-label]="title() ? null : kind() + ' chart'">
+  @if (title() || sample()) {
+    <figcaption class="head">
+      <span class="title" [id]="titleId()">{{ title() }}</span>
+      @if (sample()) {
+        <span class="note">Sample data: pick a data source</span>
+      }
+    </figcaption>
+  }
+
+  <div class="plot" (mouseleave)="hovered.set(null)">
+    @if (points().length === 0) {
+      <div class="empty">No data to show yet.</div>
+    } @else {
+      <svg [attr.viewBox]="'0 0 ' + size().width + ' ' + size().height" [style.--series]="color()" aria-hidden="true">
+        @if (kind() === 'pie') {
+          @for (slice of slices(); track $index) {
+            <path class="slice" [attr.d]="slice.path" [style.fill]="'var(--slot-' + slice.slot + ')'"
+              [class.dim]="hovered() !== null && hovered() !== $index" (mouseenter)="hovered.set($index)" />
+          }
+        } @else {
+          @for (line of gridlines(); track $index) {
+            <line class="grid" [attr.x1]="plotBox().x" [attr.x2]="plotBox().x + plotBox().w" [attr.y1]="line.y" [attr.y2]="line.y" />
+            <text class="axis" [attr.x]="plotBox().x - 6" [attr.y]="line.y" text-anchor="end" dominant-baseline="middle">{{ line.label }}</text>
+          }
+          @if (kind() === 'line') {
+            <path class="line" [attr.d]="linePath()" />
+          }
+          @for (mark of marks(); track $index) {
+            @if (kind() === 'bar') {
+              <path class="bar" [attr.d]="mark.bar" [class.dim]="hovered() !== null && hovered() !== $index" />
+            } @else {
+              <circle class="dot" [attr.cx]="mark.cx" [attr.cy]="mark.top" r="4" [class.active]="hovered() === $index" />
+            }
+            @if (mark.showLabel) {
+              <text class="axis" [attr.x]="mark.cx" [attr.y]="baseline() + 15" text-anchor="middle">{{ mark.label }}</text>
+            }
+            <!-- Hover target: the whole band, bigger than the mark -->
+            <rect class="hit" [attr.x]="mark.cx - plotBox().w / marks().length / 2" [attr.y]="plotBox().y"
+              [attr.width]="plotBox().w / marks().length" [attr.height]="plotBox().h" (mouseenter)="hovered.set($index)" />
+          }
+        }
+      </svg>
+
+      @if (hoveredMark(); as mark) {
+        <div class="tooltip" [style.left.px]="mark.cx" [style.top.px]="mark.top">
+          <span>{{ mark.label }}</span><strong>{{ mark.text }}</strong>
+        </div>
+      }
+    }
+  </div>
+
+  @if (kind() === 'pie' && slices().length > 0) {
+    <ul class="legend">
+      @for (slice of slices(); track $index) {
+        <li [class.active]="hovered() === $index" (mouseenter)="hovered.set($index)" (mouseleave)="hovered.set(null)">
+          <span class="swatch" [style.background]="'var(--slot-' + slice.slot + ')'"></span>
+          <span class="name">{{ slice.label }}</span>
+          <span class="amount">{{ slice.text }} · {{ slice.percent }}%</span>
+        </li>
+      }
+    </ul>
+  }
+
+  <!-- The data for screen readers -->
+  <table class="w-sr-only">
+    <caption>{{ summary() }}</caption>
+    <thead><tr><th scope="col">Label</th><th scope="col">Value</th></tr></thead>
+    <tbody>
+      @for (point of points(); track $index) {
+        <tr><th scope="row">{{ point.label }}</th><td>{{ point.value }}</td></tr>
+      }
+    </tbody>
+  </table>
+</figure>

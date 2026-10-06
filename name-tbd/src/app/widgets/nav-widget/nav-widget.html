@@ -1,4 +1,12 @@
-<nav class="nav" [class.vertical]="vertical()" [class.live]="previewing()" [style.color]="color()">
+<nav
+  class="nav"
+  [class]="'variant-' + variant()"
+  [class.vertical]="vertical()"
+  [class.live]="previewing()"
+  [style.color]="color()"
+  [style.background]="background()"
+  [style.--nav-accent]="accentColor()"
+  [style.--nav-on-accent]="onAccentColor()">
   @if (links().length) {
     <ul>
       @for (page of links(); track page.id) {
@@ -11,7 +19,8 @@
         </li>
       }
     </ul>
-  } @else {
+  } @else if (!previewing()) {
+    <!-- A hint for the editor; the running app shows an empty menu -->
     <span class="empty">Pick pages in the properties panel</span>
   }
 </nav>

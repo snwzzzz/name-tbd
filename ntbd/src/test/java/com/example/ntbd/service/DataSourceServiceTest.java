@@ -32,12 +32,18 @@ class DataSourceServiceTest {
     @Mock
     private BranchRepository branchRepository;
 
+    @Mock
+    private com.example.ntbd.livedata.LiveDataService liveData;
+
+    @Mock
+    private com.example.ntbd.persistence.DataConnectionRepository connectionRepository;
+
     private DataSourceService dataSourceService;
 
     @BeforeEach
     void setUp() {
         var registry = new TabularDataParserRegistry(List.of(new CsvParser()));
-        dataSourceService = new DataSourceService(dataSourceRepository, branchRepository, registry);
+        dataSourceService = new DataSourceService(dataSourceRepository, branchRepository, registry, connectionRepository, liveData, null);
     }
 
     @Test
@@ -83,15 +89,8 @@ class DataSourceServiceTest {
 
     @Test
     void findById_NotFound() {
-        when(dataSourceRepository.findById(new DataSource.DataSourceId(1L))).thenReturn(Optional.empty());
+        when(liveData.view(1L)).thenThrow(new DataSourceNotFoundException(1L));
 
         assertThrows(DataSourceNotFoundException.class, () -> dataSourceService.findById(1L));
-    }
-
-    @Test
-    void delete_NotFound() {
-        when(dataSourceRepository.deleteInBulk(new DataSource.DataSourceId(1L))).thenReturn(0);
-
-        assertThrows(DataSourceNotFoundException.class, () -> dataSourceService.delete(1L));
     }
 }

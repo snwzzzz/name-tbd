@@ -3,6 +3,7 @@ package com.example.ntbd.service;
 import com.example.ntbd.Exception.ApplicationNotFoundException;
 import com.example.ntbd.Exception.BranchNotFoundException;
 import com.example.ntbd.Exception.UserNotFoundException;
+import com.example.ntbd.auth.CurrentUser;
 import com.example.ntbd.commands.NewBranchCommand;
 import com.example.ntbd.domain.Application;
 import com.example.ntbd.domain.Branch;
@@ -30,6 +31,7 @@ public class BranchService {
     private final ApplicationRepository applicationRepository;
     private final VersionControlRepository versionControlRepository;
     private final UserRepository userRepository;
+    private final CurrentUser currentUser;
 
     @Transactional
     public BranchDto createBranch(NewBranchCommand command) {
@@ -37,8 +39,9 @@ public class BranchService {
         Application application = applicationRepository.findById(new Application.ApplicationId(command.applicationId()))
                 .orElseThrow(() -> new ApplicationNotFoundException(command.applicationId()));
 
-        User user = userRepository.findById(new User.UserId(command.createdById()))
-                .orElseThrow(() -> new UserNotFoundException(command.createdById()));
+        User.UserId userId = currentUser.requireId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId.id()));
 
         Branch branch = Branch.builder()
                 .application(application)
@@ -52,8 +55,11 @@ public class BranchService {
 
     @Transactional
     public void deleteBranch(Long branchId) {
-        if (!branchRepository.existsById(new Branch.BranchId(branchId))) {
-            throw new BranchNotFoundException(branchId);
+        Branch branch = branchRepository.findById(new Branch.BranchId(branchId))
+                .orElseThrow(() -> new BranchNotFoundException(branchId));
+        Branch defaultBranch = branch.getApplication().getDefaultBranch();
+        if (defaultBranch != null && defaultBranch.getId().equals(branch.getId())) {
+            throw new IllegalArgumentException("The application's default branch can't be deleted");
         }
 
         branchRepository.deleteById(new Branch.BranchId(branchId));

@@ -11,7 +11,10 @@
         <svg lucideMoon></svg>
       }
     </button>
-    <div class="logo" routerLink="/">My IDE</div>
+    <a class="logo" routerLink="/console" title="All applications">My IDE</a>
+    @if (appTitle()) {
+      <span class="app-title" [title]="appTitle()">{{ appTitle() }}</span>
+    }
   </div>
 
   <div class="center-section">
@@ -22,6 +25,25 @@
   </div>
 
   <div class="actions">
+    <button
+      type="button"
+      class="icon-action"
+      [disabled]="!undoLabel()"
+      [title]="undoLabel() ? 'Undo ' + undoLabel() + ' (' + undoKeys + ')' : 'Nothing to undo'"
+      aria-label="Undo"
+      (click)="undo()">
+      <svg lucideUndo2></svg>
+    </button>
+    <button
+      type="button"
+      class="icon-action"
+      [disabled]="!redoLabel()"
+      [title]="redoLabel() ? 'Redo ' + redoLabel() + ' (' + redoKeys + ')' : 'Nothing to redo'"
+      aria-label="Redo"
+      (click)="redo()">
+      <svg lucideRedo2></svg>
+    </button>
+    <app-save-indicator />
     @if (busy()) {
       <!-- Only shows once a request takes a moment (see navbar.scss), so quick ones don't flicker -->
       <span class="busy" role="status" aria-label="Loading"><span class="ui-spinner"></span></span>
@@ -37,5 +59,6 @@
       <svg lucideDownload></svg>
       Export
     </button>
+    <app-user-menu />
   </div>
 </nav>

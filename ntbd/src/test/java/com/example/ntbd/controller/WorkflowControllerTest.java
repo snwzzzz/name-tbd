@@ -1,5 +1,6 @@
 package com.example.ntbd.controller;
 
+import com.example.ntbd.auth.WorkspaceAccess;
 import com.example.ntbd.Exception.WorkflowNotFoundException;
 import com.example.ntbd.commands.NewWorkflowCommand;
 import com.example.ntbd.domain.WorkflowStatus;
@@ -8,12 +9,15 @@ import com.example.ntbd.service.EdgeService;
 import com.example.ntbd.service.NodeService;
 import com.example.ntbd.service.WorkflowService;
 import com.example.ntbd.workflow.FlowEngine;
+import com.example.ntbd.config.SecurityConfig;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -24,10 +28,13 @@ import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(WorkflowController.class)
+@Import(SecurityConfig.class)
+@WithMockUser
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 public class WorkflowControllerTest {
 
@@ -41,6 +48,12 @@ public class WorkflowControllerTest {
     private WorkflowService workflowService;
 
     @MockitoBean
+    private WorkspaceAccess access;
+
+    @MockitoBean
+    private com.example.ntbd.service.SoftDeleteService softDelete;
+
+    @MockitoBean
     private NodeService nodeService;
 
     @MockitoBean
@@ -48,6 +61,9 @@ public class WorkflowControllerTest {
 
     @MockitoBean
     private FlowEngine flowEngine;
+
+    @MockitoBean
+    private com.example.ntbd.workflow.sidecar.ServerFlowRunner serverFlowRunner;
 
     // ---- POST /api/workflows ----
 
@@ -58,7 +74,7 @@ public class WorkflowControllerTest {
 
         when(workflowService.createWorkflow(any(NewWorkflowCommand.class))).thenReturn(dto);
 
-        mockMvc.perform(post("/api/workflows")
+        mockMvc.perform(post("/api/workflows").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(command)))
                 .andExpect(status().isCreated())
@@ -113,7 +129,7 @@ public class WorkflowControllerTest {
     void delete_workflow_returns_204() throws Exception {
         doNothing().when(workflowService).deleteWorkflow(5L);
 
-        mockMvc.perform(delete("/api/workflows/5"))
+        mockMvc.perform(delete("/api/workflows/5").with(csrf()))
                 .andExpect(status().isNoContent());
 
         verify(workflowService).deleteWorkflow(5L);
@@ -123,7 +139,7 @@ public class WorkflowControllerTest {
     void delete_workflow_returns_404_when_not_found() throws Exception {
         doThrow(new WorkflowNotFoundException(99L)).when(workflowService).deleteWorkflow(99L);
 
-        mockMvc.perform(delete("/api/workflows/99"))
+        mockMvc.perform(delete("/api/workflows/99").with(csrf()))
                 .andExpect(status().isNotFound());
     }
 
@@ -133,7 +149,7 @@ public class WorkflowControllerTest {
     void execute_workflow_returns_202() throws Exception {
         doNothing().when(flowEngine).executeWorkflow(eq(5L), any());
 
-        mockMvc.perform(post("/api/workflows/5/execute")
+        mockMvc.perform(post("/api/workflows/5/execute").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"key\":\"value\"}"))
                 .andExpect(status().isAccepted());
@@ -145,7 +161,7 @@ public class WorkflowControllerTest {
     void execute_workflow_with_empty_body_returns_202() throws Exception {
         doNothing().when(flowEngine).executeWorkflow(eq(5L), any());
 
-        mockMvc.perform(post("/api/workflows/5/execute"))
+        mockMvc.perform(post("/api/workflows/5/execute").with(csrf()))
                 .andExpect(status().isAccepted());
     }
 
@@ -158,7 +174,7 @@ public class WorkflowControllerTest {
 
         var body = "{\"type\":\"CONDITION\",\"props\":{\"field\":\"status\"}}";
 
-        mockMvc.perform(post("/api/workflows/1/nodes")
+        mockMvc.perform(post("/api/workflows/1/nodes").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest())

@@ -1,6 +1,7 @@
 package com.example.ntbd.export;
 
 import com.example.ntbd.Exception.BranchNotFoundException;
+import com.example.ntbd.auth.TestSignIn;
 import com.example.ntbd.commands.NewDataSourceCommand;
 import com.example.ntbd.commands.NewEdgeCommand;
 import com.example.ntbd.commands.NewNodeCommand;
@@ -10,13 +11,17 @@ import com.example.ntbd.controller.ExportController;
 import com.example.ntbd.dto.NodeDto;
 import com.example.ntbd.dto.PageDto;
 import com.example.ntbd.dto.UiComponentDto;
+import com.example.ntbd.export.definition.AppDefinition;
 import com.example.ntbd.export.definition.AppDefinitionService;
+import com.example.ntbd.export.definition.DataMode;
+import com.example.ntbd.export.definition.ExportOptions;
 import com.example.ntbd.service.DataSourceService;
 import com.example.ntbd.service.EdgeService;
 import com.example.ntbd.service.NodeService;
 import com.example.ntbd.service.PageService;
 import com.example.ntbd.service.UiComponentService;
 import com.example.ntbd.service.WorkflowService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,9 +62,17 @@ class AppExportIntegrationTest {
     private PageDto about;
     private UiComponentDto button;
     private UiComponentDto label;
+    private com.example.ntbd.dto.DataSourceDto people;
+
+    @AfterEach
+    void signOut() {
+        TestSignIn.signOut();
+    }
 
     @BeforeEach
     void setUp() {
+        // The sample user -1 owns the sample workspace, so exporting branch -1 is allowed
+        TestSignIn.signInAs(-1L);
         about = pageService.createPage(new NewPageCommand("About", "/about", BRANCH));
         UiComponentDto box = uiComponentService.createComponent(
                 new NewUiComponentCommand(about.id(), "container", Map.of(), null, null, 0.0, 0.0, 6.0, 3.0));
@@ -73,9 +86,9 @@ class AppExportIntegrationTest {
                 Map.of("triggerType", "element_click", "elementId", String.valueOf(button.id())), 0.0, 0.0));
         NodeDto action = nodeService.createNode(new NewNodeCommand(workflowId, "Action",
                 Map.of("actionType", "set_text", "config", Map.of("targetId", String.valueOf(label.id()), "text", "Bye")), 300.0, 0.0));
-        edgeService.createEdge(new NewEdgeCommand(trigger.id(), action.id(), "out"));
+        edgeService.createEdge(workflowId, new NewEdgeCommand(trigger.id(), action.id(), "out"));
 
-        dataSourceService.importDataSource(new NewDataSourceCommand(BRANCH, "People", "csv", "name,city\nAlice,Bern\nBob,Basel"));
+        people = dataSourceService.importDataSource(new NewDataSourceCommand(BRANCH, "People", "csv", "name,city\nAlice,Bern\nBob,Basel"));
     }
 
     private JsonNode definition() {
@@ -93,7 +106,7 @@ class AppExportIntegrationTest {
     void holdsTheBranchsPagesWithTheirWidgetsAndWorkflows() {
         JsonNode definition = definition();
 
-        assertEquals(1, definition.get("version").asInt());
+        assertEquals(AppDefinition.VERSION, definition.get("version").asInt());
         assertEquals("Test Application", definition.get("app").get("name").asString());
 
         JsonNode page = find(definition.get("pages"), "name", "About");
@@ -119,15 +132,32 @@ class AppExportIntegrationTest {
         JsonNode definition = definition();
 
         JsonNode people = find(definition.get("dataSources"), "name", "People");
-        assertEquals("[\"name\",\"city\"]", people.get("columns").toString());
-        assertEquals("[[\"Alice\",\"Bern\"],[\"Bob\",\"Basel\"]]", people.get("rows").toString());
+        assertEquals("embedded", people.get("mode").asString());
+        assertEquals(2, people.get("rowIds").size(), "rows travel with their (database) ids");
         assertTrue(definition.get("dataRevision").asString().matches("[0-9a-f]{16}"));
         assertEquals(definition.get("dataRevision"), definition().get("dataRevision"), "same data, same revision");
     }
 
     @Test
+    void embedsOnlyTheColumnsTheAppUses() {
+        // Nothing shows People yet: an embedded export carries none of its columns
+        assertEquals("[]", find(definition().get("dataSources"), "name", "People").get("columns").toString());
+
+        uiComponentService.createComponent(new NewUiComponentCommand(about.id(), "table",
+                Map.of("dataSourceId", String.valueOf(people.id()), "columns", "[\"name\"]"), null, null, 0.0, 4.0, 6.0, 4.0));
+        JsonNode shown = find(definition().get("dataSources"), "name", "People");
+        assertEquals("[\"name\"]", shown.get("columns").toString());
+        assertEquals("[[\"Alice\"],[\"Bob\"]]", shown.get("rows").toString());
+
+        JsonNode all = find(objectMapper.readTree(objectMapper.writeValueAsString(definitionService.build(BRANCH,
+                new ExportOptions(DataMode.EMBED, null, null, true)))).get("dataSources"), "name", "People");
+        assertEquals("[\"name\",\"city\"]", all.get("columns").toString());
+        assertEquals("[[\"Alice\",\"Bern\"],[\"Bob\",\"Basel\"]]", all.get("rows").toString());
+    }
+
+    @Test
     void downloadsTheAppAsOneHtmlFile() {
-        ResponseEntity<byte[]> response = exportController.exportApp(BRANCH, "html");
+        ResponseEntity<byte[]> response = exportController.exportApp(BRANCH, "html", null, false);
         String html = new String(response.getBody(), StandardCharsets.UTF_8);
 
         assertEquals("attachment; filename=\"test-application.html\"", response.getHeaders().getFirst("Content-Disposition"));
@@ -138,6 +168,6 @@ class AppExportIntegrationTest {
     @Test
     void rejectsUnknownBranchesAndFormats() {
         assertThrows(BranchNotFoundException.class, () -> definitionService.build(424242L));
-        assertThrows(IllegalArgumentException.class, () -> exportController.exportApp(BRANCH, "pdf"));
+        assertThrows(IllegalArgumentException.class, () -> exportController.exportApp(BRANCH, "pdf", null, false));
     }
 }

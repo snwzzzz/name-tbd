@@ -25,14 +25,14 @@
 
 <ng-template #layerItems let-items let-depth="depth">
   @for (item of items; track key(item)) {
-    <li role="treeitem" [attr.aria-selected]="selectedId() === key(item)">
+    <li role="treeitem" [attr.aria-selected]="isSelected(key(item))">
       <button
         type="button"
         class="layer"
-        [class.selected]="selectedId() === key(item)"
+        [class.selected]="isSelected(key(item))"
         [style.padding-left.rem]="0.375 + depth * 1"
-        title="Double-click to edit its properties"
-        (click)="select(item)"
+        title="Double-click to edit its properties; Ctrl+click to select several"
+        (click)="select(item, $event)"
         (dblclick)="openProperties(item)">
         @if (item.children?.length) {
           <span class="toggle" [attr.aria-label]="isCollapsed(item) ? 'Expand' : 'Collapse'" (click)="toggle(item, $event)">

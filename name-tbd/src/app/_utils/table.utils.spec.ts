@@ -1,4 +1,4 @@
-import { parseColumnList, visibleColumnIndexes } from './table.utils';
+import { parseColumnList, rowMatches, visibleColumnIndexes } from './table.utils';
 import { propBool, propNumber } from './widget-props.utils';
 
 describe('parseColumnList', () => {
@@ -26,5 +26,16 @@ describe('propBool / propNumber', () => {
     expect(propBool({}, 'a', true)).toBe(true);
     expect(propNumber({ n: '12' }, 'n', 10)).toBe(12);
     expect(propNumber({ n: 'abc' }, 'n', 10)).toBe(10);
+  });
+});
+
+describe('rowMatches', () => {
+  it('matches every word of the search somewhere in the row, ignoring case', () => {
+    const row = ['Anna', 'Huber', 'Vienna'];
+    expect(rowMatches(row, '')).toBe(true);
+    expect(rowMatches(row, '  ')).toBe(true);
+    expect(rowMatches(row, 'hub')).toBe(true);
+    expect(rowMatches(row, 'ANNA vienna')).toBe(true);
+    expect(rowMatches(row, 'anna graz')).toBe(false);
   });
 });

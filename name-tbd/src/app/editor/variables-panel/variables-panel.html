@@ -1,0 +1,46 @@
+<div class="panel">
+  <header class="header"><h2>Variables</h2></header>
+  <p class="hint">Values flows can change while the app runs, used by name in expressions, e.g. <code>approvalLimit</code>.</p>
+
+  <ng-template #rows let-owner="owner" let-list="list">
+    @for (variable of list; track $index; let i = $index) {
+      <div class="variable" [class.invalid]="problem(owner, i)">
+        <div class="line">
+          <input class="ui-input name" aria-label="Name" spellcheck="false" [value]="variable.name" (change)="change(owner, i, { name: $any($event.target).value.trim() })" />
+          <app-select size="sm" class="type" [options]="types" [ngModel]="variable.type" (ngModelChange)="setType(owner, i, $event)" />
+          <button type="button" class="icon-button" title="Delete" (click)="remove(owner, i)"><svg lucideTrash2></svg></button>
+        </div>
+        <input
+          class="ui-input initial"
+          aria-label="Initial value"
+          spellcheck="false"
+          [placeholder]="variable.type === 'list' ? '[]' : variable.type === 'object' ? '{}' : 'Initial value'"
+          [value]="variable.initial ?? ''"
+          (change)="change(owner, i, { initial: $any($event.target).value })" />
+        @if (problem(owner, i); as problem) { <p class="problem">{{ problem }}</p> }
+        @if (current(variable); as value) { <p class="current">Now: <code>{{ value }}</code></p> }
+      </div>
+    } @empty {
+      <p class="empty">None yet.</p>
+    }
+  </ng-template>
+
+  <section>
+    <div class="section-head">
+      <h3>App</h3>
+      <button type="button" class="add" (click)="add('app')"><svg lucidePlus></svg> Add</button>
+    </div>
+    <ng-container *ngTemplateOutlet="rows; context: { owner: 'app', list: appVariables() }" />
+  </section>
+
+  @if (page(); as page) {
+    <section>
+      <div class="section-head">
+        <h3>Page “{{ page.name }}”</h3>
+        <button type="button" class="add" (click)="add('page')"><svg lucidePlus></svg> Add</button>
+      </div>
+      <p class="hint">Start afresh whenever the page is opened. They hide app variables of the same name.</p>
+      <ng-container *ngTemplateOutlet="rows; context: { owner: 'page', list: pageVariables() }" />
+    </section>
+  }
+</div>

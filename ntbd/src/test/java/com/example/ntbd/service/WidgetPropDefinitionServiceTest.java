@@ -17,7 +17,7 @@ class WidgetPropDefinitionServiceTest {
     void definitionsOfATypeComeFromTheCatalog() {
         List<WidgetPropDefinitionDto> defs = service.getDefinitionsByType("button");
 
-        assertThat(defs).extracting(WidgetPropDefinitionDto::propKey).containsExactly("label", "color", "textSize");
+        assertThat(defs).extracting(WidgetPropDefinitionDto::propKey).containsExactly("label", "formAction", "variant", "color", "textSize");
         assertThat(defs.get(0).label()).isEqualTo("Label");
         assertThat(defs.get(0).defaultValue()).isEqualTo("Click Me");
         assertThat(defs).allMatch(d -> d.widgetType().equals("button"));

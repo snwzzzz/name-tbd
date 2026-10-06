@@ -16,9 +16,9 @@ public class UserMapperTest {
                 new User.UserId(1L),
                 new Username("testuser"),
                 new Email("test@example.com"),
-                "securePassword123",
                 "Test",
-                "User"
+                "User",
+                "https://example.com/avatar.png"
         );
 
         UserDto userDto = UserMapper.toDto(user);
@@ -26,7 +26,7 @@ public class UserMapperTest {
         assertEquals(user.getId().id(), userDto.id());
         assertEquals(user.getUsername().value(), userDto.username());
         assertEquals(user.getEmail().value(), userDto.email());
-        assertEquals(user.getPassword(), userDto.password());
+        assertEquals(user.getAvatarUrl(), userDto.avatarUrl());
         assertEquals(user.getFirstName(), userDto.firstName());
         assertEquals(user.getLastName(), userDto.lastName());
 
@@ -35,7 +35,7 @@ public class UserMapperTest {
         assertEquals(userDto.id(), mappedUser.getId().id());
         assertEquals(userDto.username(), mappedUser.getUsername().value());
         assertEquals(userDto.email(), mappedUser.getEmail().value());
-        assertEquals(userDto.password(), mappedUser.getPassword());
+        assertEquals(userDto.avatarUrl(), mappedUser.getAvatarUrl());
         assertEquals(userDto.firstName(), mappedUser.getFirstName());
         assertEquals(userDto.lastName(), mappedUser.getLastName());
     }
@@ -46,9 +46,9 @@ public class UserMapperTest {
                 null,
                 new Username("noiduser"),
                 new Email("noid@example.com"),
-                "pw",
                 "No",
-                "Id"
+                "Id",
+                null
         );
 
         UserDto userDto = UserMapper.toDto(user);
@@ -58,6 +58,15 @@ public class UserMapperTest {
         User mappedUser = UserMapper.toEntity(userDto);
         assertNotNull(mappedUser);
         assertNull(mappedUser.getId());
+    }
+
+    @Test
+    void testUserMapperWithoutUsername() {
+        User user = new User(new User.UserId(2L), null, new Email("oidc@example.com"), "Oidc", "User", null);
+
+        UserDto userDto = UserMapper.toDto(user);
+        assertNull(userDto.username());
+        assertNull(UserMapper.toEntity(userDto).getUsername());
     }
 
     @Test

@@ -38,3 +38,18 @@ export function updateInTree(items: LayoutItem[], id: ComponentId, update: (item
     return item.children ? { ...item, children: updateInTree(item.children, id, update) } : item;
   });
 }
+
+/** A copy of the tree without the items with these ids (and what's inside them). */
+export function removeFromTree(items: LayoutItem[], ids: ComponentId[]): LayoutItem[] {
+  return items
+    .filter((item) => !ids.some((id) => sameId(item.id, id)))
+    .map((item) => (item.children ? { ...item, children: removeFromTree(item.children, ids) } : item));
+}
+
+/** A copy of the tree with the item added to its parent's children (`item.parentId`), or at the top. */
+export function insertIntoTree(items: LayoutItem[], item: LayoutItem): LayoutItem[] {
+  if (item.parentId != null && findInTree(items, item.parentId)) {
+    return updateInTree(items, item.parentId, (parent) => ({ ...parent, children: [...(parent.children ?? []), item] }));
+  }
+  return [...items, item];
+}

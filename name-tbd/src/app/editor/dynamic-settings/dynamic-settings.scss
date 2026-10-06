@@ -5,3 +5,26 @@
 .groups {
   gap: 1.25rem;
 }
+
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+// Switches a setting between a fixed value and an expression
+.fx {
+  padding: 0 0.3rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  background: none;
+  color: var(--color-text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-style: italic;
+  cursor: pointer;
+
+  &:hover { border-color: var(--color-border); }
+  &.on { background: var(--color-primary-light); color: var(--color-primary); }
+}

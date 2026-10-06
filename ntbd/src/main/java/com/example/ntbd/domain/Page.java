@@ -1,5 +1,6 @@
 package com.example.ntbd.domain;
 
+import com.example.ntbd.persistence.converter.VariablesConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,6 +33,12 @@ public class Page extends AuditableEntity {
     @Column(name = "is_layout", nullable = false)
     @Builder.Default
     private boolean layout = false;
+
+    /** The page's own variables. */
+    @Convert(converter = VariablesConverter.class)
+    @Column(name = "variables")
+    @Builder.Default
+    private List<VariableDefinition> variables = List.of();
 
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "page")
     @Builder.Default

@@ -1,0 +1,43 @@
+<div class="w-field">
+  @if (label(); as label) {
+    <span class="w-label" [class.w-required]="required()" [id]="fieldId() + '-label'">{{ label }}</span>
+  }
+  <div
+    class="w-box drop"
+    [class.dragging]="dragging()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="dragging.set(false)"
+    (drop)="onDrop($event)">
+    @if (file(); as file) {
+      @if (isImage()) {
+        <img class="thumb" [src]="file.url" alt="" />
+      }
+      <span class="name" [title]="file.name">{{ file.name }}</span>
+      <button type="button" class="remove" [attr.aria-label]="'Remove ' + file.name" [attr.tabindex]="tabIndex()" (click)="remove()">
+        <svg lucideX aria-hidden="true"></svg>
+      </button>
+    } @else {
+      <input
+        #picker
+        type="file"
+        class="w-sr-only"
+        [id]="fieldId()"
+        [attr.accept]="accept()"
+        [attr.aria-labelledby]="label() ? fieldId() + '-label' : null"
+        [attr.aria-label]="label() ? null : 'Upload a file'"
+        [attr.aria-required]="required()"
+        [attr.aria-invalid]="!!error()"
+        [attr.aria-describedby]="error() ? errorId() : null"
+        [attr.tabindex]="tabIndex()"
+        [disabled]="!session.live()"
+        (change)="onPicked(picker)" />
+      <label class="pick" [for]="fieldId()">
+        <svg lucideUpload aria-hidden="true"></svg>
+        <span>Choose a file or drop it here</span>
+      </label>
+    }
+  </div>
+  @if (error(); as error) {
+    <span class="w-error" [id]="errorId()" role="alert">{{ error }}</span>
+  }
+</div>

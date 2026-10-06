@@ -28,8 +28,16 @@ describe('ComponentList', () => {
   it('lists the widgets by category, without the retired ones', () => {
     const el: HTMLElement = mount().nativeElement;
 
-    expect(sections(el)).toEqual(['Basic', 'Actions', 'Navigation', 'Data', 'Layout']);
-    expect(labels(el)).toEqual(['Text Label', 'Button', 'Link', 'Nav Menu', 'Data Table', 'Detail Section', 'Container']);
+    expect(sections(el)).toEqual(['Basic', 'Inputs', 'Display', 'Actions', 'Navigation', 'Data', 'Layout']);
+    expect(labels(el)).toEqual([
+      'Text Label', 'Input', 'Rich Text',
+      'Dropdown', 'Checkbox', 'Toggle', 'Number Input', 'Date Picker', 'Text Area', 'File Upload', 'Form',
+      'Image', 'Divider', 'Icon', 'Badge / Status', 'Progress Bar',
+      'Button',
+      'Link', 'Nav Menu',
+      'Data Table', 'Detail Section', 'Chart', 'List / Repeater',
+      'Container / Card', 'Tabs', 'Modal Dialog',
+    ]);
     expect(el.textContent).not.toContain('Dynamic Form');
   });
 
@@ -49,7 +57,7 @@ describe('ComponentList', () => {
 
   it('folds categories and remembers it', () => {
     const fixture = mount();
-    (fixture.nativeElement.querySelectorAll('.section-header')[2] as HTMLElement).click();
+    (fixture.nativeElement.querySelectorAll('.section-header')[4] as HTMLElement).click();
     fixture.detectChanges();
     expect(labels(fixture.nativeElement)).not.toContain('Link');
 

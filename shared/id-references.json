@@ -1,0 +1,22 @@
+{
+  "$comment": "Where an app stores ids inside its settings, and of what. Copying things (duplicating an app, pasting widgets, restoring a version) gives them new ids and rewrites these values to point at the copies. A new widget prop type or workflow setting that holds an id MUST be listed here, or copies keep pointing at the originals. Read by the backend (catalog/IdReferences.java) and the editor (core/catalog/id-references.ts). Kinds: widget, page, pageList (a JSON array of page ids), dataSource.",
+  "version": 1,
+  "widgetPropTypes": {
+    "page": "page",
+    "pages": "pageList",
+    "dataSource": "dataSource",
+    "widget": "widget"
+  },
+  "workflowNodeKeys": {
+    "elementId": "widget",
+    "targetId": "widget",
+    "tableId": "widget",
+    "detailId": "widget",
+    "inputId": "widget",
+    "modalId": "widget",
+    "formId": "widget",
+    "detailPageId": "page",
+    "pageId": "page",
+    "dataSourceId": "dataSource"
+  }
+}

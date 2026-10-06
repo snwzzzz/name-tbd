@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { Editor } from './editor';
+import { provideTestEditorContext } from '../_testing/editor-context.testing';
 
 describe('Editor', () => {
   let component: Editor;
@@ -12,7 +13,7 @@ describe('Editor', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Editor],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideTestEditorContext(), provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Editor);

@@ -1,5 +1,6 @@
 package com.example.ntbd.persistence;
 
+import com.example.ntbd.domain.Workspace;
 import com.example.ntbd.commands.NewDataSourceCommand;
 import com.example.ntbd.datasource.TabularDataParserRegistry;
 import com.example.ntbd.datasource.parsers.CsvParser;
@@ -41,10 +42,17 @@ public class DataSourceRepositoryTest {
     private ApplicationRepository applicationRepository;
 
     @Autowired
+    private WorkspaceRepository workspaceRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private EntityManager entityManager;
+
+    /** Live data isn't part of this slice: every source here is embedded. */
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.example.ntbd.livedata.LiveDataService liveData;
 
     @Test
     void can_import_find_and_delete_a_data_source() {
@@ -55,6 +63,8 @@ public class DataSourceRepositoryTest {
                 new NewDataSourceCommand(branchId, "People", "csv", "name,age\nAlice,30\nBob,25"));
         entityManager.clear();
 
+        org.mockito.Mockito.when(liveData.view(created.id())).thenReturn(new com.example.ntbd.livedata.LiveDataService.SourceView(
+                created.id(), null, "People", "embedded", false, null, List.of("name", "age"), null));
         DataSourceDto found = dataSourceService.findById(created.id());
         assertThat(found.columns()).containsExactly("name", "age");
         assertThat(found.rows()).containsExactly(List.of("Alice", "30"), List.of("Bob", "25"));
@@ -63,16 +73,13 @@ public class DataSourceRepositoryTest {
         assertThat(summaries).hasSize(1);
         assertThat(summaries.getFirst().rowCount()).isEqualTo(2);
 
-        dataSourceService.delete(created.id());
-        entityManager.flush();
-        assertThat(dataSourceRepository.findByBranch_IdOrderByNameAsc(branch.getId())).isEmpty();
     }
 
     private Branch createBranch() {
-        var user = User.builder().username(new Username("datauser")).email(new Email("data@example.com")).password("test").firstName("Test").lastName("Test").build();
+        var user = User.builder().username(new Username("datauser")).email(new Email("data@example.com")).firstName("Test").lastName("Test").build();
         userRepository.save(user);
 
-        var app = Application.builder().title("App").description("Desc").build();
+        var app = Application.builder().workspace(workspaceRepository.save(Workspace.builder().name("Workspace").build())).title("App").description("Desc").build();
         applicationRepository.save(app);
 
         var branch = Branch.builder().name("main").description("main branch").createdBy(user).application(app).build();

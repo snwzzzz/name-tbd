@@ -83,6 +83,33 @@
   --widget-hover-dim: brightness(0.92);   // filled widgets (buttons), any color
   --widget-active-dim: brightness(0.84);
   --widget-transition: 0.12s ease;
+
+  // =====================================================
+  // WIDGET TOKENS (the look of the apps built here, after Microsoft's Fluent 2: Segoe UI,
+  // 4px corners, hairline strokes, neutral greys and one brand blue). Only widgets use them;
+  // the editor's own UI has the tokens above.
+  // =====================================================
+  // The app's theme (core/rendering/app-theme.ts) overrides brand, font, radius and spacing
+  --widget-font: 'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', sans-serif;
+  --widget-radius: 0.25rem;                  // 4px: buttons, cards
+  --widget-radius-field: 0.5rem;             // inputs and other fields
+  --widget-space: 0.5rem;                    // the base gap inside widgets (cards, lists, charts)
+  --widget-brand: var(--color-primary);          // the editor's primary, #2f89ff (BRAND_COLOR)
+  --widget-brand-selected-bg: color-mix(in srgb, var(--color-primary) 12%, #ffffff);
+  --widget-bg: #ffffff;
+  --widget-bg-subtle: #fafafa;                // headers, stripes
+  --widget-bg-hover: #f5f5f5;
+  --widget-bg-pressed: #e0e0e0;
+  --widget-stroke: #d1d1d1;                   // outlines of inputs and buttons
+  --widget-stroke-subtle: #e0e0e0;            // cards, tables, dividers
+  --widget-stroke-accessible: #616161;        // an input's bottom edge
+  --widget-fg: #242424;
+  --widget-fg-secondary: #616161;
+  --widget-fg-disabled: #bdbdbd;
+  --widget-focus-ring: #000000;
+  --widget-danger: #c50f1f;
+  --widget-success: #107c10;
+  --widget-warning: #bc4b09;
 }
 
 // =====================================================
@@ -138,4 +165,22 @@
   --color-text-primary: #f5f5f5;
   --color-text-secondary: #b5b5b5;
   --color-text-disabled: #707070;
+
+  // Widgets
+  --widget-brand: var(--color-primary);
+  --widget-brand-selected-bg: color-mix(in srgb, var(--color-primary) 22%, #1c1c1c);
+  --widget-bg: #292929;
+  --widget-bg-subtle: #242424;
+  --widget-bg-hover: #3d3d3d;
+  --widget-bg-pressed: #1f1f1f;
+  --widget-stroke: #666666;
+  --widget-stroke-subtle: #3d3d3d;
+  --widget-stroke-accessible: #adadad;
+  --widget-fg: #ffffff;
+  --widget-fg-secondary: #d6d6d6;
+  --widget-fg-disabled: #5c5c5c;
+  --widget-focus-ring: #ffffff;
+  --widget-danger: #f1707b;
+  --widget-success: #54b054;
+  --widget-warning: #fa9e5c;
 }

@@ -1,0 +1,10 @@
+// The field's look is shared (.w-field, .w-box in _styles/_widgets.scss)
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+input {
+  font-variant-numeric: tabular-nums;
+}

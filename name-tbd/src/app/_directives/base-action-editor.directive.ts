@@ -1,6 +1,7 @@
 import { Directive, input } from '@angular/core';
 import { LayoutItem } from '../_types/layout.types';
 import type { ActionConfig } from '../_types/workflow.types';
+import type { ScopeEntry } from '../../flow-engine';
 
 /**
  * Base of an action type's settings, shown inside its workflow node (see ACTION_TYPES).
@@ -12,4 +13,8 @@ export abstract class BaseActionEditor<C extends ActionConfig = ActionConfig> {
   /** The page's widgets, for pickers. */
   readonly pageItems = input.required<LayoutItem[]>();
   readonly update = input.required<(patch: Partial<C>) => void>();
+  /** The page the workflow belongs to. */
+  readonly pageId = input<string>('');
+  /** What expressions in the settings can use (the page's names and the flow's own values). */
+  readonly scope = input<ScopeEntry[]>([]);
 }

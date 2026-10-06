@@ -1,5 +1,6 @@
 package com.example.ntbd.service;
 
+import com.example.ntbd.Exception.WorkflowNotFoundException;
 import com.example.ntbd.Exception.PageNotFoundException;
 import com.example.ntbd.catalog.WidgetCatalog;
 import com.example.ntbd.Exception.UiComponentNotFoundException;
@@ -36,16 +37,17 @@ public class UiComponentService {
         Page page = pageRepository.findById(new Page.PageId(command.pageId()))
                 .orElseThrow(() -> new PageNotFoundException("Page not found with id: " + command.pageId()));
 
+        // The workflow must be of the page's branch, the parent on the same page; others count as not found
         Workflow workflow = null;
         if (command.workflowId() != null) {
             workflow = workflowRepository.findById(new Workflow.WorkflowId(command.workflowId()))
-                    .orElseThrow(() -> new RuntimeException("Workflow not found with id: " + command.workflowId()));
+                    .filter(w -> w.getBranch() != null && w.getBranch().getId().equals(page.getBranch().getId()))
+                    .orElseThrow(() -> new WorkflowNotFoundException(command.workflowId()));
         }
 
         UiComponent parent = null;
         if (command.parentId() != null) {
-            parent = uiComponentRepository.findById(new UiComponent.UiComponentId(command.parentId()))
-                    .orElseThrow(() -> new UiComponentNotFoundException("Parent UI Component not found with id: " + command.parentId()));
+            parent = parentOnPage(command.parentId(), page);
         }
 
         UiComponent component = UiComponent.builder()
@@ -74,10 +76,18 @@ public class UiComponentService {
     }
 
     @Transactional
-    public List<UiComponentDto> findAll() {
-        return uiComponentRepository.findAll().stream()
-                .map(UiComponentMapper::toDto)
+    public List<UiComponentDto> findByPageIdWithDefaults(Long pageId) {
+        return uiComponentRepository.findByPage_Id(new Page.PageId(pageId)).stream()
+                .map(component -> withDefaults(UiComponentMapper.toDto(component)))
                 .toList();
+    }
+
+    /** The component with its type's default props, overlaid with its own (what findPropsById gives). */
+    private UiComponentDto withDefaults(UiComponentDto dto) {
+        Map<String, Object> props = new LinkedHashMap<>(widgetCatalog.defaultsOf(dto.type()));
+        if (dto.props() != null) props.putAll(dto.props());
+        return new UiComponentDto(dto.id(), dto.pageId(), dto.type(), props, dto.workflowId(), dto.parentId(),
+                dto.x(), dto.y(), dto.w(), dto.h());
     }
 
     @Transactional
@@ -126,21 +136,14 @@ public class UiComponentService {
             if (command.parentId() == -1L) {
                 component.setParent(null);
             } else {
-                UiComponent parent = uiComponentRepository.findById(new UiComponent.UiComponentId(command.parentId()))
-                        .orElseThrow(() -> new UiComponentNotFoundException("Parent UI Component not found with id: " + command.parentId()));
-                component.setParent(parent);
+                if (command.parentId().equals(id)) {
+                    throw new IllegalArgumentException("A UI component can't be its own parent");
+                }
+                component.setParent(parentOnPage(command.parentId(), component.getPage()));
             }
         }
         
         return UiComponentMapper.toDto(uiComponentRepository.saveAndFlush(component));
-    }
-
-    @Transactional
-    public void deleteComponent(Long id) {
-        if (!uiComponentRepository.existsById(new UiComponent.UiComponentId(id))) {
-            throw new UiComponentNotFoundException("UI Component not found with id " + id);
-        }
-        uiComponentRepository.deleteById(new UiComponent.UiComponentId(id));
     }
 
     @Transactional
@@ -155,4 +158,11 @@ public class UiComponentService {
         return props;
     }
 
+
+    /** The parent for a component on {@code page}: a component on the same page (others count as not found). */
+    private UiComponent parentOnPage(Long parentId, Page page) {
+        return uiComponentRepository.findById(new UiComponent.UiComponentId(parentId))
+                .filter(parent -> parent.getPage().getId().equals(page.getId()))
+                .orElseThrow(() -> new UiComponentNotFoundException("Parent UI Component not found with id: " + parentId));
+    }
 }

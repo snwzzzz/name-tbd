@@ -1,19 +1,26 @@
 import { EnvironmentProviders, Injectable, inject, makeEnvironmentProviders, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
-  APP_DATA, APP_LAYOUT, APP_NAVIGATION, APP_PAGES, APP_SESSION, AppLayout, AppNavigation, AppPages, AppSession,
-  PageInfo, WORKFLOW_SOURCE, WorkflowSource,
+  APP_DATA, APP_LAYOUT, APP_NAVIGATION, APP_PAGES, APP_SESSION, APP_VARIABLES, AppLayout, AppNavigation, AppPages, AppSession,
+  AppVariables, PageInfo, WORKFLOW_SOURCE, WorkflowSource,
 } from '../../app/core/ports/app-ports';
+import { VariableDefinition } from '../../flow-engine';
 import { MemoryAppData } from '../../app/core/ports/memory-app-data';
-import { definitionGraph } from '../../app/core/definition/app-definition';
+import { AppDefinition, definitionGraph } from '../../app/core/definition/app-definition';
 import { LayoutItem, WidgetProps } from '../../app/_types/layout.types';
 import { WorkflowGraph } from '../../app/_types/workflow.types';
 import { APP_DEFINITION } from './app-definition.token';
 import { AppStorage } from './app-storage';
 import { pagePaths } from './runtime-routes';
+import { AppData } from '../../app/core/ports/app-ports';
+import { AppMessagesService } from '../../app/core/services/app-messages.service';
+import { LiveAppData } from './live-data/live-app-data';
+import { DataApiClient } from './live-data/data-api-client';
+import { openOfflineStore } from './live-data/offline-store';
 
 // The exported app's adapters for the runtime core's ports: everything comes from the app
-// definition, data changes are kept in the browser, and pages are routes.
+// definition, data changes are kept in the browser (or, in live exports, saved through the data API),
+// and pages are routes.
 
 /** The page being shown (set by RuntimePage). */
 @Injectable({ providedIn: 'root' })
@@ -21,9 +28,27 @@ export class RuntimeLocation {
   readonly pageId = signal<string | null>(null);
 }
 
-/** The embedded data, with the changes made on earlier visits (kept in the browser). */
-function createAppData(): MemoryAppData {
+/**
+ * The app's data. Embedded exports: the data in the file, with the changes made on earlier visits (kept in
+ * the browser). Live exports: the data where the customer keeps it, through the data API (LiveAppData),
+ * kept in the browser for offline use if the export says so.
+ */
+function createAppData(): AppData {
   const definition = inject(APP_DEFINITION);
+  const live = definition.liveData;
+  if (live) {
+    const messages = inject(AppMessagesService);
+    return new LiveAppData({
+      sources: definition.dataSources,
+      client: new DataApiClient(live.apiUrl, live.key),
+      store: live.offlineCache ? openOfflineStore(`ntbd-app-${definition.app.id}-live`) : null,
+      notify: (text, tone) => messages.show(text, tone),
+    });
+  }
+  return createEmbeddedData(definition);
+}
+
+function createEmbeddedData(definition: AppDefinition): MemoryAppData {
   const storage = new AppStorage(`ntbd-app-${definition.app.id}-data`, definition.dataRevision);
   const data = new MemoryAppData(definition.dataSources, (tables) => storage.save(tables));
   for (const [id, table] of Object.entries(storage.load())) data.restore(Number(id), table);
@@ -110,6 +135,17 @@ class RuntimeWorkflows implements WorkflowSource {
   }
 }
 
+/** The variables as the definition has them (the app's, and each page's). */
+@Injectable({ providedIn: 'root' })
+class RuntimeVariables implements AppVariables {
+  private readonly definition = inject(APP_DEFINITION);
+  readonly app = signal<VariableDefinition[]>(this.definition.variables ?? []).asReadonly();
+
+  page(pageId: string): VariableDefinition[] {
+    return this.definition.pages.find((p) => String(p.id) === pageId)?.variables ?? [];
+  }
+}
+
 /** The runtime core's ports, run on the app definition (see runtime.config.ts). */
 export function provideAppRuntime(): EnvironmentProviders {
   return makeEnvironmentProviders([
@@ -119,5 +155,6 @@ export function provideAppRuntime(): EnvironmentProviders {
     { provide: APP_SESSION, useExisting: RuntimeSession },
     { provide: APP_LAYOUT, useExisting: RuntimeLayout },
     { provide: WORKFLOW_SOURCE, useExisting: RuntimeWorkflows },
+    { provide: APP_VARIABLES, useExisting: RuntimeVariables },
   ]);
 }

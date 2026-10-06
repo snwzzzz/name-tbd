@@ -1,0 +1,104 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-family: var(--widget-font);
+}
+
+.input-widget {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--widget-fg);
+  font-size: var(--widget-text-size);
+}
+
+.input-label {
+  flex-shrink: 0;
+  padding-left: 0.125rem;
+  color: var(--widget-fg-secondary);
+  font-size: var(--widget-text-size-small);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// A soft field: rounded, a quiet border that darkens on hover, and a ring in the brand color
+// (the editor's primary) while typing
+.field {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--widget-fg) 16%, transparent);
+  border-radius: var(--widget-radius-field);
+  background: var(--widget-bg);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--widget-fg) 6%, transparent);
+  transition:
+    border-color var(--widget-transition),
+    box-shadow var(--widget-transition);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--widget-fg) 30%, transparent);
+  }
+
+  &:focus-within {
+    border-color: var(--widget-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--widget-brand) 22%, transparent);
+  }
+
+  :host(.invalid) & {
+    border-color: var(--widget-danger);
+  }
+}
+
+.field-icon {
+  flex-shrink: 0;
+  width: 1.05em;
+  height: 1.05em;
+  color: var(--widget-fg-secondary);
+  transition: color var(--widget-transition);
+
+  .field:focus-within & {
+    color: var(--widget-brand);
+  }
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+
+  &::placeholder {
+    color: color-mix(in srgb, var(--widget-fg) 45%, transparent);
+  }
+
+  // The browser's own clear (×) of a search field, in the field's colors
+  &::-webkit-search-cancel-button {
+    cursor: pointer;
+    opacity: 0.55;
+  }
+}
+
+// While editing, the canvas gets the clicks (to select and move the widget)
+:host(:not(.live)) {
+  input {
+    pointer-events: none;
+  }
+
+  .field:hover {
+    border-color: color-mix(in srgb, var(--widget-fg) 16%, transparent);
+  }
+}

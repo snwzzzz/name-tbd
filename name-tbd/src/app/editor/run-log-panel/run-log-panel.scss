@@ -1,0 +1,112 @@
+@use '../../_styles/scrollbar' as *;
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.panel {
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  @include thin-scrollbar;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0.25rem 0.5rem;
+
+  h2 { margin: 0; font-size: var(--font-size-md); font-weight: 600; }
+}
+
+.clear {
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  &:hover { color: var(--color-text-primary); }
+}
+
+.hint, .none { color: var(--color-text-secondary); margin: 0 0.25rem; }
+
+.run {
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+}
+
+.run-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 600;
+  .time { color: var(--color-text-secondary); font-weight: 400; }
+}
+
+.steps { margin: 0; padding: 0.25rem 0; list-style: none; }
+
+.step {
+  --status: var(--color-success, #16a34a);
+  &[data-status='error'] { --status: var(--color-danger); }
+  &[data-status='stopped'], &[data-status='skipped'] { --status: var(--color-text-secondary); }
+  &.nested { padding-left: 0.75rem; }
+}
+
+.step-line {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  &:hover { background: var(--color-surface-hover); }
+}
+
+.status {
+  flex: 0 0 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--status);
+}
+
+.label { font-weight: 500; }
+
+.tag {
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+  background: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
+  &.branch { color: var(--color-primary); }
+}
+
+.duration { margin-left: auto; color: var(--color-text-secondary); }
+
+.error { margin: 0 0.5rem 0.25rem 1.375rem; color: var(--color-danger); }
+
+.detail {
+  margin: 0 0.5rem 0.25rem 1.375rem;
+  span { color: var(--color-text-secondary); }
+  pre {
+    margin: 0.125rem 0 0;
+    padding: 0.375rem;
+    overflow-x: auto;
+    border-radius: 0.25rem;
+    background: var(--color-surface-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}

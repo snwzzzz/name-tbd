@@ -72,7 +72,7 @@ public class EdgeServiceTest {
                     .build();
         });
 
-        EdgeDto dto = edgeService.createEdge(command);
+        EdgeDto dto = edgeService.createEdge(1L, command);
 
         assertThat(dto).isNotNull();
         assertThat(dto.id()).isEqualTo(10L);
@@ -89,7 +89,7 @@ public class EdgeServiceTest {
         when(nodeRepository.findById(new Node.NodeId(2L))).thenReturn(Optional.of(targetNode));
         when(edgeRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        edgeService.createEdge(command);
+        edgeService.createEdge(1L, command);
 
         ArgumentCaptor<Edge> captor = ArgumentCaptor.forClass(Edge.class);
         verify(edgeRepository).saveAndFlush(captor.capture());
@@ -99,11 +99,26 @@ public class EdgeServiceTest {
     }
 
     @Test
+    void createEdge_treats_a_node_of_another_workflow_as_not_found() {
+        var otherWorkflow = Workflow.builder().id(new Workflow.WorkflowId(2L)).name("Other").status(WorkflowStatus.ACTIVE).build();
+        var foreignNode = Node.builder().id(new Node.NodeId(3L)).type("WEBHOOK").props(Map.of()).workflow(otherWorkflow).build();
+        var command = new NewEdgeCommand(1L, 3L, "output_true");
+        when(nodeRepository.findById(new Node.NodeId(1L))).thenReturn(Optional.of(sourceNode));
+        when(nodeRepository.findById(new Node.NodeId(3L))).thenReturn(Optional.of(foreignNode));
+
+        assertThatThrownBy(() -> edgeService.createEdge(1L, command))
+                .isInstanceOf(NodeNotFoundException.class)
+                .hasMessageContaining("3");
+
+        verifyNoInteractions(edgeRepository);
+    }
+
+    @Test
     void createEdge_throws_when_source_node_not_found() {
         var command = new NewEdgeCommand(99L, 2L, "output_true");
         when(nodeRepository.findById(new Node.NodeId(99L))).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> edgeService.createEdge(command))
+        assertThatThrownBy(() -> edgeService.createEdge(1L, command))
                 .isInstanceOf(NodeNotFoundException.class)
                 .hasMessageContaining("99");
 
@@ -116,7 +131,7 @@ public class EdgeServiceTest {
         when(nodeRepository.findById(new Node.NodeId(1L))).thenReturn(Optional.of(sourceNode));
         when(nodeRepository.findById(new Node.NodeId(99L))).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> edgeService.createEdge(command))
+        assertThatThrownBy(() -> edgeService.createEdge(1L, command))
                 .isInstanceOf(NodeNotFoundException.class)
                 .hasMessageContaining("99");
 
@@ -168,27 +183,5 @@ public class EdgeServiceTest {
         assertThatThrownBy(() -> edgeService.findById(99L))
                 .isInstanceOf(EdgeNotFoundException.class)
                 .hasMessageContaining("99");
-    }
-
-    // ---- deleteEdge ----
-
-    @Test
-    void deleteEdge_deletes_when_exists() {
-        when(edgeRepository.existsById(new Edge.EdgeId(5L))).thenReturn(true);
-
-        edgeService.deleteEdge(5L);
-
-        verify(edgeRepository).deleteById(new Edge.EdgeId(5L));
-    }
-
-    @Test
-    void deleteEdge_throws_when_not_found() {
-        when(edgeRepository.existsById(new Edge.EdgeId(99L))).thenReturn(false);
-
-        assertThatThrownBy(() -> edgeService.deleteEdge(99L))
-                .isInstanceOf(EdgeNotFoundException.class)
-                .hasMessageContaining("99");
-
-        verify(edgeRepository, never()).deleteById(any());
     }
 }

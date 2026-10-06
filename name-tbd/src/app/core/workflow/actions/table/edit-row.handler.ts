@@ -26,7 +26,6 @@ export class EditRowHandler implements ActionHandler {
     const values = await this.tables.askForRow(target, `Edit row in “${target.name}”`, 'Save', row.values);
     if (!values || !run.isCurrent()) return 'stop';
 
-    this.appData.updateRow(target.dataSourceId, row.id, values);
-    return 'continue';
+    return (await this.tables.save(() => this.appData.updateRow(target.dataSourceId, row.id, values))) ? 'continue' : 'stop';
   }
 }

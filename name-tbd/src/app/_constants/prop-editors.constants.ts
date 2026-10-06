@@ -4,6 +4,9 @@ import { DataSourcePropEditor } from '../editor/prop-editors/data-source-prop-ed
 import { ColumnsPropEditor } from '../editor/prop-editors/columns-prop-editor/columns-prop-editor';
 import { PagePropEditor } from '../editor/prop-editors/page-prop-editor/page-prop-editor';
 import { PagesPropEditor } from '../editor/prop-editors/pages-prop-editor/pages-prop-editor';
+import { ColumnPropEditor } from '../editor/prop-editors/column-prop-editor/column-prop-editor';
+import { FieldPropEditor } from '../editor/prop-editors/field-prop-editor/field-prop-editor';
+import { WidgetPropEditor } from '../editor/prop-editors/widget-prop-editor/widget-prop-editor';
 
 /**
  * Editors for prop types beyond the built-in ones (string, number, color, ...), by the prop type
@@ -14,4 +17,7 @@ export const PROP_EDITORS: Record<string, Type<BasePropEditor>> = {
   columns: ColumnsPropEditor,
   page: PagePropEditor,
   pages: PagesPropEditor,
+  column: ColumnPropEditor,
+  field: FieldPropEditor,
+  widget: WidgetPropEditor,
 };

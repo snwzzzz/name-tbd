@@ -6,12 +6,16 @@ import { toTableData } from '../_utils/table.utils';
 /**
  * Data sources as a page preview sees them. The first change to a data source makes a copy that
  * all later reads and changes use; the real data is never touched. reset() drops the copies.
+ * With `writeThrough` on, the preview changes the real data instead (EditorAppData sends the changes
+ * to the data API), e.g. to try an app on a live spreadsheet.
  */
 @Injectable({ providedIn: 'root' })
 export class PreviewDataService {
   private readonly state = inject(DataSourceStateService);
 
   private readonly copies = signal<Record<number, TableData>>({});
+  /** Whether previews change the real data (not a copy). Kept while the editor is open. */
+  readonly writeThrough = signal(false);
   private nextRowNumber = 0;
 
   /** The data source's copy if it was changed, else its real data (null until that's loaded). */

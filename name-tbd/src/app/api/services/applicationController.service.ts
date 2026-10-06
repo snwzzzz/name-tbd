@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestOptions, ApplicationDto, NewApplicationCommand } from "../models";
+import { RequestOptions, ApplicationDto, NewApplicationCommand, DuplicateApplicationCommand, UpdateApplicationCommand } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class ApplicationControllerService {
@@ -25,11 +25,16 @@ export class ApplicationControllerService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    getApplications(observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<ApplicationDto>>;
-    getApplications(observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<ApplicationDto>>>;
-    getApplications(observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<ApplicationDto>>>;
-    getApplications(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+    getApplications(workspaceId?: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<ApplicationDto>>;
+    getApplications(workspaceId?: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<ApplicationDto>>>;
+    getApplications(workspaceId?: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<ApplicationDto>>>;
+    getApplications(workspaceId?: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/applications`;
+
+        let params = new HttpParams();
+        if (workspaceId != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, workspaceId, 'workspaceId');
+        }
 
         let headers: HttpHeaders;
         if (options?.headers instanceof HttpHeaders) {
@@ -45,6 +50,7 @@ export class ApplicationControllerService {
         return this.httpClient.request('get', url, {
             observe,
             headers,
+            params,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
@@ -74,6 +80,116 @@ export class ApplicationControllerService {
 
         return this.httpClient.request('post', url, {
             body: newApplicationCommand,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    duplicateApplication(id: number, duplicateApplicationCommand?: DuplicateApplicationCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<ApplicationDto>;
+    duplicateApplication(id: number, duplicateApplicationCommand?: DuplicateApplicationCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<ApplicationDto>>;
+    duplicateApplication(id: number, duplicateApplicationCommand?: DuplicateApplicationCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<ApplicationDto>>;
+    duplicateApplication(id: number, duplicateApplicationCommand?: DuplicateApplicationCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/applications/${id}/duplicate`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+        // Set Content-Type for JSON requests if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json');
+        }
+
+        return this.httpClient.request('post', url, {
+            body: duplicateApplicationCommand,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    getApplication(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<ApplicationDto>;
+    getApplication(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<ApplicationDto>>;
+    getApplication(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<ApplicationDto>>;
+    getApplication(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/applications/${id}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    updateApplication(id: number, updateApplicationCommand: UpdateApplicationCommand, observe?: 'body', options?: RequestOptions<'json'>): Observable<ApplicationDto>;
+    updateApplication(id: number, updateApplicationCommand: UpdateApplicationCommand, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<ApplicationDto>>;
+    updateApplication(id: number, updateApplicationCommand: UpdateApplicationCommand, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<ApplicationDto>>;
+    updateApplication(id: number, updateApplicationCommand: UpdateApplicationCommand, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/applications/${id}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+        // Set Content-Type for JSON requests if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json');
+        }
+
+        return this.httpClient.request('patch', url, {
+            body: updateApplicationCommand,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    deleteApplication(id: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    deleteApplication(id: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    deleteApplication(id: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    deleteApplication(id: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/applications/${id}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+
+        return this.httpClient.request('delete', url, {
             observe,
             headers,
             reportProgress: options?.reportProgress,

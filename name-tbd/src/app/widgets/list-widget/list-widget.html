@@ -1,0 +1,49 @@
+@if (source.id() === null && !source.table()) {
+  @if (!session.live()) {
+    <div class="message">Pick a data source in the properties panel.</div>
+  }
+} @else if (!source.table()) {
+  <div class="message">Loading…</div>
+} @else if (visibleCards().length === 0) {
+  <div class="message">{{ emptyText() }}</div>
+} @else {
+  <ul
+    class="cards"
+    role="listbox"
+    aria-label="Items"
+    [class.grid]="grid()"
+    [style.--per-row]="cardsPerRow()">
+    @for (card of visibleCards(); track card.id) {
+      <li
+        class="card"
+        role="option"
+        [class.selected]="selectedIds().has(card.id)"
+        [attr.aria-selected]="selectedIds().has(card.id)"
+        [attr.tabindex]="session.live() ? 0 : -1"
+        (click)="select(card)"
+        (keydown)="onKey($event, card)">
+        @if (card.image; as image) {
+          <img class="image" [src]="image" alt="" />
+        }
+        <div class="body">
+          <div class="top">
+            <span class="title">{{ card.title }}</span>
+            @if (card.badge) {
+              <span class="badge">{{ card.badge }}</span>
+            }
+          </div>
+          @if (card.subtitle) {
+            <span class="subtitle">{{ card.subtitle }}</span>
+          }
+          @if (card.fields.length) {
+            <dl class="fields">
+              @for (field of card.fields; track $index) {
+                <div><dt>{{ field.name }}</dt><dd>{{ field.value }}</dd></div>
+              }
+            </dl>
+          }
+        </div>
+      </li>
+    }
+  </ul>
+}

@@ -1,22 +1,52 @@
 import { GridStackOptions } from 'gridstack';
 
-// The artboard is a 16:9 website viewport:
-// 24 columns × 60px = 1440px wide, 18 rows × 45px = 810px tall.
-// A typical button (w:2, h:1) has ~112 × 37px of content after the 4px margins.
-export const ARTBOARD_WIDTH = 1440;
-export const ARTBOARD_HEIGHT = 810;
-export const GRID_COLUMNS = 24;
-export const GRID_ROWS = 18;
-export const CELL_HEIGHT = ARTBOARD_HEIGHT / GRID_ROWS;
+// The artboard is the page area of a maximized desktop browser on the most common screen
+// (1920 × 1080 minus the taskbar and the browser's toolbars): 128 square cells of 15px across =
+// exactly 1920px, so a widget on its edge sits on the window's edge. A page is at least one screen
+// high (63 rows = 945px) and grows downward with its widgets; the exported app scrolls like any
+// website. The only definition of the grid: the canvas, the layout overlay and the exported app
+// all draw from these.
+// Widget margins are 2px, so a typical button (w:7, h:3) has 101 × 41px of content.
+export const CELL_SIZE = 15;
+export const GRID_COLUMNS = 128;
+/** The rows of one screen: every page has at least these. */
+export const GRID_ROWS = 63;
+export const ARTBOARD_WIDTH = GRID_COLUMNS * CELL_SIZE;
+/** One screen's height; a taller page goes on below it. */
+export const ARTBOARD_HEIGHT = GRID_ROWS * CELL_SIZE;
+/** Empty rows the canvas keeps below the lowest widget, so there's always room to drop more. */
+export const PAGE_GROW_ROWS = 21;
+
+/** The row the lowest of these widgets ends on (0 for none). */
+export function contentRows(items: readonly { y?: number; h?: number }[]): number {
+  return items.reduce((rows, item) => Math.max(rows, (item.y ?? 0) + (item.h ?? 1)), 0);
+}
+
+/** A page's height in rows: one screen, or down to its lowest widget. */
+export function pageRows(items: readonly { y?: number; h?: number }[]): number {
+  return Math.max(GRID_ROWS, contentRows(items));
+}
+
+/** A page's height on the canvas: with room below its lowest widget to place more. */
+export function editorPageRows(items: readonly { y?: number; h?: number }[]): number {
+  return Math.max(GRID_ROWS, contentRows(items) + PAGE_GROW_ROWS);
+}
+/**
+ * The narrowest the exported app gets (half the artboard; e.g. zoomed in to 200%): down to it,
+ * columns narrow with the window while rows keep their height; below it, the page scrolls sideways.
+ */
+export const EXPORT_MIN_WIDTH = ARTBOARD_WIDTH / 2;
+/** Inset of a widget in its cells (each side), so neighbours keep a 4px gap. */
+export const WIDGET_MARGIN = 2;
 
 export const CANVAS_MIN_ZOOM = 0.05;
 export const CANVAS_MAX_ZOOM = 4;
 /**
- * The blueprint grid behind the artboard, in artboard px: both sizes divide the artboard
- * (1440 × 810) evenly, so its edges sit on major lines. Minor lines fade out below this on-screen size.
+ * The blueprint grid behind the artboard, in artboard px, anchored at its top-left corner: minor
+ * lines are cells, major lines every 8 cells (120px). Minor lines fade out below this on-screen size.
  */
-export const BACKDROP_GRID_MINOR = 18;
-export const BACKDROP_GRID_MAJOR = 90;
+export const BACKDROP_GRID_MINOR = CELL_SIZE;
+export const BACKDROP_GRID_MAJOR = CELL_SIZE * 8;
 export const BACKDROP_GRID_MIN_VISIBLE = 6;
 
 /** Space kept around the artboard when fitting it into the viewport. */
@@ -27,10 +57,10 @@ const ACCEPTED_WIDGETS = '.gs-drag-item, .grid-stack-item';
 
 export const ROOT_GRID_OPTIONS: GridStackOptions = {
   column: GRID_COLUMNS,
-  cellHeight: CELL_HEIGHT,
-  margin: 4,
-  // Fixed row count locks the canvas to exactly 16:9
-  row: GRID_ROWS,
+  cellHeight: CELL_SIZE,
+  margin: WIDGET_MARGIN,
+  // At least one screen; no maximum, so a page grows downward (the artboard follows, see Canvas)
+  minRow: GRID_ROWS,
   // No responsive breakpoints, so the grid doesn't drop to 1 column when zoomed out
   columnOpts: { breakpoints: [] },
   acceptWidgets: ACCEPTED_WIDGETS,
@@ -47,7 +77,7 @@ export function subGridOptions(rows: number): GridStackOptions {
     column: 'auto',
     row: rows,
     maxRow: rows,
-    cellHeight: CELL_HEIGHT,
+    cellHeight: CELL_SIZE,
     // Children sit flush inside the container
     margin: 0,
     acceptWidgets: ACCEPTED_WIDGETS,

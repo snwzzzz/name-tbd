@@ -22,12 +22,12 @@ public abstract class AuditableEntity {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = Timestamps.nowUtc();
         lastModified = createdAt;
     }
 
     @PreUpdate
     protected void onUpdate() {
-        lastModified = LocalDateTime.now();
+        lastModified = Timestamps.nowUtc();
     }
 }

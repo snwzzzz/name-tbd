@@ -1,19 +1,22 @@
 import { Component, computed, effect, inject, input, output } from '@angular/core';
-import { LucideChevronLeft, LucideTrash2 } from '@lucide/angular';
+import { LucideChevronLeft, LucideRefreshCw, LucideTrash2 } from '@lucide/angular';
 import { DataSourceStateService } from '../../_services/data-source-state.service';
 import { DataSourceDto, DataSourceSummaryDto } from '../../api/models';
 import { DATA_SOURCE_PREVIEW_ROWS } from '../../_constants/data-source.constants';
 import { describeColumns } from '../../_utils/data-source.utils';
+import { connectionKind } from '../../_constants/connection-kinds.constants';
+import { DataSourceControllerService } from '../../api/services/dataSourceController.service';
 
 /** One data source in the sidebar: overview, per-column info, and a preview of its rows. */
 @Component({
   selector: 'app-data-source-detail',
-  imports: [LucideChevronLeft, LucideTrash2],
+  imports: [LucideChevronLeft, LucideTrash2, LucideRefreshCw],
   templateUrl: './data-source-detail.html',
   styleUrl: './data-source-detail.scss',
 })
 export class DataSourceDetail {
   private readonly state = inject(DataSourceStateService);
+  private readonly api = inject(DataSourceControllerService);
 
   readonly id = input.required<number>();
   readonly back = output<void>();
@@ -22,6 +25,11 @@ export class DataSourceDetail {
   readonly error = this.state.error;
   /** The data source with its rows, once loaded. */
   readonly source = computed<DataSourceDto | null>(() => this.state.details()[this.id()] ?? null);
+
+  readonly connectionLabel = computed(() => {
+    const kind = this.source()?.kind;
+    return kind ? connectionKind(kind)?.label || kind : null;
+  });
 
   readonly columns = computed(() => this.source()?.columns ?? []);
   readonly rows = computed(() => this.source()?.rows ?? []);
@@ -42,5 +50,15 @@ export class DataSourceDetail {
   requestDelete(): void {
     const source = this.source();
     if (source) this.deleteRequested.emit({ id: source.id, name: source.name });
+  }
+
+  async refreshColumns(): Promise<void> {
+    const source = this.source();
+    if (!source || source.format !== 'live') return;
+    try {
+      await this.state.refreshSchema(source.id!);
+    } catch (e) {
+      console.error('Failed to refresh columns', e);
+    }
   }
 }

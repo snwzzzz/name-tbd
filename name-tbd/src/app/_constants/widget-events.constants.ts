@@ -6,3 +6,15 @@ export const CLICK_EVENT = 'element_click';
 
 /** The event a data table fires when one of its rows is double-clicked (the row is selected first). */
 export const ROW_DOUBLE_CLICK_EVENT = 'row_dblclick';
+
+/** The event an input fires when its text changed: once typing pauses (its debounce), or at once on Enter. */
+export const INPUT_EVENT = 'input_change';
+
+/** The event a field (dropdown, checkbox, toggle, number, date, file) fires when its value was changed. */
+export const CHANGE_EVENT = 'value_change';
+
+/** The event a list fires when one of its cards is clicked (its row is selected first). */
+export const ITEM_CLICK_EVENT = 'item_click';
+
+/** The event a form fires once it saved its row (after validation passed). */
+export const SUBMIT_EVENT = 'form_submit';

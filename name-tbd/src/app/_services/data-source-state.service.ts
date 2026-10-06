@@ -2,18 +2,19 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { DataSourceControllerService } from '../api/services/dataSourceController.service';
-import { DataSourceDto, DataSourceSummaryDto } from '../api/models';
+import { DataSourceDto, DataSourceSummaryDto, LiveDataSourceCommand } from '../api/models';
 import { DATA_SOURCE_FORMATS } from '../_constants/data-source.constants';
-import { EDITOR_BRANCH_ID } from '../_constants/api.constants';
+import { EditorContext } from './editor-context.service';
 import { DataSourceFormat } from '../_types/data-source.types';
 
 /**
- * The project's data sources (tabular data imported from files). The list is loaded once; a data
+ * The branch's data sources (tabular data imported from files). The list is loaded once; a data
  * source's rows only when it's opened. Which one is open is up to the URL (see DataSourcePanel).
  */
 @Injectable({ providedIn: 'root' })
 export class DataSourceStateService {
   private readonly api = inject(DataSourceControllerService);
+  private readonly context = inject(EditorContext);
 
   readonly sources = signal<DataSourceSummaryDto[]>([]);
   readonly loading = signal(false);
@@ -31,7 +32,7 @@ export class DataSourceStateService {
     if (this.requested) return;
     this.requested = true;
     this.loading.set(true);
-    this.api.getDataSources(EDITOR_BRANCH_ID).subscribe({
+    this.api.getDataSources(this.context.requireBranchId()).subscribe({
       next: (sources) => {
         this.sources.set(sources);
         this.loaded.set(true);
@@ -63,6 +64,53 @@ export class DataSourceStateService {
     return source;
   }
 
+  /** Reads a data source's rows again (e.g. after the preview changed the real data). */
+  async reload(id: number): Promise<DataSourceDto> {
+    const source = await firstValueFrom(this.api.getDataSource(id));
+    this.cache(source);
+    return source;
+  }
+
+  /** Adds a live data source (rows read through a connection); resolves to its id (undefined if it failed). */
+  async createLive(command: Omit<LiveDataSourceCommand, 'branchId'>): Promise<number | undefined> {
+    this.error.set(null);
+    this.loading.set(true);
+    try {
+      const created = await firstValueFrom(this.api.createLiveDataSource({ ...command, branchId: this.context.requireBranchId() }));
+      this.sources.update((all) => [...all, summaryOf(created)].sort(byName));
+      this.cache(created);
+      this.loading.set(false);
+      return created.id;
+    } catch (err) {
+      this.fail(`Failed to add ${command.name ?? 'the data source'}`, err);
+      return undefined;
+    }
+  }
+
+  /** Changes what a live data source reads (or its name, key column, read-only flag); resolves to whether it worked. */
+  async updateLive(id: number, command: Omit<LiveDataSourceCommand, 'branchId'>): Promise<boolean> {
+    this.error.set(null);
+    try {
+      this.replace(await firstValueFrom(this.api.updateLiveDataSource(id, command)));
+      return true;
+    } catch (err) {
+      this.fail('Failed to change the data source', err);
+      return false;
+    }
+  }
+
+  /** Asks a live data source's system for its columns again. */
+  async refreshSchema(id: number): Promise<boolean> {
+    this.error.set(null);
+    try {
+      this.replace(await firstValueFrom(this.api.refreshSchema(id)));
+      return true;
+    } catch (err) {
+      this.fail('Failed to read the columns', err);
+      return false;
+    }
+  }
+
   /** Imports a file as a new data source; resolves to its id (undefined if it failed). */
   async importFile(file: File): Promise<number | undefined> {
     const format = formatOf(file.name);
@@ -75,7 +123,7 @@ export class DataSourceStateService {
     try {
       const content = await file.text();
       const created = await firstValueFrom(
-        this.api.importDataSource({ branchId: EDITOR_BRANCH_ID, name: baseName(file.name), format: format.format, content }),
+        this.api.importDataSource({ branchId: this.context.requireBranchId(), name: baseName(file.name), format: format.format, content }),
       );
       this.sources.update((all) => [...all, summaryOf(created)].sort(byName));
       this.cache(created);
@@ -98,6 +146,11 @@ export class DataSourceStateService {
       this.fail('Failed to delete data source', err);
       return false;
     }
+  }
+
+  private replace(source: DataSourceDto): void {
+    this.sources.update((all) => all.map((s) => (s.id === source.id ? summaryOf(source) : s)).sort(byName));
+    this.cache(source);
   }
 
   private cache(source: DataSourceDto): void {
@@ -126,8 +179,15 @@ const summaryOf = (source: DataSourceDto): DataSourceSummaryDto => ({
   format: source.format,
   branchId: source.branchId,
   columns: source.columns,
-  rowCount: source.rows?.length ?? 0,
+  rowCount: isLive(source) ? 0 : source.rows?.length ?? 0,
+  kind: source.kind,
+  connectionId: source.connectionId,
+  keyColumn: source.keyColumn,
+  readOnly: source.readOnly,
 });
+
+/** Whether a data source's rows are read through a connection (not stored with the app). */
+export const isLive = (source: { kind?: string } | null | undefined): boolean => !!source?.kind && source.kind !== 'embedded';
 
 const byName = (a: DataSourceSummaryDto, b: DataSourceSummaryDto): number =>
   (a.name ?? '').localeCompare(b.name ?? '');

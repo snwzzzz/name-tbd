@@ -16,7 +16,7 @@ class AppDefinitionTest {
         definition.put("pages", List.of());
         definition.put("homePageId", null);
 
-        assertEquals("{\"version\":1,\"app\":{\"id\":3,\"name\":\"Shop\"},\"pages\":[],\"homePageId\":null}",
+        assertEquals("{\"version\":" + AppDefinition.VERSION + ",\"app\":{\"id\":3,\"name\":\"Shop\"},\"pages\":[],\"homePageId\":null}",
                 JsonMapper.builder().build().writeValueAsString(definition));
     }
 

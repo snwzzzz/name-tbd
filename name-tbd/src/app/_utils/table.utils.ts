@@ -13,10 +13,19 @@ export function visibleColumnIndexes(allColumns: string[], chosen: string[]): nu
   return indexes.length > 0 ? indexes : allColumns.map((_, i) => i);
 }
 
-/** A loaded data source as table data; rows are identified by their position. */
-export function toTableData(source: { columns?: string[]; rows?: string[][] }): TableData {
+/** A loaded data source as table data; rows keep their ids (older exports have none: their position then). */
+export function toTableData(source: { columns?: string[]; rows?: string[][]; rowIds?: string[] | null; truncated?: boolean }): TableData {
   return {
     columns: source.columns ?? [],
-    rows: (source.rows ?? []).map((values, index) => ({ id: String(index), values })),
+    rows: (source.rows ?? []).map((values, index) => ({ id: source.rowIds?.[index] ?? String(index), values })),
+    ...(source.truncated ? { truncated: true } : {}),
   };
+}
+
+/** Whether a row matches a search: every word of it appears in one of the values, ignoring case. An empty search matches all. */
+export function rowMatches(values: string[], query: string): boolean {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const text = values.map((v) => v.toLowerCase());
+  return words.every((word) => text.some((value) => value.includes(word)));
 }

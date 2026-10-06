@@ -10,7 +10,7 @@
   border: 1px solid var(--color-border);
   border-top: 3px solid var(--accent);
   border-radius: 8px;
-  width: 240px;
+  width: 280px;
   box-shadow: var(--wf-shadow);
   position: relative;
   color: var(--color-text-primary);
@@ -24,7 +24,7 @@
 :host(.condition-node) {
   --accent: var(--wf-condition);
   --accent-soft: var(--wf-condition-soft);
-  width: 200px;
+  width: 240px;
 }
 
 :host(.f-selected) {

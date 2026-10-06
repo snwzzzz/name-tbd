@@ -1,13 +1,23 @@
 import { Routes } from '@angular/router';
 import { Editor } from './editor/editor';
+import { authGuard } from './_guards/auth.guard';
+import { editorAppGuard } from './_guards/editor-app.guard';
 
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'console' },
+  {
+    path: 'login',
+    loadComponent: () => import('./pages/login/login').then((m) => m.Login),
+  },
   {
     path: 'console',
+    canActivate: [authGuard],
     loadComponent: () => import('./pages/console/console').then((m) => m.ApplicationConsole),
   },
   {
-    path: 'editor',
+    // The editor, on one application (EditorContext): /apps/:appId/edit/:tabId/:mode
+    path: 'apps/:appId/edit',
+    canActivate: [authGuard, editorAppGuard],
     component: Editor,
     children: [
       { path: ':tabId/edit', loadComponent: () => import('./pages/canvas/canvas').then((m) => m.Canvas) },
@@ -20,4 +30,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'welcome-0/welcome', pathMatch: 'full' },
     ],
   },
+  // The editor before it had applications
+  { path: 'editor', redirectTo: 'console' },
+  { path: 'editor/**', redirectTo: 'console' },
 ];

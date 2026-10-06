@@ -1,0 +1,56 @@
+[
+  {
+    "name": "http: the answer goes into a variable and is `response` for the next node",
+    "request": {
+      "triggerNodeId": 1,
+      "variables": { "app": [{ "name": "users", "type": "list" }, { "name": "summary", "type": "text" }, { "name": "userId", "type": "number", "initial": "2" }] },
+      "workflow": {
+        "nodes": [
+          { "id": 1, "type": "Trigger", "props": { "triggerType": "page_load" } },
+          { "id": 2, "type": "Action", "props": { "actionType": "http_request", "config": {
+            "method": "GET", "url": "https://api.example.com/users?after={{ userId }}", "headers": [], "body": "", "resultVariable": "users"
+          } } },
+          { "id": 3, "type": "Action", "props": { "actionType": "set_variable", "config": {
+            "variable": "summary", "value": "{{ response.status }}: {{ users.map(u, u.name).join(', ') }}"
+          } } }
+        ],
+        "edges": [
+          { "id": 1, "sourceNodeId": 1, "sourcePort": "out", "targetNodeId": 2 },
+          { "id": 2, "sourceNodeId": 2, "sourcePort": "out", "targetNodeId": 3 }
+        ]
+      }
+    },
+    "http": {
+      "https://api.example.com/users?after=2": { "status": 200, "body": [{ "id": 3, "name": "Clementine" }, { "id": 4, "name": "Patricia" }] }
+    },
+    "expect": {
+      "steps": ["1:out", "2:out", "3:out"],
+      "variables": { "summary": "200: Clementine, Patricia", "users": [{ "id": 3, "name": "Clementine" }, { "id": 4, "name": "Patricia" }] }
+    }
+  },
+  {
+    "name": "http: a failed answer goes on through `error`",
+    "request": {
+      "triggerNodeId": 1,
+      "variables": { "app": [{ "name": "problem", "type": "text" }] },
+      "workflow": {
+        "nodes": [
+          { "id": 1, "type": "Trigger", "props": { "triggerType": "page_load" } },
+          { "id": 2, "type": "Action", "props": { "actionType": "http_request", "config": {
+            "method": "POST", "url": "https://api.example.com/orders", "headers": [{ "name": "X-Key", "value": "k" }],
+            "body": "{{ {\"amount\": 5} }}", "resultVariable": ""
+          } } },
+          { "id": 3, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "problem", "value": "{{ error }}" } } },
+          { "id": 4, "type": "Action", "props": { "actionType": "set_variable", "config": { "variable": "problem", "value": "none" } } }
+        ],
+        "edges": [
+          { "id": 1, "sourceNodeId": 1, "sourcePort": "out", "targetNodeId": 2 },
+          { "id": 2, "sourceNodeId": 2, "sourcePort": "error", "targetNodeId": 3 },
+          { "id": 3, "sourceNodeId": 2, "sourcePort": "out", "targetNodeId": 4 }
+        ]
+      }
+    },
+    "http": { "https://api.example.com/orders": { "status": 503, "body": "Try later" } },
+    "expect": { "steps": ["1:out", "2:error", "3:out"], "variables": { "problem": "The server answered 503: Try later" } }
+  }
+]

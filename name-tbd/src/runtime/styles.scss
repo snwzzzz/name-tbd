@@ -5,5 +5,11 @@
 @use '../app/_styles/fields';
 @use '../app/_styles/modal';
 @use '../app/_styles/spinner';
+@use '../app/_styles/widgets';
 
 @import '@angular/cdk/overlay-prebuilt.css';
+
+html,
+body {
+  background-color: var(--color-bg);
+}

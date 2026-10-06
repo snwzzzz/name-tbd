@@ -39,7 +39,54 @@ describe('NavWidget', () => {
     expect(fakeApp().navigation.opened).toEqual([1]);
   });
 
-  it('asks for pages when none are chosen', () => {
+  it('takes its appearance, accent and background (underline and transparent by default)', () => {
+    const plain = mount({ pages: '["2"]' }).querySelector('nav') as HTMLElement;
+    expect(plain.classList).toContain('variant-underline');
+    expect(plain.style.background).toBe('');
+    expect(plain.style.getPropertyValue('--nav-accent')).toBe('#2f89ff');
+
+    TestBed.resetTestingModule();
+    const filled = mount({ pages: '["2"]', variant: 'Filled', accentColor: '#c50f1f', background: '#f5f5f5' }).querySelector('nav') as HTMLElement;
+    expect(filled.classList).toContain('variant-filled');
+    expect(filled.classList).toContain('nav');
+    expect(filled.style.getPropertyValue('--nav-accent')).toBe('#c50f1f');
+    expect(filled.style.background).toBe('rgb(245, 245, 245)');
+  });
+
+  it('fits its text and current-page colors to its background unless they are picked', () => {
+    const dark = mount({ pages: '["1"]', background: '#1b1b1b', variant: 'Filled' }).querySelector('nav') as HTMLElement;
+    expect(dark.style.color).toBe('rgb(255, 255, 255)');
+    // Filled, no color picked: a tone of its background (lighter, as it's near-black), white text on it
+    expect(dark.style.getPropertyValue('--nav-accent')).toBe('#484848');
+    expect(dark.style.getPropertyValue('--nav-on-accent')).toBe('#ffffff');
+    TestBed.resetTestingModule();
+
+    const picked = mount({ pages: '["1"]', background: '#1b1b1b', color: '#ffd700', accentColor: '#0f6cbd' }).querySelector('nav') as HTMLElement;
+    expect(picked.style.color).toBe('rgb(255, 215, 0)');
+    expect(picked.style.getPropertyValue('--nav-on-accent')).toBe('#ffffff');
+    TestBed.resetTestingModule();
+
+    const plain = mount({ pages: '["1"]' }).querySelector('nav') as HTMLElement;
+    expect(plain.style.color).toBe('var(--widget-fg)');
+    expect(plain.style.getPropertyValue('--nav-accent')).toBe('#2f89ff');
+    TestBed.resetTestingModule();
+
+    // Filled on a blue bar: a darker blue, with white text
+    const filled = mount({ pages: '["1"]', background: '#2f89ff', variant: 'Filled' }).querySelector('nav') as HTMLElement;
+    expect(filled.style.getPropertyValue('--nav-accent')).toBe('#2876db');
+    expect(filled.style.getPropertyValue('--nav-on-accent')).toBe('#ffffff');
+  });
+
+  it('asks for pages when none are chosen, only in the editor', () => {
     expect(mount({ pages: '[]' }).textContent).toContain('Pick pages');
+    TestBed.resetTestingModule();
+
+    TestBed.configureTestingModule({ providers: provideFakeApp({ pages: PAGES }) });
+    fakeApp().session.start('2');
+    const fixture = TestBed.createComponent(NavWidget);
+    fixture.componentRef.setInput('id', '1');
+    fixture.componentRef.setInput('props', { pages: '[]' });
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Pick pages');
   });
 });
