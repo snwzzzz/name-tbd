@@ -43,7 +43,7 @@ export class Login implements OnInit {
       .pipe(map((me) => !!me))
       .subscribe({
         next: (signedIn) => {
-          if (signedIn) this.router.navigateByUrl(this.returnUrl() ?? '/console');
+          if (signedIn) this.router.navigateByUrl(this.returnUrl() ?? '/tools');
         },
         error: () => {},
       });
@@ -56,7 +56,7 @@ export class Login implements OnInit {
   devSignIn(): void {
     this.devError.set(null);
     this.auth.devSignIn(this.devEmail()).subscribe({
-      next: () => this.router.navigateByUrl(this.returnUrl() ?? '/console'),
+      next: () => this.router.navigateByUrl(this.returnUrl() ?? '/tools'),
       error: (error: unknown) =>
         this.devError.set(
           error instanceof HttpErrorResponse && error.status === 400

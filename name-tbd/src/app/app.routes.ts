@@ -4,10 +4,27 @@ import { authGuard } from './_guards/auth.guard';
 import { editorAppGuard } from './_guards/editor-app.guard';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'console' },
+  { path: '', pathMatch: 'full', redirectTo: 'tools' },
   {
     path: 'login',
     loadComponent: () => import('./pages/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'tools',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/tools/tools').then((m) => m.ToolsDashboard),
+  },
+  {
+    // The simple builder: independent of the editor (src/tools/simple)
+    path: 'simple',
+    canActivate: [authGuard],
+    loadChildren: () => import('../tools/simple/simple.routes').then((m) => m.SIMPLE_ROUTES),
+  },
+  {
+    // Data management: connections to databases (src/tools/data)
+    path: 'data',
+    canActivate: [authGuard],
+    loadChildren: () => import('../tools/data/data.routes').then((m) => m.DATA_ROUTES),
   },
   {
     path: 'console',

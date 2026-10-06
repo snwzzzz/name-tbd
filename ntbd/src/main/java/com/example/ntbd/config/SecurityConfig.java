@@ -121,7 +121,7 @@ public class SecurityConfig {
             .oauth2Login(login -> login
                     // The editor's login page (this also turns off Spring's generated one)
                     .loginPage(frontendUrl + "/login")
-                    .defaultSuccessUrl(frontendUrl + "/console", true)
+                    .defaultSuccessUrl(frontendUrl + "/tools", true)
                     .failureHandler(signInFailed()))
             .logout(logout -> logout
                     .logoutUrl("/logout")
